@@ -4,7 +4,6 @@ import AntimonyEditor from "./editor/AntimonyEditor";
 import FileList from "./fileexplorer/FileList";
 import { searchModels } from './features/BrowseBiomodels';
 import './App.css'
-import { BsUpload } from 'react-icons/bs';
 import FileUploader from './fileexplorer/FileUploader'
 
 const App = () => {
