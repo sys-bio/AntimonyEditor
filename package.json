@@ -1,7 +1,7 @@
 {
-  "name": "my-editor-app",
+  "name": "antimony-editor-app",
   "version": "0.1.0",
-  "homepage": "https://evaxliu.github.io/",
+  "homepage": "https://sys-bio.github.io/AntimonyEditor/",
   "private": true,
   "dependencies": {
     "@geoffcox/react-splitter": "^2.1.2",
