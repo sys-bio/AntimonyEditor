@@ -143,7 +143,7 @@ const AntimonyEditor = () => {
           {/* <Tabs/> */}
         </div>
         <div className='menu'>
-          <CustomButton name={'Save Changes'} />
+          <button className='button' onClick={save}> Save Changes </button>
           <CustomButton name={'Create Annotations'} />
           <CustomButton name={'Navigate to Edit Annotations'} />
           <CustomButton name={'Insert Rate Law'} />
