@@ -5,8 +5,15 @@ import FileList from "./fileexplorer/FileList";
 import { searchModels } from './features/BrowseBiomodels';
 import './App.css'
 import FileUploader from './fileexplorer/FileUploader'
+import { useState } from 'react';
 
 const App = () => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleFileSelected = (file: File) => {
+    setSelectedFile(file);
+  };
+
   return (
     <div className='app' style={{height: '100%'}}>
       <div className="wrapper">
@@ -25,7 +32,7 @@ const App = () => {
             splitterSize='3px'
           >
             <div style={{"height": "100%", "overflowY": "scroll"}}>
-              <FileUploader/>
+              <FileUploader onFileSelected={handleFileSelected} />
               {/* <BsUpload style={{padding: '4px 0 0 7px'}}/> */}
               {/* <input type='file' className='choosefile' /> <br/> */}
             </div>        
@@ -36,7 +43,7 @@ const App = () => {
               initialPrimarySize='80%'
             > */}
               <div style={{"height": "100%"}}>
-                <AntimonyEditor/>
+              <AntimonyEditor />
               </div>
               Logs Here
               <div style={{"padding": "100px", "width": "100%", "height": "100%"}}>
