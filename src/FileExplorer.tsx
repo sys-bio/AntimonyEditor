@@ -45,11 +45,14 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
       {/* <h5 style={{paddingLeft:'7px'}}>Don't Forget to Save Files Before Closing Website</h5>  */}
       <ul style={{ listStyle: 'none'}}>
         {files.map((file, index) => (
-          <li 
-            key={index} 
-            onClick={() => onFileClick(file.content)}
-            >
-            {file.name}
+          <li key={index}>
+              <button
+                key={index} 
+                onClick={() => onFileClick(file.content)}
+                className='button'
+              >
+                {file.name}
+              </button>
           </li>
         ))}
       </ul>
