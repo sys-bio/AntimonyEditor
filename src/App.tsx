@@ -3,6 +3,8 @@ import './App.css';
 import FileExplorer from './FileUploader';
 import CodeEditor from './AntimonyEditor';
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { SolidSplitter } from './CustomSplitters';
+import { Split } from '@geoffcox/react-splitter';
 
 interface MyDB extends DBSchema {
   files: {
@@ -66,12 +68,47 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="app">
-      <h1>File Explorer & Code Editor</h1>
-      <input type="file" multiple onChange={handleFileUpload} />
-      <div className="content-container">
-        <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
-        <CodeEditor content={selectedFileContent} />
+    <div className='app' style={{height: '100%'}}>
+      <div className="wrapper">
+        <div className="top" style={{"fontSize": "2em", textAlign: 'center'}}>
+          The Official Antimony Web Code Editor
+          <div className="float-end" style={{"fontSize": ".5em"}}>
+            <a href={"https://reproduciblebiomodels.org/"}>
+              https://reproduciblebiomodels.org/
+            </a>
+          </div>
+        </div>
+        <div className="middle App" style={{"backgroundColor": "#1c1c1c", color:'white'}}>
+          <Split
+            renderSplitter={() => <SolidSplitter/>}
+            initialPrimarySize='14%'
+            splitterSize='3px'
+          >
+            <div style={{"height": "100%", "overflowY": "scroll"}}>
+              <input type="file" multiple onChange={handleFileUpload} />
+              <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
+              {/* <BsUpload style={{padding: '4px 0 0 7px'}}/> */}
+              {/* <input type='file' className='choosefile' /> <br/> */}
+            </div>        
+            {/* <Split
+              renderSplitter={() => <SolidSplitter />}
+              splitterSize='3px'
+              horizontal
+              initialPrimarySize='80%'
+            > */}
+              <div style={{"height": "100%"}}>
+              <CodeEditor content={selectedFileContent} />
+              </div>
+              Logs Here
+              <div style={{"padding": "100px", "width": "100%", "height": "100%"}}>
+                <div style={{"width": "100%", "height": "100%"}}>
+                  <iframe style={{"width": "100%", "height": "100%"}}/>
+                </div>
+              </div>
+            {/* </Split> */}
+          </Split>
+        </div>
+        <div className="bottom" style={{backgroundColor: '#1c1c1c', color:'white'}}>Copyright © 2023 Center for Reproducible Biomedical Modeling</div>
       </div>
     </div>
   );

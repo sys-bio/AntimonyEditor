@@ -1,3 +1,8 @@
+interface Model {
+  name: string;
+  model: string;
+}
+
 interface Compartment {
   name: string;
 }
@@ -43,6 +48,7 @@ interface Display {
 }
 
 interface AntimonyModel {
+  model: Map<String, Model>;
   compartments: Map<string, Compartment>;
   species: Map<string, Species>;
   reactions: Map<string, Reaction>;
@@ -57,6 +63,7 @@ interface AntimonyModel {
 export function parseAntimonyModel(antimonyModel: string): AntimonyModel {
   const lines = antimonyModel.split('\n');
   const model: AntimonyModel = {
+    model: new Map(),
     compartments: new Map(),
     species: new Map(),
     reactions: new Map(),
@@ -68,7 +75,7 @@ export function parseAntimonyModel(antimonyModel: string): AntimonyModel {
     displays: new Map()
   };
 
-  let currentSection: 'compartments' | 'species' | 'reactions' | 'declarations' | 'initializations' | 'displays' | 'annotations' | 'functions' | 'units' | null = null;
+  let currentSection: 'model' | 'compartments' | 'species' | 'reactions' | 'declarations' | 'initializations' | 'displays' | 'annotations' | 'functions' | 'units' | null = null;
   let lastCompartment: string | null = null;
   let lastAnnotVar: string | "";
 
@@ -83,15 +90,16 @@ export function parseAntimonyModel(antimonyModel: string): AntimonyModel {
       return;
     }
 
-    if (line.trim().startsWith('model')) {
+    if (line.trim().includes('model')) {
       // Skip the model definition
+      currentSection = 'model';
     }
 
-    if (line.trim().startsWith('compartment')) {
+    if (line.trim().includes('compartment')) {
       currentSection = 'compartments';
     }
 
-    if (line.trim().startsWith('species')) {
+    if (line.trim().includes('species')) {
       currentSection = 'species';
     }
 
@@ -125,6 +133,18 @@ export function parseAntimonyModel(antimonyModel: string): AntimonyModel {
 
     let match;
     switch(currentSection) {
+      case 'model':
+        match = line.match(/model (.+);/);
+        if (match) {
+          console.log(match)
+          const modelName = match[1];
+          console.log(modelName)
+          model.model.set(modelName, {
+            name: modelName,
+            model: ""
+          });
+        }
+        break;
       case 'compartments':
         match = line.match(/compartment (.+);/);
         if (match) {
