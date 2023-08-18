@@ -1,63 +1,54 @@
-import {Split} from '@geoffcox/react-splitter';
-import {SolidSplitter} from './CustomSplitters';
-import AntimonyEditor from "./editor/AntimonyEditor";
-import FileList from "./fileexplorer/FileList";
-import { searchModels } from './features/BrowseBiomodels';
-import './App.css'
-import FileUploader from './fileexplorer/FileUploader'
-import { useState } from 'react';
+import React, { useState } from 'react';
+import './App.css';
+import FileExplorer from './FileUploader';
+import CodeEditor from './AntimonyEditor';
 
-const App = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+const sampleAntimonyModel = `
+// Sample Antimony Model
+model main()
+  compartment C1;
 
-  const handleFileSelected = (file: File) => {
-    setSelectedFile(file);
+  species S1, S2;
+
+  S1 in C1;
+  S2 in C1;
+
+  S1 -> S2; k1*S1;
+  k1 = 0.1;
+end
+`;
+
+const App: React.FC = () => {
+  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; content: string }[]>([]);
+  const [selectedFileContent, setSelectedFileContent] = useState<string>(sampleAntimonyModel);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.readAsText(file);
+        reader.onload = () => {
+          setUploadedFiles(prevFiles => [...prevFiles, { name: file.name, content: reader.result as string }]);
+        };
+      });
+    }
+  };
+
+  const handleFileClick = (fileContent: string) => {
+    setSelectedFileContent(fileContent);
   };
 
   return (
-    <div className='app' style={{height: '100%'}}>
-      <div className="wrapper">
-        <div className="top" style={{"fontSize": "2em", textAlign: 'center'}}>
-          The Official Antimony Web Code Editor
-          <div className="float-end" style={{"fontSize": ".5em"}}>
-            <a href={"https://reproduciblebiomodels.org/"}>
-              https://reproduciblebiomodels.org/
-            </a>
-          </div>
-        </div>
-        <div className="middle App" style={{"backgroundColor": "#1c1c1c", color:'white'}}>
-          <Split
-            renderSplitter={() => <SolidSplitter/>}
-            initialPrimarySize='14%'
-            splitterSize='3px'
-          >
-            <div style={{"height": "100%", "overflowY": "scroll"}}>
-              <FileUploader onFileSelected={handleFileSelected} />
-              {/* <BsUpload style={{padding: '4px 0 0 7px'}}/> */}
-              {/* <input type='file' className='choosefile' /> <br/> */}
-            </div>        
-            {/* <Split
-              renderSplitter={() => <SolidSplitter />}
-              splitterSize='3px'
-              horizontal
-              initialPrimarySize='80%'
-            > */}
-              <div style={{"height": "100%"}}>
-              <AntimonyEditor />
-              </div>
-              Logs Here
-              <div style={{"padding": "100px", "width": "100%", "height": "100%"}}>
-                <div style={{"width": "100%", "height": "100%"}}>
-                  <iframe style={{"width": "100%", "height": "100%"}}/>
-                </div>
-              </div>
-            {/* </Split> */}
-          </Split>
-        </div>
-        <div className="bottom" style={{backgroundColor: '#1c1c1c', color:'white'}}>Copyright © 2023 Center for Reproducible Biomedical Modeling</div>
+    <div className="app">
+      <h1>File Explorer & Code Editor</h1>
+      <input type="file" multiple onChange={handleFileUpload} />
+      <div className="content-container">
+        <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
+        <CodeEditor content={selectedFileContent} />
       </div>
     </div>
   );
-}
+};
 
 export default App;
