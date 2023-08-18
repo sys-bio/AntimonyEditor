@@ -11,7 +11,7 @@ const CustomButton =  (props: Name) => {
                 .button {
                     background-color: #1c1c1c;
                     border-radius: 2px;
-                    border-style: dotted;
+                    border-style: solid;
                     border-width: 1px;
                     border-color: #1c1c1c;
                     color: #B7B7B7;
