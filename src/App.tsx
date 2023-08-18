@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import FileExplorer from './FileExplorer';
-import CodeEditor from './AntimonyEditor';
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { openDB, DBSchema } from 'idb';
 import { SolidSplitter } from './CustomSplitters';
 import { Split } from '@geoffcox/react-splitter';
 import AntimonyEditor from './AntimonyEditor';
