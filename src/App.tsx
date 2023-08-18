@@ -73,7 +73,7 @@ const App: React.FC = () => {
         <div className="top" style={{"fontSize": "2em", textAlign: 'center'}}>
           The Official Antimony Web Code Editor
           <div className="float-end" style={{"fontSize": ".5em"}}>
-            <a href={"https://reproduciblebiomodels.org/"}>
+            <a target="_blank" href={"https://reproduciblebiomodels.org/"}>
               https://reproduciblebiomodels.org/
             </a>
           </div>
