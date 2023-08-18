@@ -5,11 +5,11 @@ import { antimonyTheme } from './languages/AntimonyTheme';
 import { parseAntimonyModel } from './languages/AntimonyParser'
 import CustomButton from './components/CustomButton';
 
-interface CodeEditorProps {
+interface AntimonyEditorProps {
   content: string;
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ content }) => {
+const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -135,4 +135,4 @@ function parseAntimony(editorVal: string) {
   });
 }
 
-export default CodeEditor;
+export default AntimonyEditor;

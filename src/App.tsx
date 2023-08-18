@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import FileExplorer from './FileUploader';
+import FileExplorer from './FileExplorer';
 import CodeEditor from './AntimonyEditor';
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { SolidSplitter } from './CustomSplitters';
 import { Split } from '@geoffcox/react-splitter';
+import AntimonyEditor from './AntimonyEditor';
 
 interface MyDB extends DBSchema {
   files: {
@@ -97,7 +98,7 @@ const App: React.FC = () => {
               initialPrimarySize='80%'
             > */}
               <div style={{"height": "100%"}}>
-              <CodeEditor content={selectedFileContent} />
+              <AntimonyEditor content={selectedFileContent} />
               </div>
               Logs Here
               <div style={{"padding": "100px", "width": "100%", "height": "100%"}}>
