@@ -1,5 +1,3 @@
-import { METHODS } from "http";
-
 interface Model {
     name: string;
     url: string;
