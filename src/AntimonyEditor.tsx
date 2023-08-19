@@ -55,8 +55,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
           dropdown!.innerHTML = "";
           return;
         }
-        const results = await searchModels(biomodel);
-        console.log(results)
+        setTimeout(async () => {
+          const biomodels = await searchModels(biomodel);
+          dropdown!.innerHTML = "";
+          console.log(biomodels);
+        }, 500);
       });
 
       return () => editor.dispose();

@@ -11,24 +11,27 @@ interface Models {
 const corsProxyUrl = "https://api.allorigins.win/raw?url=";
 
 export async function searchModels(search: KeyboardEvent) {
-    const queryText = (search.target as HTMLInputElement).value.trim();
-    console.log(queryText)
-    await fetch(corsProxyUrl + `https://www.ebi.ac.uk/biomodels/search?query=${queryText}&numResults=100&format=json`, { method: 'GET' })
-        .then(response => response.json())
-        .then(data => {
-            const models = data.models.map((model: any) => {
-                return {
+    try {
+        const queryText = (search.target as HTMLInputElement).value.trim();
+        const response = await fetch(corsProxyUrl + `https://www.ebi.ac.uk/biomodels/search?query=${queryText}%26numResults=100%26format=json`)
+        if (response.ok) {
+            const results = await response.json();
+            const models: Models = { models: new Map() };
+            results.models.forEach((model: any) => {
+                models.models.set(model.id, {
                     name: model.name,
                     url: model.url,
                     id: model.id
-                }
+                });
             });
             return models;
-        })
-        .catch(error => {
-            console.log(error);
-            throw error;
-        });
+        } else {
+            throw new Error('Error when fetching search results');
+        }
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
 }
 
 export async function getModel(modelId: string) {
