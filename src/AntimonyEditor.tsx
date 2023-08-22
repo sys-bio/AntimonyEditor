@@ -7,9 +7,10 @@ import CustomButton from './components/CustomButton';
 
 interface AntimonyEditorProps {
   content: string;
+  name: string;
 }
 
-const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
+const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, name }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
   return (
     <div>
       <div className='menu'>
+        <button className='button' onClick={}>Download File</button>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
         <CustomButton name={'Create Annotations'} />
         <CustomButton name={'Navigate to Edit Annotations'} />

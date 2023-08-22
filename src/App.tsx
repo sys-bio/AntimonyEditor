@@ -31,6 +31,7 @@ end
 const App: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; content: string }[]>([]);
   const [selectedFileContent, setSelectedFileContent] = useState<string>(sampleAntimonyModel);
+  const [selectedFileName, setSelectedFileName] = useState<string>('')
 
   useEffect(() => {
     openDB<MyDB>('fileDB', 1, {
@@ -63,8 +64,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleFileClick = (fileContent: string) => {
+  const handleFileClick = (fileContent: string, fileName: string) => {
     setSelectedFileContent(fileContent);
+    setSelectedFileName(fileName);
   };
 
   return (
@@ -97,7 +99,7 @@ const App: React.FC = () => {
               initialPrimarySize='80%'
             > */}
               <div style={{"height": "100%"}}>
-              <AntimonyEditor content={selectedFileContent} />
+              <AntimonyEditor content={selectedFileContent} name={selectedFileName}/>
               </div>
               Logs Here
               <div style={{"padding": "100px", "width": "100%", "height": "100%"}}>
