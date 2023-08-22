@@ -13,7 +13,7 @@ const corsProxyUrl = "https://api.allorigins.win/raw?url=";
 export async function searchModels(search: KeyboardEvent) {
     try {
         const queryText = (search.target as HTMLInputElement).value.trim();
-        const response = await fetch(corsProxyUrl + `https://www.ebi.ac.uk/biomodels/search?query=${queryText}%26numResults=100%26format=json`)
+        const response = await fetch(corsProxyUrl + `https://www.ebi.ac.uk/biomodels/search?query=${queryText}%26numResults=25%26format=json`)
         if (response.ok) {
             const results = await response.json();
             const models: Models = { models: new Map() };
