@@ -97,6 +97,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
           return;
         }
         // Otherwise, display the models in the dropdown
+        dropdown!.style.display = "block";
         biomodels.models.forEach(function (model: any) {
           setLoading(false);
           const a = document.createElement('a');
@@ -109,8 +110,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
           a.innerHTML = model.name + ": " + model.id + "\n";
           dropdown!.appendChild(a);
         });
-      }, 100);
-      
+      }, 300);
     });
   }
   useEffect(() => {
@@ -153,7 +153,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
 
   useEffect(() => {
     if (chosenModel) {
+      const dropdown = document.getElementById('dropdown');
+      dropdown!.style.display = "none";
+      setLoading(true);
       getModel(chosenModel).then((model) => {
+        setLoading(false);
         const editor = monaco.editor.getModels()[0];
         editor.setValue(model);
       });
