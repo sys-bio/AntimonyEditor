@@ -12,7 +12,7 @@ interface AntimonyEditorProps {
 
 const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, name }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
-  const [editorInstance, setEditorInstance] = useState<>();
+  const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   useEffect(() => {
     if (editorRef.current) {
@@ -40,6 +40,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, name }) => {
         ],
       });
 
+      setEditorInstance(editor)
+
       parseAntimony(editor.getValue());
 
       editor.onDidChangeModelContent(() => {
@@ -56,7 +58,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, name }) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = name + '.ant';
+      a.download = name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
