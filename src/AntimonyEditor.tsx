@@ -1,19 +1,118 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import * as monaco from 'monaco-editor';
 import { antimonyLanguage } from './languages/AntimonyLanguage';
 import { antimonyTheme } from './languages/AntimonyTheme';
 import { parseAntimonyModel } from './languages/AntimonyParser'
 import CustomButton from './components/CustomButton';
 import './AntimonyEditor.css';
-import { searchModels } from './features/BrowseBiomodels';
+import { getModel, searchModels } from './features/BrowseBiomodels';
+import libantimony from './libAntimony/libantimony.js';
+import Loader from './components/Loader';
 
 interface AntimonyEditorProps {
   content: string;
 }
 
+// var loadAntimonyString; // libantimony function
+// var loadString;   // 		"
+// var loadSBMLString; //		"
+// var getSBMLString; //		"
+// var getAntimonyString; //	"
+// var getCompSBMLString; //	"
+// var clearPreviousLoads; //	"
+// var getLastError; //		"
+// var getWarnings;  //		"
+// var getSBMLInfoMessages; //	"
+// var getSBMLWarnings; //		"
+// var freeAll;      //		"
+// var jsFree;         // emscripten function
+// var jsAllocateUTF8; //  	
+
+// try {
+//   libantimony().then((libantimony: any) => {
+//     //	Format: libantimony.cwrap( function name, return type, input param array of types).
+//     loadString = libantimony.cwrap("loadString", "number", ["number"]);
+//     loadAntimonyString = libantimony.cwrap("loadAntimonyString", "number", [
+//       "number",
+//     ]);
+//     loadSBMLString = libantimony.cwrap("loadSBMLString", "number", [
+//       "number",
+//     ]);
+//     getSBMLString = libantimony.cwrap("getSBMLString", "string", ["null"]);
+//     getAntimonyString = libantimony.cwrap("getAntimonyString", "string", [
+//       "null",
+//     ]);
+//     getCompSBMLString = libantimony.cwrap("getCompSBMLString", "string", [
+//       "string",
+//     ]);
+//     clearPreviousLoads = libantimony.cwrap("clearPreviousLoads", "null", [
+//       "null",
+//     ]);
+//     getLastError = libantimony.cwrap("getLastError", "string", ["null"]);
+//     getWarnings = libantimony.cwrap("getWarnings", "string", ["null"]);
+//     getSBMLInfoMessages = libantimony.cwrap("getSBMLInfoMessages", "string", [
+//       "string",
+//     ]);
+//     getSBMLWarnings = libantimony.cwrap("getSBMLWarnings", "string", [
+//       "string",
+//     ]);
+//     freeAll = libantimony.cwrap("freeAll", "null", ["null"]);
+
+//     jsFree = (strPtr: any) => libantimony._free(strPtr);
+//     jsAllocateUTF8 = (newStr: any) => libantimony.allocateUTF8(newStr);
+//   });
+// } catch (err) {
+//   console.log("Load libantimony error: ", err);
+// }
+
 const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
-
+  const [loading, setLoading] = useState<boolean>(false);
+  const [chosenModel, setChosenModel] = useState<string | null>(null);
+  
+  function getBiomodels() {
+    const biomodelBrowse = document.getElementById('biomodel-browse') as HTMLInputElement;
+    const dropdown = document.getElementById('dropdown');
+    var biomodels: any;
+    var chosenModel: any;
+  
+    biomodelBrowse.addEventListener('keyup', async (val) => {
+      const biomodel = val;
+      if ((val.target as HTMLInputElement).value.length < 3) {
+        dropdown!.innerHTML = "";
+        return;
+      }
+      setTimeout(async () => {
+        setLoading(true);
+        dropdown!.innerHTML = "";
+        biomodels = await searchModels(biomodel);
+        // If no models found, display "No models found"
+        if (biomodels.models.size === 0) {
+          setLoading(false);
+          biomodels = null;
+          const li = document.createElement('li');
+          li.innerHTML = "No models found";
+          dropdown!.innerHTML = "";
+          dropdown!.appendChild(li);
+          return;
+        }
+        // Otherwise, display the models in the dropdown
+        biomodels.models.forEach(function (model: any) {
+          setLoading(false);
+          const a = document.createElement('a');
+          a.addEventListener('click', () => {
+            biomodelBrowse.value = "";
+            dropdown!.innerHTML = "";
+            chosenModel = model.id;
+            setChosenModel(chosenModel);
+          });
+          a.innerHTML = model.name + ": " + model.id + "\n";
+          dropdown!.appendChild(a);
+        });
+      }, 100);
+      
+    });
+  }
   useEffect(() => {
     if (editorRef.current) {
       // Load the custom language
@@ -46,25 +145,20 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
         parseAntimony(editor.getValue());
       });
 
-      const biomodelBrowse = document.getElementById('biomodel-browse') as HTMLInputElement;
-      const dropdown = document.getElementById('dropdown');
-
-      biomodelBrowse.addEventListener('keyup', async (val) => {
-        const biomodel = val;
-        if ((val.target as HTMLInputElement).value.length < 3) {
-          dropdown!.innerHTML = "";
-          return;
-        }
-        setTimeout(async () => {
-          const biomodels = await searchModels(biomodel);
-          dropdown!.innerHTML = "";
-          console.log(biomodels);
-        }, 500);
-      });
+      getBiomodels();
 
       return () => editor.dispose();
     }
   }, [content]);
+
+  useEffect(() => {
+    if (chosenModel) {
+      getModel(chosenModel).then((model) => {
+        const editor = monaco.editor.getModels()[0];
+        editor.setValue(model);
+      });
+    }
+  }, [chosenModel]);
 
   return (
     <div>
@@ -77,18 +171,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
         <CustomButton name={'Annotated Variable Highlight Off'} />
         <input id='biomodel-browse' type='text' placeholder='Search for a model' />
         <ul id='dropdown' />
-        <CustomButton name={'Browse Biomodels'} />
+        <Loader loading={loading} />
       </div>
       <div className="code-editor" ref={editorRef} style={{ height: '80vh' }}></div>
     </div>
   );
 };
-
-async function searchModel(query: any) {
-  console.log(query)
-  const queryText = query.target.value.trim()
-  console.log(queryText)
-}
 
 function parseAntimony(editorVal: string) {
   let parsedModel = parseAntimonyModel(editorVal);
