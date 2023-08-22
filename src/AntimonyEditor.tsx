@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import * as monaco from 'monaco-editor';
 import { antimonyLanguage } from './languages/AntimonyLanguage';
 import { antimonyTheme } from './languages/AntimonyTheme';
@@ -12,6 +12,7 @@ interface AntimonyEditorProps {
 
 const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, name }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const [editorInstance, setEditorInstance] = useState<>();
 
   useEffect(() => {
     if (editorRef.current) {
@@ -49,10 +50,24 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, name }) => {
     }
   }, [content]);
 
+  const handleDownload = () => {
+    if (editorInstance) {
+      const blob = new Blob([editorInstance.getValue()], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name + '.ant';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
   return (
     <div>
       <div className='menu'>
-        <button className='button' onClick={}>Download File</button>
+        <button className='button' onClick={handleDownload}>Download File</button>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
         <CustomButton name={'Create Annotations'} />
         <CustomButton name={'Navigate to Edit Annotations'} />
