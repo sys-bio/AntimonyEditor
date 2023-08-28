@@ -8,6 +8,12 @@ import './AntimonyEditor.css';
 import { getModel, searchModels } from './features/BrowseBiomodels';
 import libantimony from './libAntimony/libantimony.js';
 import Loader from './components/Loader';
+import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
+import { AntimonyGrammarLexer } from './languages/AntimonyGrammarLexer';
+import { AntimonyGrammarParser } from './languages/AntimonyGrammarParser';
+import { AntimonyGrammarListener } from './languages/AntimonyGrammarListener'
+import { ModelContext } from './languages/AntimonyGrammarParser'
+import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
 
 interface AntimonyEditorProps {
   content: string;
@@ -144,6 +150,32 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
       editor.onDidChangeModelContent(() => {
         parseAntimony(editor.getValue());
       });
+
+      // Create the lexer and parser
+      let inputStream = new ANTLRInputStream(editor.getValue());
+      let lexer = new AntimonyGrammarLexer(inputStream);
+      let tokenStream = new CommonTokenStream(lexer);
+      let parser = new AntimonyGrammarParser(tokenStream);
+
+      // Parse the input, where `compilationUnit` is whatever entry point you defined
+      let tree = parser.model();
+
+      class AntimonySyntax implements AntimonyGrammarListener {
+        // Assuming a parser rule with name: `functionDeclaration`
+        enterModel(context: ModelContext) {
+          console.log(`Function start line number ${context._start.line}`)
+          // ...
+        }
+
+        // other enterX functions...
+      }
+
+      // Create the listener
+      const listener: AntimonyGrammarListener = new AntimonySyntax();
+      // Use the entry point for listeners
+      ParseTreeWalker.DEFAULT.walk(listener, tree)
+
+      console.log(tree);
 
       getBiomodels();
 
