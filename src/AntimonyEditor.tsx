@@ -173,8 +173,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
         <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Convert to SBML'} />
         <CustomButton name={'Annotated Variable Highlight Off'} />
-        <input id='biomodel-browse' type='text' placeholder='Search for a model' />
-        <ul id='dropdown' />
+        <div style={{display: "inline-block", position:"relative"}}>
+          <input id='biomodel-browse' type='text' placeholder='Search for a model' />
+          <ul id='dropdown' />
+        </div>
         <Loader loading={loading} />
       </div>
       <div className="code-editor" ref={editorRef} style={{ height: '80vh' }}></div>

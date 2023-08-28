@@ -12,7 +12,7 @@ const loaderStyle: React.CSSProperties = {
 const CustomLoader: React.FC<LoaderProps> = ({ loading }) => {
   return (
     <div style={loaderStyle}>
-      <ClipLoader size={10} color={'#09a7f0'} loading={loading} />
+      <ClipLoader size={15} color={'#09a7f0'} loading={loading} />
     </div>
   );
 };

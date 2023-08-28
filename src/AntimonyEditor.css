@@ -8,6 +8,8 @@
     overflow-y: scroll;
     height: 150px;
     display: none;
+    position: absolute;
+    z-index: 5000;
 }
 
 #dropdown a {
