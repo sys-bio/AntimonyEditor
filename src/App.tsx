@@ -16,15 +16,11 @@ interface MyDB extends DBSchema {
 const sampleAntimonyModel = `
 // Sample Antimony Model
 model main()
-  compartment C1;
-
-  species S1, S2;
-
-  S1 in C1;
-  S2 in C1;
+  species S1;
+  species S2;
 
   S1 -> S2; k1*S1;
-  k1 = 0.1;
+  k1 = 1;
 end
 `;
 

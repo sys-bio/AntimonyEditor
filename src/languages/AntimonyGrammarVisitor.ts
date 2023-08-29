@@ -12,9 +12,18 @@ import { Reaction_nameContext } from "./AntimonyGrammarParser";
 import { ReactionContext } from "./AntimonyGrammarParser";
 import { Species_listContext } from "./AntimonyGrammarParser";
 import { SpeciesContext } from "./AntimonyGrammarParser";
+import { AssignmentContext } from "./AntimonyGrammarParser";
+import { DeclarationContext } from "./AntimonyGrammarParser";
+import { Decl_modifiersContext } from "./AntimonyGrammarParser";
+import { Decl_itemContext } from "./AntimonyGrammarParser";
+import { Decl_assignmentContext } from "./AntimonyGrammarParser";
 import { SumContext } from "./AntimonyGrammarParser";
 import { ProductContext } from "./AntimonyGrammarParser";
+import { PowerContext } from "./AntimonyGrammarParser";
 import { AtomContext } from "./AntimonyGrammarParser";
+import { Simple_stmtContext } from "./AntimonyGrammarParser";
+import { Small_stmtContext } from "./AntimonyGrammarParser";
+import { Simple_stmt_listContext } from "./AntimonyGrammarParser";
 
 
 /**
@@ -89,6 +98,41 @@ export interface AntimonyGrammarVisitor<Result> extends ParseTreeVisitor<Result>
 	visitSpecies?: (ctx: SpeciesContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.assignment`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitAssignment?: (ctx: AssignmentContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.declaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitDeclaration?: (ctx: DeclarationContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.decl_modifiers`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitDecl_modifiers?: (ctx: Decl_modifiersContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.decl_item`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitDecl_item?: (ctx: Decl_itemContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.decl_assignment`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitDecl_assignment?: (ctx: Decl_assignmentContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `AntimonyGrammarParser.sum`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -103,10 +147,38 @@ export interface AntimonyGrammarVisitor<Result> extends ParseTreeVisitor<Result>
 	visitProduct?: (ctx: ProductContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.power`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitPower?: (ctx: PowerContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `AntimonyGrammarParser.atom`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitAtom?: (ctx: AtomContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.simple_stmt`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitSimple_stmt?: (ctx: Simple_stmtContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.small_stmt`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitSmall_stmt?: (ctx: Small_stmtContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.simple_stmt_list`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitSimple_stmt_list?: (ctx: Simple_stmt_listContext) => Result;
 }
 

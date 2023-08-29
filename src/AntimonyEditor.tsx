@@ -151,6 +151,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
         parseAntimony(editor.getValue());
       });
 
+      console.log(editor.getValue());
+
       // Create the lexer and parser
       let inputStream = new ANTLRInputStream(editor.getValue());
       let lexer = new AntimonyGrammarLexer(inputStream);
@@ -175,7 +177,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
       // Use the entry point for listeners
       ParseTreeWalker.DEFAULT.walk(listener, tree)
 
-      console.log(tree);
+      console.log(tree)
+      console.log(tokenStream.getTokens().forEach(token => console.log(token.text + ' ' + token.type)));
+      console.log(tokenStream.getTokens().toString())
 
       getBiomodels();
 

@@ -12,9 +12,18 @@ import { Reaction_nameContext } from "./AntimonyGrammarParser";
 import { ReactionContext } from "./AntimonyGrammarParser";
 import { Species_listContext } from "./AntimonyGrammarParser";
 import { SpeciesContext } from "./AntimonyGrammarParser";
+import { AssignmentContext } from "./AntimonyGrammarParser";
+import { DeclarationContext } from "./AntimonyGrammarParser";
+import { Decl_modifiersContext } from "./AntimonyGrammarParser";
+import { Decl_itemContext } from "./AntimonyGrammarParser";
+import { Decl_assignmentContext } from "./AntimonyGrammarParser";
 import { SumContext } from "./AntimonyGrammarParser";
 import { ProductContext } from "./AntimonyGrammarParser";
+import { PowerContext } from "./AntimonyGrammarParser";
 import { AtomContext } from "./AntimonyGrammarParser";
+import { Simple_stmtContext } from "./AntimonyGrammarParser";
+import { Small_stmtContext } from "./AntimonyGrammarParser";
+import { Simple_stmt_listContext } from "./AntimonyGrammarParser";
 
 
 /**
@@ -122,6 +131,61 @@ export interface AntimonyGrammarListener extends ParseTreeListener {
 	exitSpecies?: (ctx: SpeciesContext) => void;
 
 	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.assignment`.
+	 * @param ctx the parse tree
+	 */
+	enterAssignment?: (ctx: AssignmentContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.assignment`.
+	 * @param ctx the parse tree
+	 */
+	exitAssignment?: (ctx: AssignmentContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.declaration`.
+	 * @param ctx the parse tree
+	 */
+	enterDeclaration?: (ctx: DeclarationContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.declaration`.
+	 * @param ctx the parse tree
+	 */
+	exitDeclaration?: (ctx: DeclarationContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.decl_modifiers`.
+	 * @param ctx the parse tree
+	 */
+	enterDecl_modifiers?: (ctx: Decl_modifiersContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.decl_modifiers`.
+	 * @param ctx the parse tree
+	 */
+	exitDecl_modifiers?: (ctx: Decl_modifiersContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.decl_item`.
+	 * @param ctx the parse tree
+	 */
+	enterDecl_item?: (ctx: Decl_itemContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.decl_item`.
+	 * @param ctx the parse tree
+	 */
+	exitDecl_item?: (ctx: Decl_itemContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.decl_assignment`.
+	 * @param ctx the parse tree
+	 */
+	enterDecl_assignment?: (ctx: Decl_assignmentContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.decl_assignment`.
+	 * @param ctx the parse tree
+	 */
+	exitDecl_assignment?: (ctx: Decl_assignmentContext) => void;
+
+	/**
 	 * Enter a parse tree produced by `AntimonyGrammarParser.sum`.
 	 * @param ctx the parse tree
 	 */
@@ -144,6 +208,17 @@ export interface AntimonyGrammarListener extends ParseTreeListener {
 	exitProduct?: (ctx: ProductContext) => void;
 
 	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.power`.
+	 * @param ctx the parse tree
+	 */
+	enterPower?: (ctx: PowerContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.power`.
+	 * @param ctx the parse tree
+	 */
+	exitPower?: (ctx: PowerContext) => void;
+
+	/**
 	 * Enter a parse tree produced by `AntimonyGrammarParser.atom`.
 	 * @param ctx the parse tree
 	 */
@@ -153,5 +228,38 @@ export interface AntimonyGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitAtom?: (ctx: AtomContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.simple_stmt`.
+	 * @param ctx the parse tree
+	 */
+	enterSimple_stmt?: (ctx: Simple_stmtContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.simple_stmt`.
+	 * @param ctx the parse tree
+	 */
+	exitSimple_stmt?: (ctx: Simple_stmtContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.small_stmt`.
+	 * @param ctx the parse tree
+	 */
+	enterSmall_stmt?: (ctx: Small_stmtContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.small_stmt`.
+	 * @param ctx the parse tree
+	 */
+	exitSmall_stmt?: (ctx: Small_stmtContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.simple_stmt_list`.
+	 * @param ctx the parse tree
+	 */
+	enterSimple_stmt_list?: (ctx: Simple_stmt_listContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.simple_stmt_list`.
+	 * @param ctx the parse tree
+	 */
+	exitSimple_stmt_list?: (ctx: Simple_stmt_listContext) => void;
 }
 
