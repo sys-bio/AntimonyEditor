@@ -96,6 +96,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
           dropdown!.appendChild(li);
           return;
         }
+        
         // Otherwise, display the models in the dropdown
         dropdown!.style.display = "block";
         biomodels.models.forEach(function (model: any) {
