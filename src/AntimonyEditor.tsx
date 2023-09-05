@@ -177,9 +177,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
       // Use the entry point for listeners
       ParseTreeWalker.DEFAULT.walk(listener, tree)
 
-      console.log(tree)
-      console.log(tokenStream.getTokens().forEach(token => console.log(token.text + ' ' + token.type)));
-      console.log(tokenStream.getTokens().toString())
+      console.log(tree.toStringTree(parser))
+      let tokenText = ''
+      tokenStream.getTokens().forEach(token => tokenText + (token.text + ' ' + token.type).toString() + '\n');
 
       getBiomodels();
 
