@@ -7,6 +7,7 @@ model : NEWLINE? COMMENT? ('model' | 'module') '*'? NAME '()'? simple_stmt_list 
 
 // end of model
 END : 'end';
+
 var_name : ('$')? NAME;
 in_comp : 'in' var_name;
 namemaybein : var_name (in_comp)?;
@@ -102,7 +103,11 @@ ANNOT_KEYWORD: 'identity'
 
 // declaration
 declaration : decl_modifiers decl_item (',' decl_item)*;
-decl_modifiers : TYPE_MODIFIER;
+decl_modifiers : VAR_MODIFIER
+    | TYPE_MODIFIER
+    | VAR_MODIFIER TYPE_MODIFIER
+    | SUB_MODIFIER TYPE_MODIFIER
+    | VAR_MODIFIER SUB_MODIFIER TYPE_MODIFIER;
 decl_item : namemaybein (decl_assignment)?;
 decl_assignment : '=' sum;
 
