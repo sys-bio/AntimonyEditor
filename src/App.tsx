@@ -22,6 +22,8 @@ model main()
   S1 -> S2; k1*S1;
   k1 = 1;
   S1 = 1;
+
+  S1 is "Glucose";
 end
 `;
 

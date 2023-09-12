@@ -119,6 +119,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
       }, 300);
     });
   }
+  
   useEffect(() => {
     if (editorRef.current) {
       // Load the custom language
@@ -151,8 +152,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
         parseAntimony(editor.getValue());
       });
 
-      console.log(editor.getValue());
-
       // Create the lexer and parser
       let inputStream = new ANTLRInputStream(editor.getValue());
       let lexer = new AntimonyGrammarLexer(inputStream);
@@ -160,7 +159,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
       let parser = new AntimonyGrammarParser(tokenStream);
 
       // Parse the input, where `compilationUnit` is whatever entry point you defined
-      let tree = parser.model();
+      let tree = parser.root();
 
       class AntimonySyntax implements AntimonyGrammarListener {
         // Assuming a parser rule with name: `functionDeclaration`
@@ -168,7 +167,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
           console.log(`Function start line number ${context._start.line}`)
           // ...
         }
-
         // other enterX functions...
       }
 
@@ -177,9 +175,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
       // Use the entry point for listeners
       ParseTreeWalker.DEFAULT.walk(listener, tree)
 
-      console.log(tree.toStringTree(parser))
-      let tokenText = ''
-      tokenStream.getTokens().forEach(token => tokenText + (token.text + ' ' + token.type).toString() + '\n');
+      console.log('tree:' + tree.toStringTree(parser))
+      // let tokenText = ''
+      // tokenStream.getTokens().forEach(token => tokenText + (token.text + ' ' + token.type).toString() + '\n');
 
       getBiomodels();
 

@@ -12,7 +12,7 @@ let tokenStream = new CommonTokenStream(lexer);
 let parser = new AntimonyGrammarParser(tokenStream);
 
 // Parse the input, where `compilationUnit` is whatever entry point you defined
-let tree = parser.model();
+let tree = parser.root();
 
 class AntimonySyntax implements AntimonyGrammarListener {
   // Assuming a parser rule with name: `functionDeclaration`

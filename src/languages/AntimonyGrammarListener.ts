@@ -3,6 +3,7 @@
 
 import { ParseTreeListener } from "antlr4ts/tree/ParseTreeListener";
 
+import { RootContext } from "./AntimonyGrammarParser";
 import { ModelContext } from "./AntimonyGrammarParser";
 import { Var_nameContext } from "./AntimonyGrammarParser";
 import { In_compContext } from "./AntimonyGrammarParser";
@@ -51,7 +52,6 @@ import { ParametersContext } from "./AntimonyGrammarParser";
 import { Init_paramsContext } from "./AntimonyGrammarParser";
 import { Variable_inContext } from "./AntimonyGrammarParser";
 import { Is_assignmentContext } from "./AntimonyGrammarParser";
-import { RootContext } from "./AntimonyGrammarParser";
 
 
 /**
@@ -59,6 +59,17 @@ import { RootContext } from "./AntimonyGrammarParser";
  * `AntimonyGrammarParser`.
  */
 export interface AntimonyGrammarListener extends ParseTreeListener {
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.root`.
+	 * @param ctx the parse tree
+	 */
+	enterRoot?: (ctx: RootContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.root`.
+	 * @param ctx the parse tree
+	 */
+	exitRoot?: (ctx: RootContext) => void;
+
 	/**
 	 * Enter a parse tree produced by `AntimonyGrammarParser.model`.
 	 * @param ctx the parse tree
@@ -586,16 +597,5 @@ export interface AntimonyGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitIs_assignment?: (ctx: Is_assignmentContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `AntimonyGrammarParser.root`.
-	 * @param ctx the parse tree
-	 */
-	enterRoot?: (ctx: RootContext) => void;
-	/**
-	 * Exit a parse tree produced by `AntimonyGrammarParser.root`.
-	 * @param ctx the parse tree
-	 */
-	exitRoot?: (ctx: RootContext) => void;
 }
 

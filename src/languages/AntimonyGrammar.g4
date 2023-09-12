@@ -1,11 +1,12 @@
 grammar AntimonyGrammar;
 
 // entry point for parser
+root : (simple_stmt | model | function | modular_model)*;
+
 model : NEWLINE? COMMENT? ('model' | 'module') '*'? NAME '()'? simple_stmt_list END;
 
 // end of model
 END : 'end';
-
 var_name : ('$')? NAME;
 in_comp : 'in' var_name;
 namemaybein : var_name (in_comp)?;
@@ -25,7 +26,8 @@ interaction : (reaction_name)? species INTERACTION_SYMBOL namemaybein;
 INTERACTION_SYMBOL : '-o' | '-|' | '-(';
 
 // event
-event : (reaction_name)? 'at' (event_delay)? bool_exp (event_trigger_list)? ':' event_assignment_list;
+// ignore empty string error for now
+event : reaction_name? 'at' event_delay? bool_exp event_trigger_list? ':' event_assignment_list;
 
 event_delay : bool_exp 'after';
 
@@ -36,6 +38,9 @@ event_trigger : 't0' '=' BOOLEAN
     | 'priority' '=' sum
     | 'fromTrigger' '=' BOOLEAN
     | 'persistent' '=' BOOLEAN;
+
+// manual coding of import number from lark
+NUMBER: [0-9]+ ('.' [0-9]+)? | '.' [0-9]+;
 
 event_assignment_list : event_assignment (',' event_assignment)*;
 event_assignment : var_name '=' sum;
@@ -200,10 +205,6 @@ is_assignment : NAME 'is' ESCAPED_STRING;
 // fix this later for the multiline comment and #
 COMMENT : '//' ~[\r\n]* NEWLINE -> skip;
 
-// root / file
-// TODO rename to 'file'
-root : (simple_stmt | model | function | modular_model)*;
-
 // name 
 NAME : ('species' | 'compartment' | 'var' | 'const' | 'formula' | 'function' | 'end' | 'model' | 'substanceOnly' | 'in')? CNAME;
 
@@ -215,18 +216,20 @@ LCASE_LETTER: [a-z];
 UCASE_LETTER: [A-Z];
 DIGIT: [0-9];
 
-// manual coding of import number from lark
-NUMBER: [0-9]+ ('.' [0-9]+)? | '.' [0-9]+;
-
 // etc
-NEWLINE : '\r'? '\n';
-WS : [ \t\r\n]+ -> skip;
+NEWLINE : [\r\n] ;
+WS : [ \t]+ -> skip;
 
 // Lexer rules for STRING_INNER and STRING_ESC_INNER
-STRING_INNER : ~'\''*; // Matches any character except single quotes
-STRING_ESC_INNER : STRING_INNER ~('\\' STRING_INNER)*; // Matches STRING_INNER not preceded by a backslash
+// STRING_INNER : ~'\''*; // Matches any character except single quotes
+// STRING_ESC_INNER : STRING_INNER ~('\\' STRING_INNER)*; // Matches STRING_INNER not preceded by a backslash
 
-// Lexer rule for ESCAPED_STRING
-ESCAPED_STRING : '\'' STRING_ESC_INNER '\''; // Matches a single-quoted string with escaped characters
+// // Lexer rule for ESCAPED_STRING
+// ESCAPED_STRING : '\'' STRING_ESC_INNER '\''; // Matches a single-quoted string with escaped characters
 
-// ESCAPED_STRING : '"' ('\\' . | ~[\\])* '"';
+// STRING_INNER : .+?;
+// STRING_ESC_INNER : STRING_INNER ( ~('\\') | '\\' '\\')*?;
+
+// ESCAPED_STRING : '"' STRING_ESC_INNER '"';
+
+ESCAPED_STRING : '"' (~[\r\n\\] | '\\' .)* '"';
