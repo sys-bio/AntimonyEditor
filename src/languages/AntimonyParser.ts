@@ -168,9 +168,9 @@ export function parseAntimonyModel(antimonyModel: string): AntimonyModel {
             } else if (lastCompartment) {
               model.species.set(speciesName, { name: speciesName, compartment: lastCompartment });
             } else {
-              console.warn(
-                'Warning: Species found before any compartment declaration. Assigning to default compartment.'
-              );
+              // console.warn(
+              //   'Warning: Species found before any compartment declaration. Assigning to default compartment.'
+              // );
               model.species.set(speciesName, { name: speciesName, compartment: 'default' });
             }
           });

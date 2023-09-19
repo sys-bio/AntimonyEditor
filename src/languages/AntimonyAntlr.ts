@@ -1,9 +1,18 @@
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
-import { AntimonyGrammarLexer } from './AntimonyGrammarLexer';
-import { AntimonyGrammarParser } from './AntimonyGrammarParser';
-import { AntimonyGrammarListener } from './AntimonyGrammarListener'
-import { ModelContext } from './AntimonyGrammarParser'
+import { AntimonyGrammarLexer } from './/antlr/AntimonyGrammarLexer';
+import { AntimonyGrammarParser, SpeciesContext } from './antlr/AntimonyGrammarParser';
+import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
+import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
+
+class SpeciesInfo {
+  declarations?: string[] = [];
+  initializations?: string[] = [];
+  compartments?: string[] = [];
+  annotations?: string[] = [];
+}
+
+declare var species: Map<string, SpeciesInfo>;
 
 // Create the lexer and parser
 let inputStream = new ANTLRInputStream("text");
@@ -15,13 +24,11 @@ let parser = new AntimonyGrammarParser(tokenStream);
 let tree = parser.root();
 
 class AntimonySyntax implements AntimonyGrammarListener {
-  // Assuming a parser rule with name: `functionDeclaration`
-  enterModel(context: ModelContext) {
-    console.log(`Function start line number ${context._start.line}`)
-    // ...
-  }
-
-  // other enterX functions...
+  enterSpecies(ctx: SpeciesContext) {
+    species.set(ctx.text, {})
+    console.log(ctx.text)
+    console.log(species.keys)
+  };
 }
 
 // Create the listener

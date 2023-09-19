@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as monaco from 'monaco-editor';
-import { antimonyLanguage } from './languages/AntimonyLanguage';
+import { antimonyLanguage } from './languages/antlr/AntimonyLanguage';
 import { antimonyTheme } from './languages/AntimonyTheme';
 import { parseAntimonyModel } from './languages/AntimonyParser'
 import CustomButton from './components/CustomButton';
@@ -9,10 +9,10 @@ import { getModel, searchModels } from './features/BrowseBiomodels';
 import libantimony from './libAntimony/libantimony.js';
 import Loader from './components/Loader';
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
-import { AntimonyGrammarLexer } from './languages/AntimonyGrammarLexer';
-import { AntimonyGrammarParser } from './languages/AntimonyGrammarParser';
-import { AntimonyGrammarListener } from './languages/AntimonyGrammarListener'
-import { ModelContext } from './languages/AntimonyGrammarParser'
+import { AntimonyGrammarLexer } from './languages/antlr/AntimonyGrammarLexer';
+import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, SpeciesContext } from './languages/antlr/AntimonyGrammarParser';
+import { AntimonyGrammarListener } from './languages/antlr/AntimonyGrammarListener'
+import { ModelContext } from './languages/antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
 
 interface AntimonyEditorProps {
@@ -161,23 +161,52 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
       // Parse the input, where `compilationUnit` is whatever entry point you defined
       let tree = parser.root();
 
+      class SpeciesInfo {
+        declarations?: string[] = [];
+        initializations?: string[] = [];
+        compartments?: string[] = [];
+        annotations?: string[] = [];
+      }
+      
+      var species: Map<string, SpeciesInfo> = new Map<string, SpeciesInfo>();
+
       class AntimonySyntax implements AntimonyGrammarListener {
-        // Assuming a parser rule with name: `functionDeclaration`
+        
+        // Entering parser rule
         enterModel(context: ModelContext) {
-          console.log(`Function start line number ${context._start.line}`)
-          // ...
+          console.log(`Model start line number ${context._start.line}`)
+          // model.addModel(context.text)
         }
+
+        enterSpecies(ctx: SpeciesContext) {
+          species.set(ctx.text, {})
+        };
+
+        enterAnnotation(ctx: AnnotationContext) {
+          const speciesName = ctx.var_name().text; // Get the species name
+          const annotationlink = ctx.ESCAPED_STRING().text; // Get the ANNOT_KEYWORD
+
+          console.log("species " + speciesName)
+          console.log("ann " + annotationlink)
+
+          const specKey = species.get(speciesName)
+
+          if (specKey) {
+            specKey.annotations?.push(annotationlink)
+            console.log(specKey)
+          }
+
+        };
         // other enterX functions...
       }
+      console.log(species)
 
       // Create the listener
       const listener: AntimonyGrammarListener = new AntimonySyntax();
       // Use the entry point for listeners
       ParseTreeWalker.DEFAULT.walk(listener, tree)
 
-      console.log('tree:' + tree.toStringTree(parser))
-      // let tokenText = ''
-      // tokenStream.getTokens().forEach(token => tokenText + (token.text + ' ' + token.type).toString() + '\n');
+      // console.log('tree:' + tree.toStringTree(parser))
 
       getBiomodels();
 
