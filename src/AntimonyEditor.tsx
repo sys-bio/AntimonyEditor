@@ -179,21 +179,21 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
         }
 
         enterSpecies(ctx: SpeciesContext) {
-          species.set(ctx.text, {})
+          species.set(ctx.text, new SpeciesInfo())
         };
 
         enterAnnotation(ctx: AnnotationContext) {
+          console.log(species)
+
           const speciesName = ctx.var_name().text; // Get the species name
           const annotationlink = ctx.ESCAPED_STRING().text; // Get the ANNOT_KEYWORD
 
           console.log("species " + speciesName)
           console.log("ann " + annotationlink)
 
-          const specKey = species.get(speciesName)
-
-          if (specKey) {
-            specKey.annotations?.push(annotationlink)
-            console.log(specKey)
+          if (species.has(speciesName)) {
+            species.get(speciesName)?.annotations?.push(annotationlink)
+            console.log("key " + species.get(speciesName)?.annotations)
           }
 
         };
