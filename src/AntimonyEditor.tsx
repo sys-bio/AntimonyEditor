@@ -10,7 +10,7 @@ import libantimony from './libAntimony/libantimony.js';
 import Loader from './components/Loader';
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
 import { AntimonyGrammarLexer } from './languages/antlr/AntimonyGrammarLexer';
-import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, SpeciesContext } from './languages/antlr/AntimonyGrammarParser';
+import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, DeclarationContext, In_compContext, NamemaybeinContext, Reaction_nameContext, SpeciesContext } from './languages/antlr/AntimonyGrammarParser';
 import { AntimonyGrammarListener } from './languages/antlr/AntimonyGrammarListener'
 import { ModelContext } from './languages/antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
@@ -161,45 +161,113 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
       // Parse the input, where `compilationUnit` is whatever entry point you defined
       let tree = parser.root();
 
-      class SpeciesInfo {
-        declarations?: string[] = [];
+      class VariableInfo {
+        label?: string;
+        modifiers?: string;
+        assignment?: string;
         initializations?: string[] = [];
-        compartments?: string[] = [];
+        compartments?: string;
         annotations?: string[] = [];
       }
       
-      var species: Map<string, SpeciesInfo> = new Map<string, SpeciesInfo>();
+      var variables: Map<string, VariableInfo> = new Map<string, VariableInfo>();
+
+      var annotatedVar: string[] = [];
 
       class AntimonySyntax implements AntimonyGrammarListener {
-        
-        // Entering parser rule
-        enterModel(context: ModelContext) {
-          console.log(`Model start line number ${context._start.line}`)
-          // model.addModel(context.text)
-        }
+        enterModel(ctx: ModelContext) {
+          const modelName = ctx.NAME().text; // Get the model name
+          const modelInfo = new VariableInfo();
+
+          let variable = variables.get(modelName);
+          if (!variable) {
+            modelInfo.label = 'Model';
+            variables.set(modelName, modelInfo);
+          } else {
+            variable.label = 'Model';
+          }
+        };
 
         enterSpecies(ctx: SpeciesContext) {
-          species.set(ctx.text, new SpeciesInfo())
+          const speciesInfo = new VariableInfo();
+          speciesInfo.label = 'Species';
+
+          let variable = variables.get(ctx.text);
+
+          if (!variable) {
+            variables.set(ctx.text, speciesInfo);
+          } else {
+            variable.label = 'Species';
+          }
         };
+
+        enterReaction_name (ctx: Reaction_nameContext) {
+          const reactionName = ctx.namemaybein().text; // Get reaction name
+          const reactionInfo = new VariableInfo();
+
+          let variable = variables.get(reactionName);
+
+          if (!variable) {
+            reactionInfo.label = 'Reaction'
+            variables.set(reactionName, reactionInfo)
+          } else {
+            variable.label = 'Reaction';
+          }
+        };
+
+        enterDeclaration (ctx: DeclarationContext) {
+          const varType = ctx.decl_modifiers().text; // Get modifier
+          ctx.decl_item().forEach((item) => {
+            const varName = item.namemaybein().var_name().text; // Get variable name
+            const varAssignment = item.decl_assignment()?.sum().text; // Get assignment
+            let variable = variables.get(varName);
+            if (variable) {
+              variable.assignment = varAssignment;
+              variable.modifiers = varType;
+            } else {
+              variables.set(varName, new VariableInfo());
+              variables.get(varName)!.assignment = varAssignment;
+              variables.get(varName)!.modifiers = varType;
+            }
+          });
+        };
+
+        enterNamemaybein(ctx: NamemaybeinContext) {
+          const varName = ctx.var_name().text; // Get the species name
+          const compartmentCtx = ctx.in_comp();
+          const compartment = compartmentCtx ? compartmentCtx.var_name().text : undefined; // Get compartment
+      
+          let variable = variables.get(varName);
+      
+          if (variable && compartment) {
+            variable.compartments = compartment;
+          } else if (!variable && compartment) {
+            const variableInfo = new VariableInfo();
+            variableInfo.compartments = compartment;
+            variables.set(varName, variableInfo);
+          }
+        }
 
         enterAnnotation(ctx: AnnotationContext) {
-          console.log(species)
+          const varName = ctx.var_name().text; // Get the species name
+          const annotationlink = ctx.ESCAPED_STRING().text; // Get the annotation
 
-          const speciesName = ctx.var_name().text; // Get the species name
-          const annotationlink = ctx.ESCAPED_STRING().text; // Get the ANNOT_KEYWORD
+          annotatedVar.push(varName);
 
-          console.log("species " + speciesName)
-          console.log("ann " + annotationlink)
-
-          if (species.has(speciesName)) {
-            species.get(speciesName)?.annotations?.push(annotationlink)
-            console.log("key " + species.get(speciesName)?.annotations)
+          let variable = variables.get(varName);
+          if (variable) {
+            variable.annotations?.push(annotationlink);
+          } else {
+            const annotationInfo = new VariableInfo();
+            annotationInfo.annotations?.push(annotationlink);
+            variables.set(varName, annotationInfo);
           }
-
         };
+
+
         // other enterX functions...
       }
-      console.log(species)
+      console.log(variables)
 
       // Create the listener
       const listener: AntimonyGrammarListener = new AntimonySyntax();
