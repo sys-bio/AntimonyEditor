@@ -10,7 +10,7 @@ import libantimony from './libAntimony/libantimony.js';
 import Loader from './components/Loader';
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
 import { AntimonyGrammarLexer } from './languages/antlr/AntimonyGrammarLexer';
-import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, DeclarationContext, In_compContext, NamemaybeinContext, Reaction_nameContext, SpeciesContext } from './languages/antlr/AntimonyGrammarParser';
+import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, DeclarationContext, In_compContext, NamemaybeinContext, Reaction_nameContext, SpeciesContext, Unit_declarationContext } from './languages/antlr/AntimonyGrammarParser';
 import { AntimonyGrammarListener } from './languages/antlr/AntimonyGrammarListener'
 import { ModelContext } from './languages/antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
@@ -217,19 +217,60 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
 
         enterDeclaration (ctx: DeclarationContext) {
           const varType = ctx.decl_modifiers().text; // Get modifier
+          if (varType == 'compartment') {
+            ctx.decl_item().forEach((item) => {
+              const varName = item.namemaybein().var_name().text; // Get variable name
+              let variable = variables.get(varName);
+              if (variable) {
+                variable.label = 'Compartment';
+              } else {
+                let variableInfo = new VariableInfo();
+                variableInfo.label = 'Compartment';
+                variables.set(varName, variableInfo);
+              }
+            });
+          }
           ctx.decl_item().forEach((item) => {
             const varName = item.namemaybein().var_name().text; // Get variable name
-            const varAssignment = item.decl_assignment()?.sum().text; // Get assignment
             let variable = variables.get(varName);
             if (variable) {
-              variable.assignment = varAssignment;
               variable.modifiers = varType;
             } else {
-              variables.set(varName, new VariableInfo());
-              variables.get(varName)!.assignment = varAssignment;
-              variables.get(varName)!.modifiers = varType;
+              let variableInfo = new VariableInfo();
+              variableInfo.modifiers = varType;
+              variables.set(varName, variableInfo);
             }
           });
+        };
+
+        enterAssignment (ctx: AssignmentContext) {
+          const varName = ctx.namemaybein().var_name().text; // Get variable name
+          const varAssignment = ctx.sum().text; // Get assignment
+          let variable = variables.get(varName);
+          if (variable && varAssignment) {
+            variable.assignment = varAssignment;
+          } else if (!variable && varAssignment) {
+            let variableInfo = new VariableInfo();
+            variableInfo.assignment = varAssignment;
+            variables.set(varName, variableInfo);
+          }
+        };
+
+        enterUnit_declaration (ctx: Unit_declarationContext) {
+          const varName = ctx.var_name().text; // Get variable name
+          const varSum = ctx.sum().text; // Get sum
+          let variable = variables.get(varName);
+          if (variable && varSum) {
+            variable.assignment = varSum;
+            variable.label = 'Unit';
+            variable.modifiers = 'unit';
+          } else if (!variable && varSum) {
+            let variableInfo = new VariableInfo();
+            variableInfo.assignment = varSum;
+            variableInfo.label = 'Unit';
+            variableInfo.modifiers = 'unit';
+            variables.set(varName, variableInfo);
+          }
         };
 
         enterNamemaybein(ctx: NamemaybeinContext) {
@@ -252,7 +293,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
           const varName = ctx.var_name().text; // Get the species name
           const annotationlink = ctx.ESCAPED_STRING().text; // Get the annotation
 
-          annotatedVar.push(varName);
+          if (annotatedVar.includes(varName)) {
+            return;
+          } else {
+            annotatedVar.push(varName);
+          }
 
           let variable = variables.get(varName);
           if (variable) {
@@ -268,6 +313,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
         // other enterX functions...
       }
       console.log(variables)
+      console.log(annotatedVar)
 
       // Create the listener
       const listener: AntimonyGrammarListener = new AntimonySyntax();
