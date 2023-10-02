@@ -10,13 +10,22 @@ import libantimony from './libAntimony/libantimony.js';
 import Loader from './components/Loader';
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
 import { AntimonyGrammarLexer } from './languages/antlr/AntimonyGrammarLexer';
-import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, DeclarationContext, In_compContext, NamemaybeinContext, Reaction_nameContext, SpeciesContext, Unit_declarationContext } from './languages/antlr/AntimonyGrammarParser';
+import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, DeclarationContext, In_compContext, Is_assignmentContext, NamemaybeinContext, Reaction_nameContext, SpeciesContext, Unit_declarationContext } from './languages/antlr/AntimonyGrammarParser';
 import { AntimonyGrammarListener } from './languages/antlr/AntimonyGrammarListener'
 import { ModelContext } from './languages/antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
 
 interface AntimonyEditorProps {
   content: string;
+}
+
+class VariableInfo {
+  label?: string;
+  modifiers?: string;
+  initialize?: string;
+  display?: string;
+  compartments?: string;
+  annotations?: string[] = [];
 }
 
 // var loadAntimonyString; // libantimony function
@@ -146,12 +155,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
         ],
       });
 
-      parseAntimony(editor.getValue());
-
-      editor.onDidChangeModelContent(() => {
-        parseAntimony(editor.getValue());
-      });
-
       // Create the lexer and parser
       let inputStream = new ANTLRInputStream(editor.getValue());
       let lexer = new AntimonyGrammarLexer(inputStream);
@@ -160,15 +163,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
 
       // Parse the input, where `compilationUnit` is whatever entry point you defined
       let tree = parser.root();
-
-      class VariableInfo {
-        label?: string;
-        modifiers?: string;
-        assignment?: string;
-        initializations?: string[] = [];
-        compartments?: string;
-        annotations?: string[] = [];
-      }
       
       var variables: Map<string, VariableInfo> = new Map<string, VariableInfo>();
 
@@ -230,6 +224,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
               }
             });
           }
+
           ctx.decl_item().forEach((item) => {
             const varName = item.namemaybein().var_name().text; // Get variable name
             let variable = variables.get(varName);
@@ -248,10 +243,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
           const varAssignment = ctx.sum().text; // Get assignment
           let variable = variables.get(varName);
           if (variable && varAssignment) {
-            variable.assignment = varAssignment;
+            variable.initialize = varAssignment;
           } else if (!variable && varAssignment) {
             let variableInfo = new VariableInfo();
-            variableInfo.assignment = varAssignment;
+            variableInfo.initialize = varAssignment;
             variables.set(varName, variableInfo);
           }
         };
@@ -261,12 +256,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
           const varSum = ctx.sum().text; // Get sum
           let variable = variables.get(varName);
           if (variable && varSum) {
-            variable.assignment = varSum;
+            variable.initialize = varSum;
             variable.label = 'Unit';
             variable.modifiers = 'unit';
           } else if (!variable && varSum) {
             let variableInfo = new VariableInfo();
-            variableInfo.assignment = varSum;
+            variableInfo.initialize = varSum;
             variableInfo.label = 'Unit';
             variableInfo.modifiers = 'unit';
             variables.set(varName, variableInfo);
@@ -288,6 +283,21 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
             variables.set(varName, variableInfo);
           }
         }
+
+        enterIs_assignment (ctx: Is_assignmentContext) {
+          const varName = ctx.NAME().text; // Get the species name
+          const display = ctx.ESCAPED_STRING().text; // Get the display
+      
+          let variable = variables.get(varName);
+      
+          if (variable && display) {
+            variable.display = display;
+          } else if (!variable && display) {
+            const variableInfo = new VariableInfo();
+            variableInfo.display = display;
+            variables.set(varName, variableInfo);
+          }
+        };
 
         enterAnnotation(ctx: AnnotationContext) {
           const varName = ctx.var_name().text; // Get the species name
@@ -321,6 +331,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
       ParseTreeWalker.DEFAULT.walk(listener, tree)
 
       // console.log('tree:' + tree.toStringTree(parser))
+
+      parseAntimony(variables);
+
+      editor.onDidChangeModelContent(() => {
+        parseAntimony(variables);
+      });
 
       getBiomodels();
 
@@ -359,66 +375,74 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
   );
 };
 
-function parseAntimony(editorVal: string) {
-  let parsedModel = parseAntimonyModel(editorVal);
-
+function parseAntimony(variables: Map<string, VariableInfo>) {
   // Register the hover provider
   monaco.languages.registerHoverProvider('antimony', {
     provideHover: (model, position) => {
-      const word = model.getWordAtPosition(position);
       let hoverContents: monaco.IMarkdownString[] = [];
-  
+      let valueOfHover: string = '';
+      let valueOfAnnotation: string = '';
+      const word = model.getWordAtPosition(position);
       if (word) {
-        if (parsedModel.displays.has(word.word)){
-          const displayName = parsedModel.displays.get(word.word);
-          hoverContents.push(
-            { supportHtml: true,
-              value: `<span style="color:#f2ab7c;">"${displayName?.name}"</span>`})
-        }
-        if (parsedModel.species.has(word.word)) {
-          const speciesInfo = parsedModel.species.get(word.word);
-          hoverContents.push(
-            { supportHtml: true,
-              value: `(<span style="color:#FD7F20;">**species**</span>) ${speciesInfo?.name}`},
-            { supportHtml: true,
-              value: `In <span style="color:#BC96CA;">**compartment**</span>: ${speciesInfo?.compartment}` }
-          );
-        }
-        if (parsedModel.units.has(word.word)) {
-          const unitInfo = parsedModel.units.get(word.word);
-          hoverContents.push(
-            { supportHtml: true,
-              value: `(<span style="color:#4954F5;">**unit**</span>) ${unitInfo?.name}` },
-            { value: `${unitInfo?.unit}` });
-        }
-        if (parsedModel.functions.has(word.word)) {
-          const functionInfo = parsedModel.functions.get(word.word);
-          hoverContents.push(
-            { supportHtml: true,
-              value: `(<span style="color:#8185C9;">**function**</span>) ${functionInfo?.name}` },
-            { value: `${functionInfo?.function}` });
-        }
-        if (parsedModel.reactions.has(word.word)) {
-          const reactInfo = parsedModel.reactions.get(word.word);
-          hoverContents.push(
-            { supportHtml: true,
-              value: `(<span style="color:#4DC5B9;">**reaction**</span>) ${reactInfo?.name}` });
-        }
-        if (parsedModel.initializations.has(word.word)) {
-          const initializationInfo = parsedModel.initializations.get(word.word);
-          hoverContents.push(
-            { supportHtml: true,
-              value: `Initialized Value: <span style="color:#DEF9CB;">${initializationInfo?.value}</span>` });
-        }
-        if (parsedModel.annotations.has(word.word)) {
-          const annotationInfo = parsedModel.annotations.get(word.word);
-          const annots = annotationInfo?.annotation.split(',');
-          if (annots) {
-            for (let i = 0; i < annots.length; i++) {
-              hoverContents.push({ value: `${annots[i]}` });
+        if (variables.has(word.word)) {
+          const variableInfo = variables.get(word.word);
+          if (variableInfo?.modifiers) {
+            switch (variableInfo?.modifiers) {
+              case 'var':
+                valueOfHover += `<span style="color:#BC96CA;">${variableInfo?.modifiers}</span> <br/> `;
+                break;
+              case 'const':
+                valueOfHover += `<span style="color:#4954F5;">${variableInfo?.modifiers}</span> <br/> `;
+                break;
+              case 'formula':
+                valueOfHover += `<span style="color:#8185C9;">${variableInfo?.modifiers}</span> <br/> `;
+                break;
+              default:
+                break;
             }
           }
+          if (variableInfo?.display) {
+            valueOfHover += `<span style="color:#FD7F20;">${variableInfo?.display}</span> <br/> `;
+          }
+          if (variableInfo?.label) {
+            switch (variableInfo?.label) {
+              case 'Model':
+                valueOfHover += `${word.word} <br/> `;
+                break;
+              case 'Species':
+                valueOfHover += `(<span style="color:#FD7F20;">${variableInfo?.label}</span>) ${word.word} <br/> `;
+                break;
+              case 'Reaction':
+                valueOfHover += `(<span style="color:#4DC5B9;">${variableInfo?.label}</span>) ${word.word} <br/> `;
+                break;
+              case 'Compartment':
+                valueOfHover += `(<span style="color:#BC96CA;">${variableInfo?.label}</span>) ${word.word} <br/> `;
+                break;
+              case 'Unit':
+                valueOfHover += `(<span style="color:#4954F5;">${variableInfo?.label}</span>) ${word.word} <br/> `;
+                break;
+              default:
+                break;
+            }
+          }
+          if (variableInfo?.initialize) {
+            valueOfHover += `Initialized Value: <span style="color:#DEF9CB;">${variableInfo?.initialize}</span> <br/> `;
+          }
+          if (variableInfo?.compartments) {
+            valueOfHover += `In <span style="color:#BC96CA;">${'compartment'}</span>: ${variableInfo?.compartments} <br/> `;
+          }
+          if (variableInfo?.annotations) {
+            variableInfo?.annotations.forEach((annotation) => {
+              valueOfAnnotation += `<span style="color:#f2ab7c;">${annotation.replace(/"/g, "")}</span> <br/> `;
+            });
+          }
         }
+        hoverContents.push(
+          { supportHtml: true,
+            value:  valueOfHover });
+        hoverContents.push(
+          { supportHtml: true,
+            value:  valueOfAnnotation });
         return {
           range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
           contents: hoverContents,
