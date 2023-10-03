@@ -1,6 +1,7 @@
 
 interface Name {
     name: string;
+    onClick?: () => void;
 }
 
 const CustomButton =  (props: Name) => {

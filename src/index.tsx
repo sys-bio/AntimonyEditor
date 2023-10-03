@@ -6,7 +6,7 @@ import reportWebVitals from './reportWebVitals';
 // index.ts
 
 import * as monaco from 'monaco-editor';
-import { customLanguageWorker } from './languages/CustomLanguageWorker';
+import { customLanguageWorker } from './languages/antlr/CustomLanguageWorker';
 
 // Define the getWorker function
 // Dummy web worker function for now, will build more upon when parser and syntax highlighting is created
