@@ -17,6 +17,7 @@ import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
 
 interface AntimonyEditorProps {
   content: string;
+  fileName: string;
 }
 
 class VariableInfo {
@@ -80,10 +81,11 @@ class VariableInfo {
 //   console.log("Load libantimony error: ", err);
 // }
 
-const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
+const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [chosenModel, setChosenModel] = useState<string | null>(null);
+  const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   
   function getBiomodels() {
     const biomodelBrowse = document.getElementById('biomodel-browse') as HTMLInputElement;
@@ -340,6 +342,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
 
       getBiomodels();
 
+      setEditorInstance(editor)
+
       return () => editor.dispose();
     }
   }, [content]);
@@ -356,10 +360,25 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content }) => {
       });
     }
   }, [chosenModel]);
+  
+  const handleDownload = () => {
+    if (editorInstance) {
+      const blob = new Blob([editorInstance.getValue()], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
 
   return (
     <div>
       <div className='menu'>
+        <button className='button' onClick={handleDownload}>Download File</button>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
         <CustomButton name={'Create Annotations'} />
         <CustomButton name={'Navigate to Edit Annotations'} />

@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 
 interface FileExplorerProps {
   files: { name: string; content: string }[];
-  onFileClick: (fileContent: string) => void;
+  onFileClick: (fileContent: string, fileName: string) => void;
 }
 
 const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
-  const handleFileButtonClick = (index: number) => {
+  const handleFileButtonClick = (index: number, fileName: string) => {
     setSelectedFileIndex(index);
-    onFileClick(files[index].content);
+    setSelectedFileName(fileName)
+    onFileClick(files[index].content, fileName);
   };
 
   return (
@@ -26,7 +28,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
         {files.map((file, index) => (
           <li key={index}>
             <button
-              onClick={() => handleFileButtonClick(index)}
+              onClick={() => handleFileButtonClick(index, file.name)}
               className={`button ${selectedFileIndex === index ? 'selected' : ''}`}
             >
               {file.name}
