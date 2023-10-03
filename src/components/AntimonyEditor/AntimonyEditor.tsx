@@ -1,18 +1,18 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as monaco from 'monaco-editor';
-import { antimonyLanguage } from './languages/antlr/AntimonyLanguage';
-import { antimonyTheme } from './languages/AntimonyTheme';
-import { parseAntimonyModel } from './languages/AntimonyParser'
-import CustomButton from './components/CustomButton';
+import { antimonyLanguage } from '../../languages/antlr/AntimonyLanguage';
+import { antimonyTheme } from '../../languages/AntimonyTheme';
+import { parseAntimonyModel } from '../../languages/AntimonyParser'
+import CustomButton from '../../components/CustomButton';
 import './AntimonyEditor.css';
-import { getModel, searchModels } from './features/BrowseBiomodels';
-import libantimony from './libAntimony/libantimony.js';
-import Loader from './components/Loader';
+import { getModel, searchModels } from '../../features/BrowseBiomodels';
+import libantimony from '../../libAntimony/libantimony.js';
+import Loader from '../../components/Loader';
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
-import { AntimonyGrammarLexer } from './languages/antlr/AntimonyGrammarLexer';
-import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, DeclarationContext, In_compContext, Is_assignmentContext, NamemaybeinContext, Reaction_nameContext, SpeciesContext, Unit_declarationContext } from './languages/antlr/AntimonyGrammarParser';
-import { AntimonyGrammarListener } from './languages/antlr/AntimonyGrammarListener'
-import { ModelContext } from './languages/antlr/AntimonyGrammarParser'
+import { AntimonyGrammarLexer } from '../../languages/antlr/AntimonyGrammarLexer';
+import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, DeclarationContext, In_compContext, Is_assignmentContext, NamemaybeinContext, Reaction_nameContext, SpeciesContext, Unit_declarationContext } from '../../languages/antlr/AntimonyGrammarParser';
+import { AntimonyGrammarListener } from '../../languages/antlr/AntimonyGrammarListener'
+import { ModelContext } from '../../languages/antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
 
 interface AntimonyEditorProps {
@@ -402,7 +402,7 @@ function parseAntimony(variables: Map<string, VariableInfo>) {
             }
           }
           if (variableInfo?.display) {
-            valueOfHover += `<span style="color:#FD7F20;">${variableInfo?.display}</span> <br/> `;
+            valueOfHover += `<span style="color:#f2ab7c;">${variableInfo?.display}</span> <br/> `;
           }
           if (variableInfo?.label) {
             switch (variableInfo?.label) {
