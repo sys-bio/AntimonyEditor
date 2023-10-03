@@ -363,7 +363,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
   
   const handleDownload = () => {
     if (editorInstance) {
-      const blob = new Blob([editorInstance.getValue()], { type: 'text/plain' });
+      const blob = new Blob([editorInstance.getValue()], { type: 'ant' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

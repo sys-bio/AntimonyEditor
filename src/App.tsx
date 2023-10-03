@@ -198,7 +198,7 @@ const App: React.FC = () => {
               initialPrimarySize='80%'
             > */}
               <div style={{"height": "100%"}}>
-              <AntimonyEditor content={selectedFileContent} name={selectedFileName}/>
+              <AntimonyEditor content={selectedFileContent} fileName={selectedFileName}/>
               </div>
               Logs Here
               <div style={{"padding": "100px", "width": "100%", "height": "100%"}}>
