@@ -4,7 +4,7 @@ import FileExplorer from './FileExplorer';
 import { openDB, DBSchema } from 'idb';
 import { SolidSplitter } from './CustomSplitters';
 import { Split } from '@geoffcox/react-splitter';
-import AntimonyEditor from './AntimonyEditor';
+import AntimonyEditor from './components/AntimonyEditor/AntimonyEditor';
 
 interface MyDB extends DBSchema {
   files: {
