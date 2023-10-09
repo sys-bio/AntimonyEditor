@@ -8,6 +8,7 @@ import { getModel, searchModels } from './features/BrowseBiomodels';
 import libantimony from './libAntimony/libantimony.js';
 import Loader from './components/Loader';
 import ModelParser from './languages/AntimonyAntlr';
+import handleDownload from './features/HandleDownload';
 
 interface AntimonyEditorProps {
   content: string;
@@ -130,6 +131,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
       monaco.editor.defineTheme('antimonyTheme', antimonyTheme);
       monaco.editor.setTheme('antimonyTheme');
 
+      // Create the editor
       const editor = monaco.editor.create(editorRef.current, {
         bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
         value: content,
@@ -146,23 +148,20 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
         ],
       });
 
-      // console.log('tree:' + tree.toStringTree(parser))
-
-      // parseAntimony(variables);
+      // Set the hover provider
       ModelParser(editor)
 
       setOriginalContent(editor.getValue());
 
       editor.onDidChangeModelContent(() => {
         // Dispose of the current hover provider if it exists
-        if (currentHoverDisposable) {
-          currentHoverDisposable.dispose();
-          currentHoverDisposable = null;
-        }
+        // if (currentHoverDisposable) {
+        //   currentHoverDisposable.dispose();
+        //   currentHoverDisposable = null;
+        // }
         
         setNewContent(editor.getValue())
         ModelParser(editor)
-        // parseAntimony(variables);
       });
 
       getBiomodels();
@@ -174,6 +173,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
   }, [content]);
 
   useEffect(() => {
+    // Display dropdown when a user searches for a model
     if (chosenModel) {
       const dropdown = document.getElementById('dropdown');
       dropdown!.style.display = "none";
@@ -185,25 +185,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
       });
     }
   }, [chosenModel]);
-  
-  const handleDownload = () => {
-    if (editorInstance) {
-      const blob = new Blob([editorInstance.getValue()], { type: 'ant' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-  };
 
   return (
     <div>
       <div className='menu'>
-        <button className='button' onClick={handleDownload}>Download File</button>
+        <button className='button' onClick={() => handleDownload(editorInstance, fileName)}>Download File</button>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
         <CustomButton name={'Create Annotations'} />
         <CustomButton name={'Navigate to Edit Annotations'} />
