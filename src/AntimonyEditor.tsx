@@ -370,7 +370,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
 
       return () => editor.dispose();
     }
-  }, []);
+  }, [content]);
 
   useEffect(() => {
     if (chosenModel) {
