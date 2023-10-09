@@ -1,4 +1,4 @@
-// Generated from /Users/evaliu/Documents/AntimonyEditor/src/languages/AntimonyGrammar.g4 by ANTLR 4.9.0-SNAPSHOT
+// Generated from /Users/evaliu/Documents/AntimonyEditor/src/languages/antlr/AntimonyGrammar.g4 by ANTLR 4.9.0-SNAPSHOT
 
 
 import { ParseTreeListener } from "antlr4ts/tree/ParseTreeListener";
@@ -8,16 +8,16 @@ import { ModelContext } from "./AntimonyGrammarParser";
 import { Var_nameContext } from "./AntimonyGrammarParser";
 import { In_compContext } from "./AntimonyGrammarParser";
 import { NamemaybeinContext } from "./AntimonyGrammarParser";
+import { EventContext } from "./AntimonyGrammarParser";
+import { Event_delayContext } from "./AntimonyGrammarParser";
+import { Event_trigger_listContext } from "./AntimonyGrammarParser";
+import { Event_triggerContext } from "./AntimonyGrammarParser";
 import { EmptyContext } from "./AntimonyGrammarParser";
 import { Reaction_nameContext } from "./AntimonyGrammarParser";
 import { ReactionContext } from "./AntimonyGrammarParser";
 import { Species_listContext } from "./AntimonyGrammarParser";
 import { SpeciesContext } from "./AntimonyGrammarParser";
 import { InteractionContext } from "./AntimonyGrammarParser";
-import { EventContext } from "./AntimonyGrammarParser";
-import { Event_delayContext } from "./AntimonyGrammarParser";
-import { Event_trigger_listContext } from "./AntimonyGrammarParser";
-import { Event_triggerContext } from "./AntimonyGrammarParser";
 import { Event_assignment_listContext } from "./AntimonyGrammarParser";
 import { Event_assignmentContext } from "./AntimonyGrammarParser";
 import { SbotermContext } from "./AntimonyGrammarParser";
@@ -115,6 +115,50 @@ export interface AntimonyGrammarListener extends ParseTreeListener {
 	exitNamemaybein?: (ctx: NamemaybeinContext) => void;
 
 	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.event`.
+	 * @param ctx the parse tree
+	 */
+	enterEvent?: (ctx: EventContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.event`.
+	 * @param ctx the parse tree
+	 */
+	exitEvent?: (ctx: EventContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.event_delay`.
+	 * @param ctx the parse tree
+	 */
+	enterEvent_delay?: (ctx: Event_delayContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.event_delay`.
+	 * @param ctx the parse tree
+	 */
+	exitEvent_delay?: (ctx: Event_delayContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.event_trigger_list`.
+	 * @param ctx the parse tree
+	 */
+	enterEvent_trigger_list?: (ctx: Event_trigger_listContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.event_trigger_list`.
+	 * @param ctx the parse tree
+	 */
+	exitEvent_trigger_list?: (ctx: Event_trigger_listContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.event_trigger`.
+	 * @param ctx the parse tree
+	 */
+	enterEvent_trigger?: (ctx: Event_triggerContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.event_trigger`.
+	 * @param ctx the parse tree
+	 */
+	exitEvent_trigger?: (ctx: Event_triggerContext) => void;
+
+	/**
 	 * Enter a parse tree produced by `AntimonyGrammarParser.empty`.
 	 * @param ctx the parse tree
 	 */
@@ -179,50 +223,6 @@ export interface AntimonyGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitInteraction?: (ctx: InteractionContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `AntimonyGrammarParser.event`.
-	 * @param ctx the parse tree
-	 */
-	enterEvent?: (ctx: EventContext) => void;
-	/**
-	 * Exit a parse tree produced by `AntimonyGrammarParser.event`.
-	 * @param ctx the parse tree
-	 */
-	exitEvent?: (ctx: EventContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `AntimonyGrammarParser.event_delay`.
-	 * @param ctx the parse tree
-	 */
-	enterEvent_delay?: (ctx: Event_delayContext) => void;
-	/**
-	 * Exit a parse tree produced by `AntimonyGrammarParser.event_delay`.
-	 * @param ctx the parse tree
-	 */
-	exitEvent_delay?: (ctx: Event_delayContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `AntimonyGrammarParser.event_trigger_list`.
-	 * @param ctx the parse tree
-	 */
-	enterEvent_trigger_list?: (ctx: Event_trigger_listContext) => void;
-	/**
-	 * Exit a parse tree produced by `AntimonyGrammarParser.event_trigger_list`.
-	 * @param ctx the parse tree
-	 */
-	exitEvent_trigger_list?: (ctx: Event_trigger_listContext) => void;
-
-	/**
-	 * Enter a parse tree produced by `AntimonyGrammarParser.event_trigger`.
-	 * @param ctx the parse tree
-	 */
-	enterEvent_trigger?: (ctx: Event_triggerContext) => void;
-	/**
-	 * Exit a parse tree produced by `AntimonyGrammarParser.event_trigger`.
-	 * @param ctx the parse tree
-	 */
-	exitEvent_trigger?: (ctx: Event_triggerContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `AntimonyGrammarParser.event_assignment_list`.

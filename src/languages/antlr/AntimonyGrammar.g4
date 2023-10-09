@@ -12,6 +12,19 @@ var_name : ('$')? NAME;
 in_comp : 'in' var_name;
 namemaybein : var_name (in_comp)?;
 
+// event
+event : reaction_name? 'at' event_delay? bool_exp event_trigger_list? ':' event_assignment_list;
+
+event_delay : bool_exp 'after';
+
+event_trigger_list : (',' event_trigger)*;
+
+// atom has to be changed to (NUMBER | var_name)
+event_trigger : 't0' '=' BOOLEAN
+    | 'priority' '=' sum
+    | 'fromTrigger' '=' BOOLEAN
+    | 'persistent' '=' BOOLEAN;
+
 empty : ;
 // reactions
 reaction_name : namemaybein ':';
@@ -25,20 +38,6 @@ ARROW : '->'
 // interaction
 interaction : (reaction_name)? species INTERACTION_SYMBOL namemaybein;
 INTERACTION_SYMBOL : '-o' | '-|' | '-(';
-
-// event
-// ignore empty string error for now
-event : reaction_name? 'at' event_delay? bool_exp event_trigger_list? ':' event_assignment_list;
-
-event_delay : bool_exp 'after';
-
-event_trigger_list : (',' event_trigger)*;
-
-// atom has to be changed to (NUMBER | var_name)
-event_trigger : 't0' '=' BOOLEAN
-    | 'priority' '=' sum
-    | 'fromTrigger' '=' BOOLEAN
-    | 'persistent' '=' BOOLEAN;
 
 // manual coding of import number from lark
 NUMBER: [0-9]+ ('.' [0-9]+)? | '.' [0-9]+;

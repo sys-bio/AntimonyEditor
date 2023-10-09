@@ -10,7 +10,7 @@ import libantimony from './libAntimony/libantimony.js';
 import Loader from './components/Loader';
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
 import { AntimonyGrammarLexer } from './languages/antlr/AntimonyGrammarLexer';
-import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, DeclarationContext, In_compContext, Is_assignmentContext, NamemaybeinContext, Reaction_nameContext, SpeciesContext, Unit_declarationContext } from './languages/antlr/AntimonyGrammarParser';
+import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, DeclarationContext, EventContext, In_compContext, Is_assignmentContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Unit_declarationContext } from './languages/antlr/AntimonyGrammarParser';
 import { AntimonyGrammarListener } from './languages/antlr/AntimonyGrammarListener'
 import { ModelContext } from './languages/antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
@@ -81,12 +81,15 @@ class VariableInfo {
 //   console.log("Load libantimony error: ", err);
 // }
 
+let currentHoverDisposable: monaco.IDisposable | null = null;
+
 const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [chosenModel, setChosenModel] = useState<string | null>(null);
   const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
-  
+  const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
+
   function getBiomodels() {
     const biomodelBrowse = document.getElementById('biomodel-browse') as HTMLInputElement;
     const dropdown = document.getElementById('dropdown');
@@ -197,17 +200,19 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
           }
         };
 
-        enterReaction_name (ctx: Reaction_nameContext) {
-          const reactionName = ctx.namemaybein().text; // Get reaction name
-          const reactionInfo = new VariableInfo();
+        enterReaction (ctx: ReactionContext) {
+            const reactionName = ctx.reaction_name()?.namemaybein().text; // Get reaction name
+            const reactionInfo = new VariableInfo();
 
-          let variable = variables.get(reactionName);
+          if (reactionName) {
+            let variable = variables.get(reactionName);
 
-          if (!variable) {
-            reactionInfo.label = 'Reaction'
-            variables.set(reactionName, reactionInfo)
-          } else {
-            variable.label = 'Reaction';
+            if (!variable) {
+              reactionInfo.label = 'Reaction'
+              variables.set(reactionName, reactionInfo)
+            } else {
+              variable.label = 'Reaction';
+            }
           }
         };
 
@@ -252,6 +257,20 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
             variables.set(varName, variableInfo);
           }
         };
+
+        enterEvent (ctx: EventContext) {
+          const eventName = ctx.reaction_name()?.namemaybein().text; // Get variable name
+          if (eventName) {
+            let variable = variables.get(eventName);
+            if (variable) {
+              variable.label = 'Event';
+            } else {
+              let variableInfo = new VariableInfo();
+              variableInfo.label = 'Event';
+              variables.set(eventName, variableInfo);
+            }
+          }
+        }
 
         enterUnit_declaration (ctx: Unit_declarationContext) {
           const varName = ctx.var_name().text; // Get variable name
@@ -320,9 +339,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
             variables.set(varName, annotationInfo);
           }
         };
-
-
-        // other enterX functions...
       }
       console.log(variables)
       console.log(annotatedVar)
@@ -336,7 +352,15 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
 
       parseAntimony(variables);
 
+      setOriginalContent(editor.getValue());
+
       editor.onDidChangeModelContent(() => {
+        // Dispose of the current hover provider if it exists
+        if (currentHoverDisposable) {
+          currentHoverDisposable.dispose();
+          currentHoverDisposable = null;
+        }
+
         parseAntimony(variables);
       });
 
@@ -346,7 +370,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
 
       return () => editor.dispose();
     }
-  }, [content]);
+  }, []);
 
   useEffect(() => {
     if (chosenModel) {
@@ -396,7 +420,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
 
 function parseAntimony(variables: Map<string, VariableInfo>) {
   // Register the hover provider
-  monaco.languages.registerHoverProvider('antimony', {
+  currentHoverDisposable = monaco.languages.registerHoverProvider('antimony', {
     provideHover: (model, position) => {
       let hoverContents: monaco.IMarkdownString[] = [];
       let valueOfHover: string = '';
@@ -436,6 +460,9 @@ function parseAntimony(variables: Map<string, VariableInfo>) {
                 break;
               case 'Compartment':
                 valueOfHover += `(<span style="color:#BC96CA;">${variableInfo?.label}</span>) ${word.word} <br/> `;
+                break;
+              case 'Event':
+                valueOfHover += `(<span style="color:#4954F5;">${variableInfo?.label}</span>) ${word.word} <br/> `;
                 break;
               case 'Unit':
                 valueOfHover += `(<span style="color:#4954F5;">${variableInfo?.label}</span>) ${word.word} <br/> `;

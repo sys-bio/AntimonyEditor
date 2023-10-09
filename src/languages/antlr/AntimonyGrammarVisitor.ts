@@ -1,4 +1,4 @@
-// Generated from /Users/evaliu/Documents/AntimonyEditor/src/languages/AntimonyGrammar.g4 by ANTLR 4.9.0-SNAPSHOT
+// Generated from /Users/evaliu/Documents/AntimonyEditor/src/languages/antlr/AntimonyGrammar.g4 by ANTLR 4.9.0-SNAPSHOT
 
 
 import { ParseTreeVisitor } from "antlr4ts/tree/ParseTreeVisitor";
@@ -8,16 +8,16 @@ import { ModelContext } from "./AntimonyGrammarParser";
 import { Var_nameContext } from "./AntimonyGrammarParser";
 import { In_compContext } from "./AntimonyGrammarParser";
 import { NamemaybeinContext } from "./AntimonyGrammarParser";
+import { EventContext } from "./AntimonyGrammarParser";
+import { Event_delayContext } from "./AntimonyGrammarParser";
+import { Event_trigger_listContext } from "./AntimonyGrammarParser";
+import { Event_triggerContext } from "./AntimonyGrammarParser";
 import { EmptyContext } from "./AntimonyGrammarParser";
 import { Reaction_nameContext } from "./AntimonyGrammarParser";
 import { ReactionContext } from "./AntimonyGrammarParser";
 import { Species_listContext } from "./AntimonyGrammarParser";
 import { SpeciesContext } from "./AntimonyGrammarParser";
 import { InteractionContext } from "./AntimonyGrammarParser";
-import { EventContext } from "./AntimonyGrammarParser";
-import { Event_delayContext } from "./AntimonyGrammarParser";
-import { Event_trigger_listContext } from "./AntimonyGrammarParser";
-import { Event_triggerContext } from "./AntimonyGrammarParser";
 import { Event_assignment_listContext } from "./AntimonyGrammarParser";
 import { Event_assignmentContext } from "./AntimonyGrammarParser";
 import { SbotermContext } from "./AntimonyGrammarParser";
@@ -98,6 +98,34 @@ export interface AntimonyGrammarVisitor<Result> extends ParseTreeVisitor<Result>
 	visitNamemaybein?: (ctx: NamemaybeinContext) => Result;
 
 	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.event`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitEvent?: (ctx: EventContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.event_delay`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitEvent_delay?: (ctx: Event_delayContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.event_trigger_list`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitEvent_trigger_list?: (ctx: Event_trigger_listContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.event_trigger`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitEvent_trigger?: (ctx: Event_triggerContext) => Result;
+
+	/**
 	 * Visit a parse tree produced by `AntimonyGrammarParser.empty`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -138,34 +166,6 @@ export interface AntimonyGrammarVisitor<Result> extends ParseTreeVisitor<Result>
 	 * @return the visitor result
 	 */
 	visitInteraction?: (ctx: InteractionContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `AntimonyGrammarParser.event`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEvent?: (ctx: EventContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `AntimonyGrammarParser.event_delay`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEvent_delay?: (ctx: Event_delayContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `AntimonyGrammarParser.event_trigger_list`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEvent_trigger_list?: (ctx: Event_trigger_listContext) => Result;
-
-	/**
-	 * Visit a parse tree produced by `AntimonyGrammarParser.event_trigger`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitEvent_trigger?: (ctx: Event_triggerContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `AntimonyGrammarParser.event_assignment_list`.
