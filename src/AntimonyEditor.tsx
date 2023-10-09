@@ -7,7 +7,7 @@ import './AntimonyEditor.css';
 import { getModel, searchModels } from './features/BrowseBiomodels';
 import libantimony from './libAntimony/libantimony.js';
 import Loader from './components/Loader';
-import ModelParser from './languages/AntimonyAntlr';
+import ModelParser from './languages/ModelParser';
 import handleDownload from './features/HandleDownload';
 
 interface AntimonyEditorProps {

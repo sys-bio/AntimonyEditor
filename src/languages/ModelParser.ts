@@ -1,6 +1,6 @@
 import * as monaco from 'monaco-editor';
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
-import { AntimonyGrammarLexer } from './/antlr/AntimonyGrammarLexer';
+import { AntimonyGrammarLexer } from './antlr/AntimonyGrammarLexer';
 import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, DeclarationContext, EventContext, Is_assignmentContext, NamemaybeinContext, ReactionContext, SpeciesContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
 import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
 import { ModelContext } from './antlr/AntimonyGrammarParser'
