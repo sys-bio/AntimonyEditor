@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './FileExplorer.css'
 
 interface FileExplorerProps {
   files: { name: string; content: string }[];
@@ -17,14 +18,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
 
   return (
     <div className="file-explorer">
-      <style>{`
-        .button:hover,
-        .button.selected {
-          color: white;
-          background-color: #464646;
-        }
-      `}</style>
-      <ul style={{ listStyle: 'none' }}>
+      <ul>
         {files.map((file, index) => (
           <li key={index}>
             <button
