@@ -200,7 +200,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
         <ul id='dropdown' />
         <Loader loading={loading} />
       </div>
-      <div className="code-editor" ref={editorRef} style={{ height: '80vh' }}></div>
+      <div className="code-editor" ref={editorRef}></div>
     </div>
   );
 };
