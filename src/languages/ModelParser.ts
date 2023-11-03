@@ -5,6 +5,7 @@ import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, Declaratio
 import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
+import { hover } from '@testing-library/user-event/dist/hover';
 
 class VariableInfo {
   label?: string;
@@ -204,13 +205,18 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
   // Use the entry point for listeners
   ParseTreeWalker.DEFAULT.walk(listener, tree)
 
-  parseAntimony(variables)
+  let hoverInfo = parseAntimony(variables);
+  if (hoverInfo) {
+    editor.onDidDispose(() => {
+      hoverInfo.dispose();
+    });
+  }
 }
 
 function parseAntimony(variables: Map<string, VariableInfo>) {
   let hoverContents: monaco.IMarkdownString[] = [];
   // Register the hover provider
-  monaco.languages.registerHoverProvider('antimony', {
+  let hoverInfo = monaco.languages.registerHoverProvider('antimony', {
     provideHover: (model, position) => {
       hoverContents = []
       let valueOfHover: string = '';
@@ -288,6 +294,7 @@ function parseAntimony(variables: Map<string, VariableInfo>) {
       return null;
     },
   });
+  return hoverInfo;
 }
 
 export default ModelParser;
