@@ -4,7 +4,7 @@ import { antimonyLanguage } from './languages/antlr/AntimonyLanguage';
 import { antimonyTheme } from './languages/AntimonyTheme';
 import CustomButton from './components/CustomButton';
 import './AntimonyEditor.css';
-import { getModel, searchModels } from './features/BrowseBiomodels';
+import { getBiomodels, getModel, searchModels } from './features/BrowseBiomodels';
 import libantimony from './libAntimony/libantimony.js';
 import Loader from './components/Loader';
 import ModelParser from './languages/ModelParser';
@@ -76,50 +76,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
   const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
-
-  function getBiomodels() {
-    const biomodelBrowse = document.getElementById('biomodel-browse') as HTMLInputElement;
-    const dropdown = document.getElementById('dropdown');
-    var biomodels: any;
-    var chosenModel: any;
-  
-    biomodelBrowse.addEventListener('keyup', async (val) => {
-      const biomodel = val;
-      if ((val.target as HTMLInputElement).value.length < 3) {
-        dropdown!.innerHTML = "";
-        return;
-      }
-      setTimeout(async () => {
-        setLoading(true);
-        dropdown!.innerHTML = "";
-        biomodels = await searchModels(biomodel);
-        // If no models found, display "No models found"
-        if (biomodels.models.size === 0) {
-          setLoading(false);
-          biomodels = null;
-          const li = document.createElement('li');
-          li.innerHTML = "No models found";
-          dropdown!.innerHTML = "";
-          dropdown!.appendChild(li);
-          return;
-        }
-        // Otherwise, display the models in the dropdown
-        dropdown!.style.display = "block";
-        biomodels.models.forEach(function (model: any) {
-          setLoading(false);
-          const a = document.createElement('a');
-          a.addEventListener('click', () => {
-            biomodelBrowse.value = "";
-            dropdown!.innerHTML = "";
-            chosenModel = model.id;
-            setChosenModel(chosenModel);
-          });
-          a.innerHTML = model.name + ": " + model.id + "\n";
-          dropdown!.appendChild(a);
-        });
-      }, 300);
-    });
-  }
   
   useEffect(() => {
     if (editorRef.current) {
@@ -164,7 +120,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
         ModelParser(editor)
       });
 
-      getBiomodels();
+      getBiomodels(setLoading, setChosenModel);
 
       setEditorInstance(editor)
 
