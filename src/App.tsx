@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import FileExplorer from './FileExplorer';
+import FileExplorer from './components/file-explorer/FileExplorer';
 import { openDB, DBSchema } from 'idb';
-import { SolidSplitter } from './CustomSplitters';
+import { SolidSplitter } from './components/CustomSplitters';
 import { Split } from '@geoffcox/react-splitter';
-import AntimonyEditor from './AntimonyEditor';
+import AntimonyEditor from './components/antimony-editor/AntimonyEditor';
 
 interface MyDB extends DBSchema {
   files: {
