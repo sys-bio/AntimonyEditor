@@ -16,7 +16,7 @@ class VariableInfo {
   annotations?: string[] = [];
 }
 
-const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
+const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: boolean) => {
   // Create the lexer and parser
   let inputStream = new ANTLRInputStream(editor.getValue());
   let lexer = new AntimonyGrammarLexer(inputStream);
@@ -206,9 +206,16 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
   ParseTreeWalker.DEFAULT.walk(listener, tree)
 
   let hoverInfo = parseAntimony(variables);
+  let typingTimer: any;
   if (hoverInfo) {
     editor.onDidDispose(() => {
       hoverInfo.dispose();
+    });
+    editor.onDidChangeModelContent(() => {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => {
+        hoverInfo.dispose();
+      }, 3000);
     });
   }
 }
@@ -291,7 +298,6 @@ function parseAntimony(variables: Map<string, VariableInfo>) {
         };
       }
   
-      return null;
     },
   });
   return hoverInfo;

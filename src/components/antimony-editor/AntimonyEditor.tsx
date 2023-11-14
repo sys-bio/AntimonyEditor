@@ -67,8 +67,6 @@ interface AntimonyEditorProps {
 //   console.log("Load libantimony error: ", err);
 // }
 
-let currentHoverDisposable: monaco.IDisposable | null = null;
-
 const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -76,7 +74,15 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
   const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
+  let typingTimer: any;
   
+  const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+      ModelParser(editor, true);
+    }, 3000);
+  };
+
   useEffect(() => {
     if (editorRef.current) {
       // Load the custom language
@@ -105,19 +111,13 @@ const AntimonyEditor: React.FC<AntimonyEditorProps> = ({ content, fileName }) =>
       });
 
       // Set the hover provider
-      ModelParser(editor)
+      ModelParser(editor, false);
 
       setOriginalContent(editor.getValue());
 
       editor.onDidChangeModelContent(() => {
-        // Dispose of the current hover provider if it exists
-        // if (currentHoverDisposable) {
-        //   currentHoverDisposable.dispose();
-        //   currentHoverDisposable = null;
-        // }
-        
-        setNewContent(editor.getValue())
-        ModelParser(editor)
+        setNewContent(editor.getValue());
+        delayedModelParser(editor);
       });
 
       getBiomodels(setLoading, setChosenModel);
