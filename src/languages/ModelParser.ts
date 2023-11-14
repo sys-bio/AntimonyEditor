@@ -198,7 +198,6 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
     };
   }
   console.log(variables)
-  console.log(annotatedVar)
 
   // Create the listener
   const listener: AntimonyGrammarListener = new AntimonySyntax();
@@ -243,6 +242,9 @@ function parseAntimony(variables: Map<string, VariableInfo>) {
               case 'formula':
                 valueOfHover += `<span style="color:#8185C9;">${variableInfo?.modifiers}</span> <br/> `;
                 break;
+              case 'species':
+                valueOfHover += `(<span style="color:#FD7F20;">Species</span>) ${word.word} <br/> `;
+                break;
               default:
                 break;
             }
@@ -254,9 +256,6 @@ function parseAntimony(variables: Map<string, VariableInfo>) {
             switch (variableInfo?.label) {
               case 'Model':
                 valueOfHover += `${word.word} <br/> `;
-                break;
-              case 'Species':
-                valueOfHover += `(<span style="color:#FD7F20;">${variableInfo?.label}</span>) ${word.word} <br/> `;
                 break;
               case 'Reaction':
                 valueOfHover += `(<span style="color:#4DC5B9;">${variableInfo?.label}</span>) ${word.word} <br/> `;
