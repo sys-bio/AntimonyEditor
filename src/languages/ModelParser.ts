@@ -211,10 +211,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       hoverInfo.dispose();
     });
     editor.onDidChangeModelContent(() => {
-      clearTimeout(typingTimer);
-      typingTimer = setTimeout(() => {
-        hoverInfo.dispose();
-      }, 3000);
+      hoverInfo.dispose();
     });
   }
 }
