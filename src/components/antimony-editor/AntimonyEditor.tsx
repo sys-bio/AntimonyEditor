@@ -5,7 +5,6 @@ import { antimonyTheme } from '../../languages/AntimonyTheme';
 import CustomButton from '../CustomButton';
 import './AntimonyEditor.css';
 import { getBiomodels, getModel, searchModels } from '../../features/BrowseBiomodels';
-import libantimony from '../../libAntimony/libantimony.js';
 import Loader from '../Loader';
 import ModelParser from '../../languages/ModelParser';
 import handleDownload from '../../features/HandleDownload';
@@ -15,65 +14,12 @@ interface AntimonyEditorProps {
   content: string;
   fileName: string;
 }
-
 interface MyDB extends DBSchema {
   files: {
     key: string;
     value: { name: string; content: string };
   };
 }
-
-// var loadAntimonyString; // libantimony function
-// var loadString;   // 		"
-// var loadSBMLString; //		"
-// var getSBMLString; //		"
-// var getAntimonyString; //	"
-// var getCompSBMLString; //	"
-// var clearPreviousLoads; //	"
-// var getLastError; //		"
-// var getWarnings;  //		"
-// var getSBMLInfoMessages; //	"
-// var getSBMLWarnings; //		"
-// var freeAll;      //		"
-// var jsFree;         // emscripten function
-// var jsAllocateUTF8; //  	
-
-// try {
-//   libantimony().then((libantimony: any) => {
-//     //	Format: libantimony.cwrap( function name, return type, input param array of types).
-//     loadString = libantimony.cwrap("loadString", "number", ["number"]);
-//     loadAntimonyString = libantimony.cwrap("loadAntimonyString", "number", [
-//       "number",
-//     ]);
-//     loadSBMLString = libantimony.cwrap("loadSBMLString", "number", [
-//       "number",
-//     ]);
-//     getSBMLString = libantimony.cwrap("getSBMLString", "string", ["null"]);
-//     getAntimonyString = libantimony.cwrap("getAntimonyString", "string", [
-//       "null",
-//     ]);
-//     getCompSBMLString = libantimony.cwrap("getCompSBMLString", "string", [
-//       "string",
-//     ]);
-//     clearPreviousLoads = libantimony.cwrap("clearPreviousLoads", "null", [
-//       "null",
-//     ]);
-//     getLastError = libantimony.cwrap("getLastError", "string", ["null"]);
-//     getWarnings = libantimony.cwrap("getWarnings", "string", ["null"]);
-//     getSBMLInfoMessages = libantimony.cwrap("getSBMLInfoMessages", "string", [
-//       "string",
-//     ]);
-//     getSBMLWarnings = libantimony.cwrap("getSBMLWarnings", "string", [
-//       "string",
-//     ]);
-//     freeAll = libantimony.cwrap("freeAll", "null", ["null"]);
-
-//     jsFree = (strPtr: any) => libantimony._free(strPtr);
-//     jsAllocateUTF8 = (newStr: any) => libantimony.allocateUTF8(newStr);
-//   });
-// } catch (err) {
-//   console.log("Load libantimony error: ", err);
-// }
 
 let currentHoverDisposable: monaco.IDisposable | null = null;
 
@@ -85,7 +31,16 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
   const [selectedFile, setSelectedFile] = useState<string>('')
+
+  let typingTimer: any;
   
+  const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+      ModelParser(editor, true);
+    }, 300);
+  };
+
   useEffect(() => {
     if (editorRef.current) {
       // Load the custom language
@@ -124,19 +79,13 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       });
 
       // Set the hover provider
-      ModelParser(editor);
+      ModelParser(editor, false);
 
       setOriginalContent(editor.getValue());
 
       editor.onDidChangeModelContent(() => {
-        // Dispose of the current hover provider if it exists
-        // if (currentHoverDisposable) {
-        //   currentHoverDisposable.dispose();
-        //   currentHoverDisposable = null;
-        // }
-        
         setNewContent(editor.getValue());
-        ModelParser(editor);
+        delayedModelParser(editor);
       });
 
       getBiomodels(setLoading, setChosenModel);

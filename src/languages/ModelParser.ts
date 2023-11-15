@@ -16,7 +16,7 @@ class VariableInfo {
   annotations?: string[] = [];
 }
 
-const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
+const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: boolean) => {
   // Create the lexer and parser
   let inputStream = new ANTLRInputStream(editor.getValue());
   let lexer = new AntimonyGrammarLexer(inputStream);
@@ -198,7 +198,6 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
     };
   }
   console.log(variables)
-  console.log(annotatedVar)
 
   // Create the listener
   const listener: AntimonyGrammarListener = new AntimonySyntax();
@@ -206,8 +205,12 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
   ParseTreeWalker.DEFAULT.walk(listener, tree)
 
   let hoverInfo = parseAntimony(variables);
+  let typingTimer: any;
   if (hoverInfo) {
     editor.onDidDispose(() => {
+      hoverInfo.dispose();
+    });
+    editor.onDidChangeModelContent(() => {
       hoverInfo.dispose();
     });
   }
@@ -236,6 +239,9 @@ function parseAntimony(variables: Map<string, VariableInfo>) {
               case 'formula':
                 valueOfHover += `<span style="color:#8185C9;">${variableInfo?.modifiers}</span> <br/> `;
                 break;
+              case 'species':
+                valueOfHover += `(<span style="color:#FD7F20;">Species</span>) ${word.word} <br/> `;
+                break;
               default:
                 break;
             }
@@ -247,9 +253,6 @@ function parseAntimony(variables: Map<string, VariableInfo>) {
             switch (variableInfo?.label) {
               case 'Model':
                 valueOfHover += `${word.word} <br/> `;
-                break;
-              case 'Species':
-                valueOfHover += `(<span style="color:#FD7F20;">${variableInfo?.label}</span>) ${word.word} <br/> `;
                 break;
               case 'Reaction':
                 valueOfHover += `(<span style="color:#4DC5B9;">${variableInfo?.label}</span>) ${word.word} <br/> `;
@@ -291,7 +294,6 @@ function parseAntimony(variables: Map<string, VariableInfo>) {
         };
       }
   
-      return null;
     },
   });
   return hoverInfo;
