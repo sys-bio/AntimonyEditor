@@ -1,12 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as monaco from 'monaco-editor';
-import { antimonyLanguage } from '../../languages/antlr/AntimonyLanguage';
-import { antimonyTheme } from '../../languages/AntimonyTheme';
+import { antimonyLanguage } from '../../language-handler/antlr/AntimonyLanguage';
+import { antimonyTheme } from '../../language-handler/AntimonyTheme';
 import CustomButton from '../CustomButton';
 import './AntimonyEditor.css';
 import { getBiomodels, getModel, searchModels } from '../../features/BrowseBiomodels';
 import Loader from '../Loader';
-import ModelParser from '../../languages/ModelParser';
+import ModelParser from '../../language-handler/ModelParser';
 import handleDownload from '../../features/HandleDownload';
 import { IDBPDatabase, DBSchema } from 'idb';
 
