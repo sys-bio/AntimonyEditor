@@ -13,3 +13,5 @@ When ready to deploy to github pages, run
 npm run deploy
 
 Do not delete the gh-pages branch, this is the branch that github pages refers to.
+If you do happen to delete gh-pages, run
+npm predeploy
