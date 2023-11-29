@@ -1,11 +1,10 @@
 import * as monaco from 'monaco-editor';
-import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
+import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, RecognitionException, Recognizer } from 'antlr4ts';
 import { AntimonyGrammarLexer } from './antlr/AntimonyGrammarLexer';
 import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, DeclarationContext, EventContext, Is_assignmentContext, NamemaybeinContext, ReactionContext, SpeciesContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
 import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
-import { hover } from '@testing-library/user-event/dist/hover';
 
 class VariableInfo {
   label?: string;
@@ -16,12 +15,36 @@ class VariableInfo {
   annotations?: string[] = [];
 }
 
+class ErrorListener implements ANTLRErrorListener<any> {
+  private errors: string[] = [];
+
+  syntaxError<T>(
+    recognizer: Recognizer<T, any>,
+    offendingSymbol: T,
+    line: number,
+    charPositionInLine: number,
+    msg: string,
+    e: RecognitionException | undefined
+  ): void {
+    this.errors.push(`Line ${line}:${charPositionInLine} - ${msg}`);
+  }
+
+  getErrors(): string[] {
+    return this.errors;
+  }
+}
+
 const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: boolean) => {
   // Create the lexer and parser
   let inputStream = new ANTLRInputStream(editor.getValue());
   let lexer = new AntimonyGrammarLexer(inputStream);
   let tokenStream = new CommonTokenStream(lexer);
   let parser = new AntimonyGrammarParser(tokenStream);
+
+  // Create custom error listener
+  const errorListener = new ErrorListener();
+  parser.removeErrorListeners();
+  parser.addErrorListener(errorListener);
 
   // Parse the input, where `compilationUnit` is whatever entry point you defined
   let tree = parser.root();
@@ -31,6 +54,18 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   var annotatedVar: string[] = [];
 
   class AntimonySyntax implements AntimonyGrammarListener {
+    // Add the following method to capture parse errors
+    syntaxError<T>(
+      recognizer: Recognizer<T, any>,
+      offendingSymbol: T,
+      line: number,
+      charPositionInLine: number,
+      msg: string,
+      e: RecognitionException | undefined
+    ): void {
+      console.error(`Parse error at Line ${line}:${charPositionInLine} - ${msg}`);
+    }
+
     enterModel(ctx: ModelContext) {
       const modelName = ctx.NAME().text; // Get the model name
       const modelInfo = new VariableInfo();
@@ -203,8 +238,9 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   const listener: AntimonyGrammarListener = new AntimonySyntax();
   // Use the entry point for listeners
   ParseTreeWalker.DEFAULT.walk(listener, tree)
+  parser.addErrorListener(errorListener);
 
-  let hoverInfo = parseAntimony(variables);
+  let hoverInfo = parseAntimony(variables, errorListener.getErrors());
   let typingTimer: any;
   if (hoverInfo) {
     editor.onDidDispose(() => {
@@ -216,8 +252,9 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   }
 }
 
-function parseAntimony(variables: Map<string, VariableInfo>) {
+function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
   let hoverContents: monaco.IMarkdownString[] = [];
+
   // Register the hover provider
   let hoverInfo = monaco.languages.registerHoverProvider('antimony', {
     provideHover: (model, position) => {
@@ -226,6 +263,11 @@ function parseAntimony(variables: Map<string, VariableInfo>) {
       let valueOfAnnotation: string = '';
       const word = model.getWordAtPosition(position);
       if (word) {
+        if (errors.length > 0) {
+          errors.forEach((error) => {
+            valueOfHover += `Error: ${error} <br/>`; // Include error message in valueOfHover
+          });
+        }
         if (variables.has(word.word)) {
           const variableInfo = variables.get(word.word);
           if (variableInfo?.modifiers) {
