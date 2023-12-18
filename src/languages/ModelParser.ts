@@ -263,6 +263,8 @@ function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
       let valueOfAnnotation: string = '';
       const word = model.getWordAtPosition(position);
       if (word) {
+        // check if position range is in error and if it is, return error message
+        // have to figure out entire position range of error first
         if (errors.length > 0) {
           errors.forEach((error) => {
             valueOfHover += `Error: ${error} <br/>`; // Include error message in valueOfHover
