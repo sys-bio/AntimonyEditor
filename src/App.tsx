@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import FileExplorer from './FileExplorer';
+import FileExplorer from './components/file-explorer/FileExplorer';
 import { openDB, DBSchema } from 'idb';
-import { SolidSplitter } from './CustomSplitters';
+import { SolidSplitter } from './components/CustomSplitters';
 import { Split } from '@geoffcox/react-splitter';
-import AntimonyEditor from './AntimonyEditor';
+import AntimonyEditor from './components/antimony-editor/AntimonyEditor';
+import { IDBPDatabase } from 'idb';
 
 interface MyDB extends DBSchema {
   files: {
@@ -13,34 +14,22 @@ interface MyDB extends DBSchema {
   };
 }
 
-const sampleAntimonyModel = `
-// Sample Antimony Model
-model main()
-  compartment C1;
-
-  species S1, S2;
-
-  S1 in C1;
-  S2 in C1;
-
-  S1 -> S2; k1*S1;
-  k1 = 0.1;
-end
-`;
-
 const App: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; content: string }[]>([]);
-  const [selectedFileContent, setSelectedFileContent] = useState<string>(sampleAntimonyModel);
+  const [selectedFileContent, setSelectedFileContent] = useState<string>('// Enter Antimony Model Here');
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
+  const [db, setDb] = useState<IDBPDatabase<MyDB> | null>();
 
   useEffect(() => {
-    openDB<MyDB>('fileDB', 1, {
+    openDB<MyDB>('antimony_editor_db', 1, {
       upgrade(db) {
         if (!db.objectStoreNames.contains('files')) {
           db.createObjectStore('files', { keyPath: 'name' });
         }
       },
-    }).then(db => {
-      db.getAll('files').then(files => {
+    }).then(database => {
+      setDb(database); // Store the database instance in the state
+      database.getAll('files').then(files => {
         setUploadedFiles(files);
       });
     });
@@ -48,9 +37,7 @@ const App: React.FC = () => {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files) {
-      const db = await openDB<MyDB>('fileDB', 1);
-
+    if (files && db) {
       Array.from(files).forEach(async file => {
         const reader = new FileReader();
         reader.readAsText(file);
@@ -63,53 +50,47 @@ const App: React.FC = () => {
     }
   };
 
-  const handleFileClick = (fileContent: string) => {
+  const handleFileClick = (fileContent: string, fileName: string) => {
     setSelectedFileContent(fileContent);
+    setSelectedFileName(fileName);
+  
+    // Store the selected file's information in IndexedDB
+    if (db) {
+      db.put('files', { name: fileName, content: fileContent });
+    }
   };
 
   return (
-    <div className='app' style={{height: '100%'}}>
-      <div className="wrapper">
-        <div className="top" style={{"fontSize": "2em", textAlign: 'center'}}>
-          The Official Antimony Web Code Editor
-          <div className="float-end" style={{"fontSize": ".5em"}}>
-            <a target="_blank" href={"https://reproduciblebiomodels.org/"}>
-              https://reproduciblebiomodels.org/
-            </a>
-          </div>
-        </div>
-        <div className="middle App" style={{"backgroundColor": "#1c1c1c", color:'white'}}>
-          <Split
-            renderSplitter={() => <SolidSplitter/>}
-            initialPrimarySize='14%'
-            splitterSize='3px'
-          >
-            <div style={{"height": "100%", "overflowY": "scroll"}}>
-              <input type="file" multiple onChange={handleFileUpload} />
-              <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
-              {/* <BsUpload style={{padding: '4px 0 0 7px'}}/> */}
-              {/* <input type='file' className='choosefile' /> <br/> */}
-            </div>        
-            {/* <Split
-              renderSplitter={() => <SolidSplitter />}
-              splitterSize='3px'
-              horizontal
-              initialPrimarySize='80%'
-            > */}
-              <div style={{"height": "100%"}}>
-              <AntimonyEditor content={selectedFileContent} />
-              </div>
-              Logs Here
-              <div style={{"padding": "100px", "width": "100%", "height": "100%"}}>
-                <div style={{"width": "100%", "height": "100%"}}>
-                  <iframe style={{"width": "100%", "height": "100%"}}/>
-                </div>
-              </div>
-            {/* </Split> */}
-          </Split>
-        </div>
-        <div className="bottom" style={{backgroundColor: '#1c1c1c', color:'white'}}>Copyright © 2023 Center for Reproducible Biomedical Modeling</div>
+    <div className='app'>
+      <header>
+        <h1>The Official Antimony Web Code Editor</h1>
+        <a target="_blank" href={"https://reproduciblebiomodels.org/"}>
+          https://reproduciblebiomodels.org/
+        </a>
+      </header>
+      <div className="middle">
+        <Split
+          renderSplitter={() => <SolidSplitter/>}
+          initialPrimarySize='14%'
+          splitterSize='3px'
+          minPrimarySize='14%'
+        >
+          <section>
+            <input type="file" multiple onChange={handleFileUpload} />
+            <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
+          </section>       
+          <div>
+          {db ? ( // Conditionally render the AntimonyEditor component when db is defined
+              <AntimonyEditor content={selectedFileContent} fileName={selectedFileName} database={db} />
+            ) : (
+              // You can provide a loading message or handle the absence of the database as needed
+              <div>Loading...</div>
+            )}          </div>
+        </Split>
       </div>
+      <footer>
+        Copyright © 2023 Center for Reproducible Biomedical Modeling
+      </footer>
     </div>
   );
 };

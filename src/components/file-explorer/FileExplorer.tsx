@@ -1,32 +1,28 @@
 import React, { useState } from 'react';
+import './FileExplorer.css'
 
 interface FileExplorerProps {
   files: { name: string; content: string }[];
-  onFileClick: (fileContent: string) => void;
+  onFileClick: (fileContent: string, fileName: string) => void;
 }
 
 const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
-  const handleFileButtonClick = (index: number) => {
+  const handleFileButtonClick = (index: number, fileName: string) => {
     setSelectedFileIndex(index);
-    onFileClick(files[index].content);
+    setSelectedFileName(fileName)
+    onFileClick(files[index].content, fileName);
   };
 
   return (
     <div className="file-explorer">
-      <style>{`
-        .button:hover,
-        .button.selected {
-          color: white;
-          background-color: #464646;
-        }
-      `}</style>
-      <ul style={{ listStyle: 'none' }}>
+      <ul>
         {files.map((file, index) => (
           <li key={index}>
             <button
-              onClick={() => handleFileButtonClick(index)}
+              onClick={() => handleFileButtonClick(index, file.name)}
               className={`button ${selectedFileIndex === index ? 'selected' : ''}`}
             >
               {file.name}
