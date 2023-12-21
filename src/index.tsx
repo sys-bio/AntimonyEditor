@@ -3,8 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './testing/reportWebVitals';
-// index.ts
-
 import * as monaco from 'monaco-editor';
 import { customLanguageWorker } from './languages/antlr/CustomLanguageWorker';
 

@@ -9,6 +9,7 @@ import Loader from '../Loader';
 import ModelParser from '../../languages/ModelParser';
 import handleDownload from '../../features/HandleDownload';
 import { IDBPDatabase, DBSchema } from 'idb';
+import { loadAntimonyString, loadSBMLString, processAntimony } from '../../libAntimony/UseLibAnt';
 
 interface AntimonyEditorProps {
   content: string;
@@ -93,6 +94,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       setEditorInstance(editor);
 
       setSelectedFile(fileName);
+
+      // processAntimony(editor.getValue());
+
+      // loadAntimonyString(editor.getValue());
 
       return () => editor.dispose();
     }
