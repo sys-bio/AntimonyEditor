@@ -1,4 +1,4 @@
-import libantimony from "../libAntimony/libantimony.js";
+import libantimony from "../../libantimony.js/index.js";
 
 // var loadAntimonyString; // libantimony function
 // var loadString;   // 		"
