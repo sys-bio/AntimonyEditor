@@ -95,7 +95,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
       setSelectedFile(fileName);
 
-      // processAntimony(editor.getValue());
+      processAntimony(editor.getValue());
 
       // loadAntimonyString(editor.getValue());
 
