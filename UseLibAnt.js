@@ -20,7 +20,7 @@ window.onload = function() {
 }
 
 // Load library functions (asynchronous call):
-function initLoad() {
+async function initLoad() {
   try {
     libantimony().then((libantimony) => {
       //	Format: libantimony.cwrap( function name, return type, input param array of types).
@@ -55,7 +55,7 @@ function initLoad() {
       jsAllocateUTF8 = (newStr) => libantimony.allocateUTF8(newStr);
     });
 
-    processAntimony(`
+    await processAntimony(`
     // Created by libAntimony v2.8.0
   model *BIOMD0000000003()
   
