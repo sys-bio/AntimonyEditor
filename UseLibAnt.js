@@ -5,7 +5,6 @@ let models = [];
 const maxRec = 15;
 const proxy = " https://api.allorigins.win/raw?url="; // A free and open source javascript AnyOrigin alternative, 
 const biomodelsInfoURL = "/makesbml/buildBiomodelsSearch/biomodelsinfo.json";
-const makeSBMLinfo = "MakeSBML version 1.0.\nCopyright 2023, Bartholomew Jardine and Herbert M. Sauro,\nUniversity of Washington, USA.\nSpecial thanks to University of Washington student Tracy Chan for her assistance with this software.\n\nThis project was funded by NIH/NIGMS (R01GM123032 and P41EB023912).";
 
 var antCode;
 var sbmlCode;
@@ -27,119 +26,9 @@ var freeAll;      //		"
 var jsFree;         // emscripten function
 var jsAllocateUTF8; //  		"
 
-const inputFile = document.getElementById("inputfile")
-
-const saveAntimonyBtn = document.getElementById("saveAntimonyBtn");
-const copyAntimonyBtn = document.getElementById("copyAntimonyBtn");
-const procAntimonyBtn = document.getElementById("procAntimonyBtn");
-const procSBMLBtn = document.getElementById("procSBMLBtn");
-const aboutBtn = document.getElementById("aboutBtn");
-
-//const xmlDownloadButton = document.querySelector("#xml-download-wrapper button")
-const xmlImportButton = document.querySelector("#xml-import-wrapper button")
-const xmlRecList1Loader = document.getElementById("loader-list1");
-const xmlDownloadInput = document.getElementById("xml-id-search-input1");
-const xmlRecList1 = document.getElementById("xml-1-rec");
-
-const saveSBMLBtn = document.getElementById("saveSBMLBtn");
-const copySBMLBtn = document.getElementById("copySBMLBtn");
-
-const rec1Wrapper = document.getElementById("rec1-wrapper");
-
-const antTextArea = document.getElementById("antimonycode");
-const sbmlTextArea = document.getElementById("sbmlcode");
-
 window.onload = function() {
   initLoad();
-  saveAntimonyBtn.addEventListener("click", (_) => saveCode("antimony"));
-  copyAntimonyBtn.addEventListener("click", (_) => copyToClipboard("antimony"));
-  procAntimonyBtn.addEventListener("click", processAntimony);
-  procSBMLBtn.addEventListener("click", processSBML);
-
-	const createRecItem = (id_nameMap, onclickEvent) => {    
-	const itr = id_nameMap.values();
-	const id = itr.next().value;
-	const name = itr.next().value;
-    const maxNameLength = 50;
-    let li = document.createElement("li");
-    let a = document.createElement("a");
-    a.addEventListener("click", onclickEvent);
-    a.innerText = name.slice(0, maxNameLength);
-    if (name.length > maxNameLength) a.innerText += "...";
-    a.innerText += `: ${id}`;
-    li.append(a);
-    return li;
-  };
-
-  xmlDownloadInput.addEventListener("click", (e) => {
-    e.preventDefault();
-    xmlRecList1.style.display = "block";
-    e.stopPropagation();
-  });
-    
-  function delay(fn, ms) { // use to delay event from triggering.
-    let timer = 0
-    return function(...args) {
-     clearTimeout(timer)
-     timer = setTimeout(fn.bind(this, ...args), ms || 0)
-    }
-  }
-
-  async function processkeySearch(e) {
-    const searchText = e.target.value.trim();
-	if (searchText.length < 3) { // 2 chars before start search
-      xmlRecList1.innerHTML = "";
-      return;
-    }
-	log("processkeySearch(): ", e );
-    let recommends = await getModelIdRecommendNew(searchText);
-    const handleSelection = (e) => {
-      e.preventDefault();
-      const text = e.target.innerText;
-      xmlDownloadInput.value = text.split(": ").slice(-1);
-	  document.getElementById("sbmlcode").value = '[SBML code here.]'; // Clear out old model 
-	  handleDownloadModel(); // view biomodel that user selected.
-    };
-
-	if (recommends?.entries()) {
-	   var numb = 0;
-      xmlRecList1.innerHTML = "";
-     // recommends = recommends?.slice(0, maxRec); // grab the first maxRec entries
-      for (const rec of recommends) {
-		  // Chk if id starts with 'BIOMD'
-        xmlRecList1.append(createRecItem(rec, handleSelection)); // rec -> one Map entry (id, name)
-		numb+=1;
-      }
-    }
-
-  };
-
-  // Do not start processing user search until at least 1000 ms has elapsed.
-  // We want to reduce the number of searches and speed up populating result list.
-  xmlDownloadInput.addEventListener("keyup", async (e) => {
-     delay(processkeySearch(e), 1000);});  
- 
-  saveSBMLBtn.addEventListener("click", (_) => saveCode("sbml"));
-  copySBMLBtn.addEventListener("click", (_) => copyToClipboard("sbml"));
-  aboutBtn.addEventListener("click", (_) => showAbout());  
-  
-  document.body.onclick = (e) => {
-    xmlRecList1.style.display = "none";
-  };
-
-  //xmlDownloadButton
-  //  .addEventListener("click", handleDownloadModel);
-
-  inputFile.addEventListener("change", function() {
-    var fr = new FileReader();
-	xmlRecList1Loader.classList.add("showLoader");
-    fr.onload = function() {
-      var modelString = fr.result;
-      processFile(modelString);
-    };
-    fr.readAsText(this.files[0]);
-	
-  });
+  processAntimony();
 };
 
 // Load library functions (asynchronous call):
@@ -183,303 +72,129 @@ function initLoad() {
 }
 
 async function processAntimony() {
-  antCode = document.getElementById("antimonycode").value;
+  antCode = `
+  // Created by libAntimony v2.12.0.3
+  model *BIOMD0000000001()
+  
+    // Compartments and Species:
+    compartment comp1;
+    species BLL in comp1, IL in comp1, AL in comp1, A in comp1, BL in comp1;
+    species B in comp1, DLL in comp1, D in comp1, ILL in comp1, DL in comp1;
+    species I in comp1, ALL in comp1, BwLL;
+  
+    // Reactions:
+    React0: B -> BL; comp1*(kf_0*B - kr_0*BL);
+    React1: BL -> BLL; comp1*(kf_1*BL - kr_1*BLL);
+    React2: BwLL -> ALL; comp1*(kf_2*BLL - kr_2*ALL);
+    React3: A -> AL; comp1*(kf_3*A - kr_3*AL);
+    React4: AL -> ALL; comp1*(kf_4*AL - kr_4*ALL);
+    React5: B -> A; comp1*(kf_5*B - kr_5*A);
+    React6: BL -> AL; comp1*(kf_6*BL - kr_6*AL);
+    React7: I -> IL; comp1*(kf_7*I - kr_7*IL);
+    React8: IL -> ILL; comp1*(kf_8*IL - kr_8*ILL);
+    React9: A -> I; comp1*(kf_9*A - kr_9*I);
+    React10: AL -> IL; comp1*(kf_10*AL - kr_10*IL);
+    React11: ALL -> ILL; comp1*(kf_11*ALL - kr_11*ILL);
+    React12: D -> DL; comp1*(kf_12*D - kr_12*DL);
+    React13: DL -> DLL; comp1*(kf_13*DL - kr_13*DLL);
+    React14: I -> D; comp1*(kf_14*I - kr_14*D);
+    React15: IL -> DL; comp1*(kf_15*IL - kr_15*DL);
+    React16: ILL -> DLL; comp1*(kf_16*ILL - kr_16*DLL);
+  
+    // Events:
+    RemovalACh: at time > t2: kf_13 = 0, kf_8 = 0, kf_4 = 0, kf_1 = 0, kf_12 = 0, kf_7 = 0, kf_3 = 0, kf_0 = 0;
+  
+    // Species initializations:
+    BLL = 0;
+    IL = 0;
+    AL = 0;
+    A = 0;
+    BL = 0;
+    B = 1.66057788110262e-21/comp1;
+    DLL = 0;
+    D = 0;
+    ILL = 0;
+    DL = 0;
+    I = 0;
+    ALL = 0;
+    BwLL = 3;
+  
+    // Compartment initializations:
+    comp1 = 1e-16;
+  
+    // Variable initializations:
+    t2 = 20;
+    kf_0 = 30002;
+    kf_3 = 3000;
+    kf_7 = 3000;
+    kf_12 = 3000;
+    kf_1 = 1500;
+    kf_4 = 1500;
+    kf_8 = 1500;
+    kf_13 = 1500;
+    kr_0 = 8000;
+    kr_1 = 16000;
+    kf_2 = 30000;
+    kr_2 = 700;
+    kr_3 = 8.64;
+    kr_4 = 17.28;
+    kf_5 = 0.54;
+    kr_5 = 10800;
+    kf_6 = 130;
+    kr_6 = 2740;
+    kr_7 = 4;
+    kr_8 = 8;
+    kf_9 = 19.7;
+    kr_9 = 3.74;
+    kf_10 = 19.85;
+    kr_10 = 1.74;
+    kf_11 = 20;
+    kr_11 = 0.81;
+    kr_12 = 4;
+    kr_13 = 8;
+    kf_14 = 0.05;
+    kr_14 = 0.0012;
+    kf_15 = 0.05;
+    kr_15 = 0.0012;
+    kf_16 = 0.05;
+    kr_16 = 0.0012;
+  
+    // Other declarations: 
+    var kf_0, kf_3, kf_7, kf_12, kf_1, kf_4, kf_8, kf_13;
+    const comp1, t2, kr_0, kr_1, kf_2, kr_2, kr_3, kr_4, kf_5, kr_5, kf_6, kr_6;
+    const kr_7, kr_8, kf_9, kr_9, kf_10, kr_10, kf_11, kr_11, kr_12, kr_13;
+    const kf_14, kr_14, kf_15, kr_15, kf_16, kr_16;
+  
+    // Display Names:
+    comp1 is "compartment1";
+    BLL is "BasalACh2";
+    IL is "IntermediateACh";
+    AL is "ActiveACh";
+    A is "Active";
+    BL is "BasalACh";
+    B is "Basal";
+    DLL is "DesensitisedACh2";
+    D is "Desensitised";
+    ILL is "IntermediateACh2";
+    DL is "DesensitisedACh";
+    I is "Intermediate";
+    ALL is "ActiveACh2";
+    RemovalACh is "removal of ACh";
+  
+  
+    BLL identity "http://identifiers.org/chebi/CHEBI:27732"
+  end  
+  `;
   clearPreviousLoads();
   //console.log("*** Antimony code: ",antCode);
   var ptrAntCode = jsAllocateUTF8(antCode);
   var load_int = loadAntimonyString(ptrAntCode);
   if (load_int > 0) {
     sbmlResult = getSBMLString();
-    document.getElementById("sbmlcode").value = sbmlResult;
-    document.getElementById("procSBMLBtn").disabled = false;
-    document.getElementById("copySBMLBtn").disabled = false;
-    document.getElementById("saveSBMLBtn").disabled = false;
+    console.log(sbmlResult);
   } else {
     var errStr = getLastError();
     window.alert(errStr);
   }
   jsFree(ptrAntCode);
 }
-async function processSBML() {
-  sbmlCode = sbmlTextArea.value;
-  clearPreviousLoads();
-  var ptrSBMLCode = jsAllocateUTF8(sbmlCode);
-  var load_int = loadSBMLString(ptrSBMLCode);
-  //console.log("processSBML: int returned: ", load_int);
-  if (load_int > 0) {
-    antResult = getAntimonyString();
-    antTextArea.value = antResult;
-    procAntimonyBtn.disabled = false;
-    copyAntimonyBtn.disabled = false;
-    saveAntimonyBtn.disabled = false;
-  } else {
-    var errStr = getLastError();
-    window.alert(errStr);
-  }
-  jsFree(ptrSBMLCode);
-}
-
-async function processFile(fileStr) {
-  if(fileStr.length > 1000000){
-    alert('Model file is very large and may take a minute or more to process!');
-  }
-  try {
-	clearPreviousLoads;
-    var ptrFileStr = jsAllocateUTF8(fileStr);
-    if (loadAntimonyString(ptrFileStr) > 0) {
-      antTextArea.value = fileStr;
-      procSBMLBtn.disabled = true;
-      sbmlTextArea.value = "[SBML code here.]";
-      await processAntimony();
-	  xmlRecList1Loader.classList.remove("showLoader");// added in inputFile.addEventListener("change" )
-    } else if (loadSBMLString(ptrFileStr) > 0) {
-      sbmlTextArea.value = fileStr;
-      procAntimonyBtn.disabled = true;
-      antTextArea.value = "[Antimony code here.]";
-	  
-      await processSBML();
-	  xmlRecList1Loader.classList.remove("showLoader");// added in inputFile.addEventListener("change" )
-    } else {
-      var errStr = getLastError();
-      window.alert(errStr);
-      clearPreviousLoads();
-    }
-  } catch (err) {
-    console.log("processing file error: :", err);
-    window.alert(err);
-  }
-  jsFree(ptrFileStr);
-}
-function copyToClipboard(copyType) {
-  var copyText;
-  if (copyType == "antimony") {
-    copyText = antTextArea;
-  } else {
-    copyText = sbmlTextArea;
-  }
-
-  // Select the text field
-  copyText.select();
-  copyText.setSelectionRange(0, 99999); // For mobile devices
-  // Copy the text inside the text field
-  navigator.clipboard.writeText(copyText.value);
-}
-
-function saveCode(codeType) {
-  var fileExt;
-  var promptFilename;
-  if (codeType == "antimony") {
-    fileExt = ".txt";
-  } else {
-    fileExt = ".xml";
-  }
-  if ((promptFilename = prompt("Save file as (" + fileExt + ") ", ""))) {
-    var textBlob;
-    if (codeType == "antimony") {
-      textBlob = new Blob([antTextArea.value], {
-        type: "text/plain",
-      });
-    } else
-      textBlob = new Blob([sbmlTextArea.value], {
-        type: "text/plain",
-      });
-    var downloadLink = document.createElement("a");
-	if( promptFilename.includes(fileExt) || promptFilename.includes(".sbml") ) {
-	  downloadLink.download = promptFilename; }
-	else { downloadLink.download = promptFilename + fileExt; }
-   
-    downloadLink.innerHTML = "Download File";
-    downloadLink.href = window.URL.createObjectURL(textBlob);
-    downloadLink.click();
-    
-  }
-}
-function isValidUrl(str) {
-  const pattern = new RegExp(
-    "^([a-zA-Z]+:\\/\\/)?" + // protocol
-    "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
-    "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR IP (v4) address
-    "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
-    "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
-    "(\\#[-a-z\\d_]*)?$", // fragment locator
-    "i"
-  );
-  return pattern.test(str);
-}
-
-function checkIfInString(searchStr, queryAr, resultAr) {
-  for( let i=0; i < queryAr.length; i++) {
-	if(searchStr.toLowerCase().includes(queryAr[i].toLowerCase())) {
-	  resultAr[i] = true; }
-  }	  
-  return resultAr;	
-}
-
-async function getModelList(newQuery, jsonData) {
-  let queries;
-  if(newQuery != null) {
-    queries = newQuery.split(" "); }
-  else { newQuery = ''; queries = ''; }
-  let found = []; // keep track if queries are found.
-  
-  const results = new Map();
-  for (var model in jsonData) {
-	for(let i =0; i < queries.length; i++) {
-	  found[i] = false; }
-    for ( var key in jsonData[model]) {
-     // console.log(key)
-	  if (key == 'name') {
-	   // console.log(jsonData[model][key]);
-		found = checkIfInString(jsonData[model][key], queries, found);
-	  }
-	  else if (key == 'description') {
-		found = checkIfInString(jsonData[model][key], queries, found);
-	  }
-	  else if (key == 'publication') {
-		for (var key2 in jsonData[model][key]) {
-		  if(key2 == 'authors') {
-			for(var author in jsonData[model][key][key2]) {
-			 // console.log(jsonData[model][key][key2][author]['name']);
-			  found = checkIfInString(jsonData[model][key][key2][author]['name'], queries, found);
-			}				
-		  }
-		}			
-	  }
-	}
-	let save = 0;
-	for( let i =0; i < found.length ; i++) {
-	  if(found[i]) { save +=1; }	
-	} 
-	if (save == found.length){ results.set( model, jsonData[model]['name'] );}
-  }
-  return results;
-}
-
-async function getBiomodelsInfo(query) {
-	console.log('In getBiomodelsInfo()');
-	let models;
-	//const apiUrl = '/makesbml/buildBiomodelsSearch/biomodelsinfo.json'
-	await fetch(biomodelsInfoURL)
-     .then((response) => response.json())
-     .then((json) => {
-	//console.log(json);
-	 xmlRecList1Loader.classList.remove("showLoader")
-	 models = getModelList(query, json)
-	  });	
-	return models;
-}
-
-async function importXml(modelId, fileName) {
-  clearPreviousLoads;
-  const apiUrl = `https://www.ebi.ac.uk/biomodels/model/download/${modelId}?filename=${fileName}`;
-// Ex: https://www.ebi.ac.uk/biomodels/model/download/BIOMD0000000444?filename=BIOMD0000000444_url.xml
-  if (isValidUrl(apiUrl)) {
-	  xmlRecList1Loader.classList.add("showLoader")
-    await fetch(proxy + apiUrl)
-      .then((response) => response.text())
-      .then((data) => {
-        // console.log(data.description);
-        sbmlTextArea.value = data;
-		processSBML(); // generate antimony version
-		xmlRecList1Loader.classList.remove("showLoader")
-      })
-      .catch((err) => console.error(err));
-  } else {
-    alert("Invalid Model ID");
-  }
-  
-}
-
-async function processJSONModelInfo(modelId,modelInfoJSON) { 
- try {
-  const mainFilesList = modelInfoJSON.main 
-  var curList = '';
-  if( mainFilesList.length >0 ) {
-    let modelInfo = mainFilesList[0];
-	const modelFileName = modelInfo.name;
-    importXml(modelId, modelFileName); 
-  }
-  else { window.alert('No sbml model found'); }
- }
- catch (err) {
- console.log('processing file error: :', err);
- window.alert(err);
- }
- 
-}
-
-async function downloadXml(modelId) {
-  const apiUrl = `https://www.ebi.ac.uk/biomodels/model/files/${modelId}?format=json`;
-  const modelFileName = modelId + '_url.xml';
-  importXml(modelId, modelFileName)
-}
-
-async function processUserQuery(queryStr) {
-  let query = queryStr.split(/(\s)/).filter((x) => x.trim().length>0);
-  //log('Query: ',query, query.length)
-  let searchQuery = '';
-  for(let i = 0; i < query.length; i++) {
-	if(i == query.length - 1) {
-	  searchQuery += query[i];}
-    else {
-	  searchQuery += query[i] +'%20';}	
-  }
-  //log(' --> search: ',searchQuery);
-  return searchQuery;	
-}
-
-async function getModelIdRecommendNew(query) {
-  const biomodelsQuery = await processUserQuery(query); 
-  const format = "json";
-  xmlRecList1Loader.classList.add("showLoader")
- 
-  return getBiomodelsInfo(query);
-}
-
-/*
-async function getModelIdRecommend(query) {
-  const biomodelsQuery = await processUserQuery(query); 
-  const format = "json";
-  xmlRecList1Loader.classList.add("showLoader")
-  const apiUrl = `https://www.ebi.ac.uk/biomodels/search?query=${biomodelsQuery}%20BIOMD%2A%26numResults=${maxRec}%26format=${format}`;
- // Only want model numbers starting with BIOMD: https://www.ebi.ac.uk/biomodels/search?query=sodium%20BIOMD%2A%26numResults=15%26format=json 
- // Should be something like this:`https://www.ebi.ac.uk/biomodels/search?query=${biomodelsQuery}%26curationstatus%3A%22Manually%20curated%22%26domain=biomodels%26numResults=${maxRec}%26format=${format}`
- 
-  let models;
-  if (isValidUrl(apiUrl)) {
-    //log("fetching...", apiUrl)
-    await fetch(proxy + apiUrl)
-      .then((response) => {
-        //log("request 1 complete")
-        return response.json()
-      })
-      .then((data) => {
-        // log("request 2 complete")
-		xmlRecList1Loader.classList.remove("showLoader")
-        (models = data.models)
-      })
-      .catch(err => {
-		  //log('Nothing returned from query');
-        if (err instanceof TypeError) return []
-      });
-  } else {
-    alert("Invalid url");
-  }
-  return models?.map(({ id, name }) => ({
-    id,
-    name,
-  }));
-}
-*/
-async function handleDownloadModel() {
-  if (xmlDownloadInput.value.trim().length > 1) {
-	  xmlRecList1Loader.classList.add("showLoader")
-	await downloadXml(xmlDownloadInput.value.trim());
-  }
-}
-
-async function showAbout() {
-	
-	window.alert(makeSBMLinfo);
-}
-
