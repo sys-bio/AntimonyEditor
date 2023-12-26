@@ -28,7 +28,6 @@ var jsAllocateUTF8; //  		"
 
 window.onload = function() {
   initLoad();
-  processAntimony();
 };
 
 // Load library functions (asynchronous call):
@@ -198,3 +197,5 @@ async function processAntimony() {
   }
   jsFree(ptrAntCode);
 }
+
+await processAntimony();
