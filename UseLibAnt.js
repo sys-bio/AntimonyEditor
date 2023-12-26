@@ -185,7 +185,7 @@ async function processAntimony() {
     BLL identity "http://identifiers.org/chebi/CHEBI:27732"
   end  
   `;
-  clearPreviousLoads();
+  // clearPreviousLoads();
   //console.log("*** Antimony code: ",antCode);
   var ptrAntCode = jsAllocateUTF8(antCode);
   var load_int = loadAntimonyString(ptrAntCode);
