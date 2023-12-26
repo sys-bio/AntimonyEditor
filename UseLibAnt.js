@@ -15,8 +15,8 @@ var freeAll;      //		"
 var jsFree;         // emscripten function
 var jsAllocateUTF8; //
 
-window.onload = async function() {
-  await initLoad();
+window.onload = function() {
+  initLoad();
   processAntimony(`
   // Created by libAntimony v2.8.0
 model *BIOMD0000000003()
@@ -129,7 +129,7 @@ function initLoad() {
   }
 }
 
-async function processAntimony(antCode) {
+function processAntimony(antCode) {
   var ptrAntCode = jsAllocateUTF8(antCode);
   console.log("ptrAntCode: ", ptrAntCode)
   var load_int = loadAntimonyString(ptrAntCode);
