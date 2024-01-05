@@ -15,9 +15,8 @@ export var freeAll;      //		"
 export var jsFree;         // emscripten function
 export var jsAllocateUTF8; //
 
-window.onload = async function() {
-  await initLoad();
-  processAntimony(`
+await initLoad();
+processAntimony(`
   // Created by libAntimony v2.8.0
 model *BIOMD0000000003()
 
@@ -87,7 +86,6 @@ model *BIOMD0000000003()
   reaction7 is "deactivation of cyclin protease";
 end
   `);
-}
 
 // Load library functions (asynchronous call):
 function initLoad() {
