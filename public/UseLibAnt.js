@@ -1,23 +1,22 @@
 var sbmlResult = "None";
 
-export var loadAntimonyString; // libantimony function
-export var loadString;   // 		"
-export var loadSBMLString; //		"
-export var getSBMLString; //		"
-export var getAntimonyString; //	"
-export var getCompSBMLString; //	"
-export var clearPreviousLoads; //	"
-export var getLastError; //		"
-export var getWarnings;  //		"
-export var getSBMLInfoMessages; //	"
-export var getSBMLWarnings; //		"
-export var freeAll;      //		"
-export var jsFree;         // emscripten function
-export var jsAllocateUTF8; //
+var loadAntimonyString; // libantimony function
+var loadString;   // 		"
+var loadSBMLString; //		"
+var getSBMLString; //		"
+var getAntimonyString; //	"
+var getCompSBMLString; //	"
+var clearPreviousLoads; //	"
+var getLastError; //		"
+var getWarnings;  //		"
+var getSBMLInfoMessages; //	"
+var getSBMLWarnings; //		"
+var freeAll;      //		"
+var jsFree;         // emscripten function
+var jsAllocateUTF8; //
 
-window.onload = async function() {
-  await initLoad();
-  processAntimony(`
+await initLoad();
+processAntimony(`
   // Created by libAntimony v2.8.0
 model *BIOMD0000000003()
 
@@ -87,7 +86,6 @@ model *BIOMD0000000003()
   reaction7 is "deactivation of cyclin protease";
 end
   `);
-}
 
 // Load library functions (asynchronous call):
 function initLoad() {
@@ -129,7 +127,7 @@ function initLoad() {
   }
 }
 
-export async function processAntimony(antCode) {
+async function processAntimony(antCode) {
   var ptrAntCode = jsAllocateUTF8(antCode);
   console.log("ptrAntCode: ", ptrAntCode)
   var load_int = loadAntimonyString(ptrAntCode);
