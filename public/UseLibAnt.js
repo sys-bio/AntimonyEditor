@@ -1,4 +1,4 @@
-const libantimony = require('./libantimony.js');
+// libantimony = require('./libantimony.js');
 
 var sbmlResult = "None";
 
@@ -17,8 +17,27 @@ var freeAll;      //		"
 var jsFree;         // emscripten function
 var jsAllocateUTF8; //
 
-initLoad();
-processAntimony(`
+// Load library functions (asynchronous call):
+
+try {
+  libantimony().then((libantimony) => {
+    //	Format: libantimony.cwrap( function name, return type, input param array of types).
+    loadString = libantimony.cwrap('loadString', 'number', ['string']);
+    loadAntimonyString = libantimony.cwrap('loadAntimonyString', 'number', ['string']);
+    loadSBMLString = libantimony.cwrap('loadSBMLString', 'number', ['string']);
+    getSBMLString = libantimony.cwrap('getSBMLString', 'string', ['null']);
+    getAntimonyString = libantimony.cwrap('getAntimonyString', 'string', ['null']);
+    getCompSBMLString = libantimony.cwrap('getCompSBMLString', 'string', ['string']); 
+    clearPreviousLoads = libantimony.cwrap('clearPreviousLoads', 'null', ['null']);
+    getLastError = libantimony.cwrap('getLastError', 'string', ['null']);
+    getWarnings = libantimony.cwrap('getWarnings', 'string', ['null']);
+    getSBMLInfoMessages = libantimony.cwrap('getSBMLInfoMessages', 'string', ['string']);
+    getSBMLWarnings = libantimony.cwrap('getSBMLWarnings', 'string', ['string']);
+    freeAll = libantimony.cwrap('freeAll', 'null', ['null']);
+    jsAllocateUTF8 = (newStr) => libantimony.allocateUTF8(newStr);
+    jsUTF8ToString = (strPtr) => libantimony.UTF8ToString(strPtr);
+    jsFree = (strPtr) => libantimony._free(strPtr);
+    processAntimony(`
   // Created by libAntimony v2.8.0
 model *BIOMD0000000003()
 
@@ -88,34 +107,13 @@ model *BIOMD0000000003()
   reaction7 is "deactivation of cyclin protease";
 end
   `);
-
-// Load library functions (asynchronous call):
-function initLoad() {
-  try {
-    libantimony().then((libantimony) => {
-      //	Format: libantimony.cwrap( function name, return type, input param array of types).
-      loadString = libantimony.cwrap('loadString', 'number', ['string']);
-      loadAntimonyString = libantimony.cwrap('loadAntimonyString', 'number', ['string']);
-      loadSBMLString = libantimony.cwrap('loadSBMLString', 'number', ['string']);
-      getSBMLString = libantimony.cwrap('getSBMLString', 'string', ['null']);
-      getAntimonyString = libantimony.cwrap('getAntimonyString', 'string', ['null']);
-      getCompSBMLString = libantimony.cwrap('getCompSBMLString', 'string', ['string']); 
-      clearPreviousLoads = libantimony.cwrap('clearPreviousLoads', 'null', ['null']);
-      getLastError = libantimony.cwrap('getLastError', 'string', ['null']);
-      getWarnings = libantimony.cwrap('getWarnings', 'string', ['null']);
-      getSBMLInfoMessages = libantimony.cwrap('getSBMLInfoMessages', 'string', ['string']);
-      getSBMLWarnings = libantimony.cwrap('getSBMLWarnings', 'string', ['string']);
-      freeAll = libantimony.cwrap('freeAll', 'null', ['null']);
-      jsAllocateUTF8 = (newStr) => libantimony.allocateUTF8(newStr);
-      jsUTF8ToString = (strPtr) => libantimony.UTF8ToString(strPtr);
-      jsFree = (strPtr) => libantimony._free(strPtr);
-    });
-  } catch (err) {
-    console.log("Load libantimony error: ", err);
-  }
+  });
+} catch (err) {
+  console.log("Load libantimony error: ", err);
 }
 
-async function processAntimony(antCode) {
+
+function processAntimony(antCode) {
   var ptrAntCode = jsAllocateUTF8(antCode);
   console.log("ptrAntCode: ", ptrAntCode)
   var load_int = loadAntimonyString(antCode);
@@ -129,3 +127,4 @@ async function processAntimony(antCode) {
   }
   jsFree(ptrAntCode);
 }
+

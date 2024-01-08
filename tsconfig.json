@@ -22,5 +22,5 @@
   },
   "include": [
     "src"
-, "public/libantimony.js", "public/UseLibAnt.js"  ]
+, "public/libantimony.js", "public/UseLibAnt.js", "src/testing/TestLibAntimony.js"  ]
 }
