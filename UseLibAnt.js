@@ -15,7 +15,7 @@ var freeAll;      //		"
 var jsFree;         // emscripten function
 var jsAllocateUTF8; //
 
-await initLoad();
+initLoad();
 processAntimony(`
   // Created by libAntimony v2.8.0
 model *BIOMD0000000003()
