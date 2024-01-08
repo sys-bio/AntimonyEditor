@@ -37,11 +37,7 @@ try {
     jsAllocateUTF8 = (newStr) => libantimony.allocateUTF8(newStr);
     jsUTF8ToString = (strPtr) => libantimony.UTF8ToString(strPtr);
     jsFree = (strPtr) => libantimony._free(strPtr);
-  });
-} catch (err) {
-  console.log("Load libantimony error: ", err);
-}
-processAntimony(`
+    processAntimony(`
   // Created by libAntimony v2.8.0
 model *BIOMD0000000003()
 
@@ -111,6 +107,11 @@ model *BIOMD0000000003()
   reaction7 is "deactivation of cyclin protease";
 end
   `);
+  });
+} catch (err) {
+  console.log("Load libantimony error: ", err);
+}
+
 
 function processAntimony(antCode) {
   var ptrAntCode = jsAllocateUTF8(antCode);
