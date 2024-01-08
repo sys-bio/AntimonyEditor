@@ -1,4 +1,4 @@
-const libantimony = require('./libantimony.js');
+libantimony = require('./libantimony.js');
 
 var sbmlResult = "None";
 
