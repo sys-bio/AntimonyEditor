@@ -106,7 +106,7 @@ model *BIOMD0000000003()
   reaction6 is "activation of cyclin protease";
   reaction7 is "deactivation of cyclin protease";
 end
-  `);
+    `);
   });
 } catch (err) {
   console.log("Load libantimony error: ", err);
