@@ -1,10 +1,15 @@
 import * as monaco from 'monaco-editor';
-import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, RecognitionException, Recognizer } from 'antlr4ts';
+import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, ParserRuleContext, RecognitionException, Recognizer } from 'antlr4ts';
 import { AntimonyGrammarLexer } from './antlr/AntimonyGrammarLexer';
-import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, DeclarationContext, EventContext, Is_assignmentContext, NamemaybeinContext, ReactionContext, SpeciesContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
+import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Is_assignmentContext, NamemaybeinContext, ReactionContext, SpeciesContext, Species_listContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
 import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
+import { AbstractParseTreeVisitor, ParseTree, TerminalNode } from 'antlr4ts/tree'
+import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
+import { SymbolTable, GlobalST, FuncST, ModelST, STVariableInfo, SrcPosition, SrcRange} from './SymbolTableClasses';
+import { Context } from 'vm';
+import { start } from 'repl';
 
 class VariableInfo {
   label?: string;
@@ -232,7 +237,305 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       }
     };
   }
-  console.log(variables)
+  console.log(variables);
+  // printing the tree for debugging purposes
+  console.log(tree);
+
+  type scope = "model" | "mmodel" | "function";
+  type nameAndScope = {name: string, scope: scope};
+  type ErrorUnderline = {
+    startLineNumber: number,
+    startColumn: number,
+    endLineNumber: number,
+    endColumn: number,
+    message: string,
+    severity: monaco.MarkerSeverity.Warning | monaco.MarkerSeverity.Error
+  }
+
+  class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implements AntimonyGrammarVisitor<void> {
+    public globalST: GlobalST;
+    private errorList: ErrorUnderline[];
+    
+
+    // these keep track of scoping when traversing so we know to which ST to add
+    // a variable: 
+    private currNameAndScope: nameAndScope | undefined;
+
+    constructor(globalST: GlobalST) {
+      super();
+      this.globalST = globalST;
+      this.currNameAndScope = undefined;
+      this.errorList = [];
+    }
+
+    protected defaultResult(): void {
+    }
+
+    public getErrors(): ErrorUnderline[] {
+      return this.errorList;
+    }
+
+    private getVarInfo(ctx: ParserRuleContext): STVariableInfo {
+      let varInfo: STVariableInfo =  {
+        type: '',
+        initialized: false,
+        compartments: '',
+        srcRange: this.getSrcRange(ctx)
+      }
+      return varInfo;
+    }
+
+    private getSrcRange(ctx: ParseTree): SrcRange {
+      if (ctx instanceof ParserRuleContext) {
+        let startLine: number = ctx._start.line;
+        let startColumn: number = ctx._start.charPositionInLine;
+        let stopLine: number = -1;
+        let stopColumn: number = -1;
+
+        if (ctx._stop) {
+          stopLine = ctx._stop.line;
+          stopColumn = ctx._stop.charPositionInLine;
+        } else {
+          stopLine = startLine;
+          stopColumn = startColumn;
+        }
+
+        if (stopLine === startLine && stopColumn === startColumn) {
+          stopColumn += ctx.text.length;
+        }
+
+        let srcRange: SrcRange = {
+          start: {
+            line: startLine,
+            column: startColumn
+          },
+          stop: {
+            line: stopLine,
+            column: stopColumn
+          }
+        }
+        return srcRange;
+      } else if (ctx instanceof TerminalNode) {
+        let srcRange: SrcRange = {
+          start: {
+            line: ctx._symbol.line,
+            column: ctx._symbol.charPositionInLine + 1
+          },
+          stop: {
+            line: ctx._symbol.line,
+            column: ctx._symbol.charPositionInLine + ctx.text.length + 1
+          }
+        }
+        return srcRange;
+      } else {
+        let srcRange: SrcRange = {
+          start: {
+            line: 0,
+            column: 0
+          },
+          stop: {
+            line: 0,
+            column: 0
+          }
+        }
+        return srcRange;
+      }
+    }
+
+    private getErrorUnderline(idSrcRange: SrcRange, message: string, isError: boolean): ErrorUnderline {
+      let prefix: string = "Error!";
+      if (!isError) {
+        prefix = "Warning!";
+      }
+      let errorUnderline: ErrorUnderline = {
+        startLineNumber:  idSrcRange.start.line,
+        startColumn:  idSrcRange.start.column,
+        endLineNumber:  idSrcRange.stop.line,
+        endColumn:  idSrcRange.stop.column,
+        message: prefix + ' ' + message,
+        severity: monaco.MarkerSeverity.Error
+      }
+      return errorUnderline;
+    }
+    
+    visitFunction(ctx: FunctionContext) {
+      if (ctx.children) {
+        const funcName: string = ctx.children[1].text;
+        const funcIDSrcRange: SrcRange = this.getSrcRange(ctx.children[1]);
+
+        const funcST: FuncST | undefined = this.globalST.getFunctionST(funcName);
+        if (!funcST){
+          // func has not been declared yet
+          this.globalST.setFunction(funcName, funcIDSrcRange)
+        } else {
+          // redeclared function, error
+          const errorMessage: string = 'function \'' + funcName+ '\' already defined on line ' + 
+                                        funcST.getPosition().start.line + ':' + 
+                                        funcST.getPosition().start.column;
+          let errorUnderline: ErrorUnderline = this.getErrorUnderline(funcIDSrcRange, errorMessage, true);
+          this.errorList.push(errorUnderline);
+        }
+
+
+        // this can be a private function
+        this.currNameAndScope = {name: funcName, scope: "function"};
+        for (let i = 0; i < ctx.children.length; i++) {
+          this.visit(ctx.children[i]);
+        }
+        this.currNameAndScope = undefined;
+      }
+    }
+
+    visitModel(ctx: ModelContext) {
+      if (ctx.children) {
+        let idIndex = 1;
+        let modName: string = ctx.children[idIndex].text;
+        if (modName === '*') {
+          idIndex = 2;
+          modName = ctx.children[idIndex].text;
+        }
+        const modelIDsrcRange: SrcRange = this.getSrcRange(ctx.children[idIndex]);
+
+        const modelST: ModelST | undefined = this.globalST.getModelST(modName);
+        if (!modelST){
+          // func has not been declared yet
+          this.globalST.setModel(modName,  modelIDsrcRange)
+        } else {
+          // redeclared function, error
+          // should make a function to return errorUnderlines.
+          const errorMessage = 'model \'' + modName+ '\' already defined on line ' + 
+                                modelST.getPosition().start.line + ':' +
+                                modelST.getPosition().start.column
+          let errorUnderline: ErrorUnderline = this.getErrorUnderline(modelIDsrcRange, errorMessage, true);
+          this.errorList.push(errorUnderline);
+        }
+        this.currNameAndScope = {name: modName, scope: "model"};
+        for (let i = 0; i < ctx.children.length; i++) {
+          this.visit(ctx.children[i]);
+        }
+        this.currNameAndScope = undefined;
+      }
+    }
+
+    visitSpecies(ctx: SpeciesContext) {
+      let varInfo: STVariableInfo = this.getVarInfo(ctx);
+      varInfo.type = "species";
+      varInfo.initialized = false;
+
+      let speciesName: string = ctx.text;
+      if (this.currNameAndScope) {
+
+        const scopeType: scope = this.currNameAndScope.scope;
+        const name: string = this.currNameAndScope.name;
+
+        if (scopeType === "function") {
+          // actually this will never appear in a function
+          this.globalST.getFunctionST(name)?.setVar(speciesName, varInfo);
+        } else if (scopeType === "model") {
+          this.globalST.getModelST(name)?.setVar(speciesName, varInfo);
+        } else {
+
+        }
+      } else {
+        this.globalST.setVar(speciesName, varInfo);
+      }
+    }
+
+    visitDeclaration(ctx: DeclarationContext) {
+      console.log("declaration " + ctx.text);
+    }
+
+    visitAssignment(ctx: AssignmentContext) {
+      if (ctx.children) {
+        for (let i = 0; i < ctx.children.length; i++) {
+          this.visit(ctx.children[i]);
+        }
+      }
+    }
+
+    visitNamemaybein(ctx: NamemaybeinContext) {
+      // ID case 1
+      // here if ID already exists in ST than no more to be done, 
+      // if ID does not exist than it is added as a variable type.
+      
+      // ID in ID2 case 2
+      // here if ID2 does not exist, assume it is a compartment
+      // if ID2 does exist, it must be of type compartment.
+
+      const id1: string = ctx.var_name().text;
+      const in_compCtx: In_compContext | undefined = ctx.in_comp();
+
+      // case 1, we will always deal with ID
+      let currST: SymbolTable | undefined;
+      
+      // get the ST to add var to.
+      // this can probably be a private function
+      if (this.currNameAndScope?.scope === "model") {
+        // make sure that this the symbol table this var is in exists
+        currST = this.globalST.getModelST(this.currNameAndScope?.name);
+      } else  if (this.currNameAndScope?.scope === "mmodel")  {
+        // TODO: take care of mmodels
+      } else {
+        // this.currNameAndScope is undefined, outermost scope
+        currST = this.globalST;
+      } 
+
+      if (!currST) {
+
+      } else {
+        // create a STvarInfo
+        // we initialize as a variable before further info is known.
+        let id1VarInfo: STVariableInfo = {
+          type: 'variable',
+          initialized: false,
+          compartments: '',
+          srcRange: this.getSrcRange(ctx.var_name())
+        }
+
+        // take care of adding var to ST if needed.
+        // check for case 2
+        if (in_compCtx) {
+          const id2: string = in_compCtx.text;
+          // check if the comparment is already defined.
+          let id2VarInfo: STVariableInfo | undefined = currST.getVar(id2)
+          if (id2VarInfo) {
+            // exists, check if it is a compartment
+            if (id2VarInfo.type === "compartment") {
+              // modify id1VarInfo
+              id1VarInfo.compartments = id2;
+            } else {
+              // error, trying to say some value is in a noncompartment type
+              const errorMessage: string = "replace with compartment error message"; // TODO figure out a good error message here
+              let errorUnderline = this.getErrorUnderline(this.getSrcRange(in_compCtx), errorMessage, true);
+              this.errorList.push(errorUnderline);
+            }
+          } else {
+            // does not exist in ST yet, add as uninitialized compartment (default value).
+          }
+        }
+
+        // case 1
+        // ST exists, check if var is already recorded.
+        // if not, then add var to ST as a variable
+        if (!currST.getVar(id1)) {
+          // set the var in the ST
+          currST.setVar(id1, id1VarInfo);
+        }
+      }
+    }
+  }
+
+
+  // create and buildup a global symbol table from the parse tree.
+  let globalSymbolTable: GlobalST = new GlobalST();
+  const stVisitor: SymbolTableVisitor = new SymbolTableVisitor(globalSymbolTable);
+  stVisitor.visit(tree);
+  console.log(stVisitor.globalST);
+  //this is how to add error squiglies 
+  let model: monaco.editor.ITextModel | null = editor.getModel();
+  if (model !== null) {
+    monaco.editor.setModelMarkers(model, "owner", stVisitor.getErrors());
+  }
 
   // Create the listener
   const listener: AntimonyGrammarListener = new AntimonySyntax();
@@ -268,6 +571,7 @@ function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
         if (errors.length > 0) {
           errors.forEach((error) => {
             valueOfHover += `Error: ${error} <br/>`; // Include error message in valueOfHover
+            console.log(error);
           });
         }
         if (variables.has(word.word)) {
