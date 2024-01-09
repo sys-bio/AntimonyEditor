@@ -68,8 +68,125 @@ function runAntimonyCheck() {
 function runTests() {
   var pass = 0; //Keep track of number of tests that pass
   var fail = 0;
-  var antResult = "nothing";  
-	testCase = "Test 1: Testing processAntimony()"
+  var antResult = "nothing";
+  var testCase = "Test 1: loadString(ant model)";
+  var intResult = loadString(antString); // TEST loadString(ant model)
+  if(intResult < 0) {
+    console.log(testCase ,': ** Failed ->', getLastError());
+	fail++;
+  }
+  else {
+    antResult = getAntimonyString();
+    sbmlResult = getSBMLString();
+	if( antResult.includes('_J0: S1 -> S2; k1*S;') && sbmlResult.includes('species id="S1" compartment="default_compartment" initialConcentration="550"') ) {
+	  console.log(testCase ,': Pass');
+	  pass++;
+	} else {
+	  console.log(testCase ,': ** Failed -> getAntimonyString() or getSBMLString() returned incorrect string');
+	  fail++;
+	}
+	//console.log('Returned Antimony: ', antResult);
+    //console.log('Returned SBML' ,sbmlResult);
+  }
+  
+  testCase = "Test 2: loadString(SBML model)";
+  clearPreviousLoads();
+  intResult = 0;
+  intResult = loadString(sbmlResult);
+  if(intResult < 0) {
+    console.log(testCase ,': ** Failed ->', getLastError());
+	fail++;
+  }
+  else {
+    antResult = 'nothing';
+    antResult = getAntimonyString();
+	if( antResult.includes('_J0: S1 -> S2; k1*S;') ) {
+	  console.log(testCase ,': Pass');
+	  pass++;
+	} else {
+	  console.log(testCase ,': ** Failed -> getAntimonyString() returned incorrect string');
+	  fail++;
+	}
+  }
+  
+  testCase = "Test 3: loadAntimonyString()"; 
+  clearPreviousLoads();  
+  sbmlResult = 'none';
+  intResult = 0;
+  intResult = loadAntimonyString(antString);
+  if(intResult < 0) {
+    console.log(testCase ,': ** Failed ->', getLastError());
+	fail++;
+  }
+  else {
+    sbmlResult = getSBMLString();
+	if( sbmlResult.includes('species id="S1" compartment="default_compartment" initialConcentration="550"') && intResult == 1 ) {
+    console.log(testCase ,': Pass');
+	pass++;
+	} else {
+	  console.log(testCase ,': ** Failed -> Returned SBML model is different');
+	  fail++;
+	}
+  }
+  
+  testCase = "Test 4: loadSBMLString()";
+  clearPreviousLoads();	
+  intResult = 0;
+  intResult = loadSBMLString(sbmlResult);
+  if(intResult < 0) {
+    console.log(testCase ,': ** Failed ->', getLastError());
+	fail++;
+  }
+  else {
+    antResult = "nothing";
+    antResult = getAntimonyString();
+	if(antResult.includes('species S1, S2;') && intResult == 1 ) {
+	  console.log(testCase ,': Pass');
+	  pass++;
+	} else {
+	  console.log(testCase ,': ** Failed -> Returned Antimony model is different');
+	  fail++;
+	}
+  }
+  
+  testCase = "Test 5: getLastError()";
+  clearPreviousLoads();	
+  var errSBMLStr = sbmlResult.replace('id="S1"', 'id="S5"');
+  intResult = 0;
+  intResult = loadSBMLString(errSBMLStr);
+  if( intResult != -1) {
+    console.log(testCase ,': ** Failed -> Load bad SBML returned int != -1');
+	fail++;
+  } else {
+    const lastErr = getLastError();
+    const sbmlInfo = getSBMLInfoMessages();
+    const sbmlWarn = getSBMLWarnings('example1'); //model id = 'example1'
+	if( lastErr.includes("line 19: (21111 [Error]) The value of a <speciesReference> 'species' attribute must be the identifier of an existing <species> in the model.") ) {
+	  console.log(testCase ,': Pass');
+	  pass++;
+	} else {
+	  console.log(testCase ,': ** Failed -> Wrong error msg returned.');
+	  fail++;
+	}
+    //console.log('getLastError(): ', lastErr); // Expected
+    //console.log('getSBMLInfoMessages(): ', sbmlInfo);// none expected
+    //console.log('getSBMLWarnings(): ', sbmlWarn); // none expected, 
+    }
+
+  // **************************************	
+  testCase = "Test 6: getCompSBMLString()";
+  const antComposite = "model feedback(); J0: $X0 -> S1; (VM1 * (X0 - S1/Keq1))/(1 + X0 + S1 + S4^h); J1: S1 -> S2; (10 * S1 - 2 * S2) / (1 + S1 + S2); S1 = 0; S2 = 0; S4 = 0; X0 = 10; X1 = 0; Keq1 = 10; VM1 = 10;  h = 10; end; model myModelTwo(); J0: S1 -> S2; (5 * S1 - S2) / (1 + S2); S1 = 5; S2 = 0; end; model compA(); A: feedback(); B: myModelTwo(); A.S1 = 2; JcompA: A.S1 + B.S1 -> B.S2; kcomp*(A.S1 + B.S1); kcomp = 1;end;"
+  
+  clearPreviousLoads();  
+  sbmlResult = 'none';
+  intResult = 0;
+  intResult = loadAntimonyString(antComposite);
+  if(intResult < 0) {
+    console.log(testCase ,': ** Failed ->', getLastError());
+	fail++;
+  }
+
+	testCase = "Test 7: Testing processAntimony()"
   let newSbmlResult = processAntimony(`model example1; S1 -> S2; k1*S ; S1 = 550; S2 = 0;  k1 = 0.1; end`);
   console.log(newSbmlResult)
   if (sbmlResult < 0) {
