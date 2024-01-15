@@ -7,6 +7,7 @@ import './AntimonyEditor.css';
 import { getBiomodels, getModel, searchModels } from '../../features/BrowseBiomodels';
 import Loader from '../Loader';
 import ModelParser from '../../languages/ModelParser';
+import ModelSemanticsChecker from '../../languages/ModelSemanticChecker';
 import handleDownload from '../../features/HandleDownload';
 import { IDBPDatabase, DBSchema } from 'idb';
 
@@ -38,6 +39,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     clearTimeout(typingTimer);
     typingTimer = setTimeout(() => {
       ModelParser(editor, true);
+      ModelSemanticsChecker(editor, true);
     }, 300);
   };
 
@@ -80,6 +82,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
       // Set the hover provider
       ModelParser(editor, false);
+      ModelSemanticsChecker(editor, false);
 
       setOriginalContent(editor.getValue());
 

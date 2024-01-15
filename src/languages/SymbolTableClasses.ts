@@ -1,12 +1,3 @@
-import * as monaco from 'monaco-editor';
-import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, RecognitionException, Recognizer } from 'antlr4ts';
-import { AntimonyGrammarLexer } from './antlr/AntimonyGrammarLexer';
-import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, DeclarationContext, EventContext, Is_assignmentContext, Modular_modelContext, NamemaybeinContext, ReactionContext, SpeciesContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
-import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
-import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
-import { ModelContext } from './antlr/AntimonyGrammarParser'
-import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
-import { ModuleResolutionCache, isMappedTypeNode } from 'typescript';
 
 // this is a record type wow!
 // should probably make this the return of a function 
@@ -45,7 +36,7 @@ export class SymbolTable {
     // a map from variable name to a list of positions 
     // this variable is found to be declared.
     // this takes care of variable reassignment during ST buildup
-    private varMap: Map<string, STVariableInfo[]>;
+    private varMap: Map<string, STVariableInfo>;
 
     constructor() {
         this.varMap = new Map();
@@ -57,10 +48,11 @@ export class SymbolTable {
      * @param varInfo a STVariableInfo that contains information about the variable
      */
     setVar(varName: string, varInfo: STVariableInfo): void {
-        if (!this.varMap.has(varName)) {
-            this.varMap.set(varName, []);
-        }
-        this.varMap.get(varName)?.push(varInfo);
+        // if (!this.varMap.has(varName)) {
+        //     this.varMap.set(varName);
+        // }
+        // this.varMap.get(varName)?.push(varInfo);
+        this.varMap.set(varName, varInfo);
     }
 
     /**
@@ -70,11 +62,12 @@ export class SymbolTable {
      */
     getVar(varName: string) {
         let varInfo = this.varMap.get(varName);
-        if (varInfo) {
-            return varInfo[varInfo.length - 1];
-        } else {
-            return undefined;
-        }
+        return varInfo;
+        // if (varInfo) { 
+        //     return varInfo[varInfo.length - 1];
+        // } else {
+        //     return undefined;
+        // }
     }
 }
 
