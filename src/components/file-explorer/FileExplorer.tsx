@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './FileExplorer.css'
 
 interface FileExplorerProps {
@@ -7,7 +7,9 @@ interface FileExplorerProps {
 }
 
 const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
-  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
+  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
+    Number(window.localStorage.getItem('current_file_index') || null)
+  );
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   const handleFileButtonClick = (index: number, fileName: string) => {
@@ -15,6 +17,22 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
     setSelectedFileName(fileName)
     onFileClick(files[index].content, fileName);
   };
+
+  useEffect(() => {
+    const fileIndex = window.localStorage.getItem('current_file_index');
+    if (fileIndex !== null) {
+      const index = Number(fileIndex);
+      if (!isNaN(index) && index >= 0 && index < files.length) {
+        setSelectedFileIndex(index);
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (selectedFileIndex !== null) {
+      window.localStorage.setItem('current_file_index', String(selectedFileIndex));
+    }
+  }, [selectedFileIndex])
 
   return (
     <div className="file-explorer">

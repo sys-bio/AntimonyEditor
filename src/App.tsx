@@ -16,9 +16,14 @@ interface MyDB extends DBSchema {
 
 const App: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; content: string }[]>([]);
-  const [selectedFileContent, setSelectedFileContent] = useState<string>('// Enter Antimony Model Here');
+  const [selectedFileContent, setSelectedFileContent] = useState<string>(
+    window.localStorage.getItem('current_file') || '// Enter Antimony Model Here'
+  );
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [db, setDb] = useState<IDBPDatabase<MyDB> | null>();
+  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
+    Number(window.localStorage.getItem('current_file_index') || null)
+  );
 
   useEffect(() => {
     openDB<MyDB>('antimony_editor_db', 1, {
@@ -59,6 +64,23 @@ const App: React.FC = () => {
       db.put('files', { name: fileName, content: fileContent });
     }
   };
+
+  useEffect(() => {
+    openDB<MyDB>('antimony_editor_db', 1, {
+      upgrade(db) {
+      },
+    }).then(database => {
+      setDb(database);
+      database.getAll('files').then(files => {
+        setUploadedFiles(files);
+        // Set the selected file content based on the stored index
+        if (selectedFileIndex !== null && files[selectedFileIndex]) {
+          setSelectedFileContent(files[selectedFileIndex].content);
+          setSelectedFileName(files[selectedFileIndex].name);
+        }
+      });
+    });
+  }, [selectedFileIndex]);
 
   return (
     <div className='app'>
