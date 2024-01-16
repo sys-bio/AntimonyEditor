@@ -24,6 +24,7 @@ export type SrcRange = {
 export type STVariableInfo = {
     type: string;
     initialized: boolean;
+    initSrcRange: SrcRange | undefined;
     compartments: string;
     srcRange: SrcRange;
 }
