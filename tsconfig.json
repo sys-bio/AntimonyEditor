@@ -22,5 +22,5 @@
   },
   "include": [
     "src"
-, "public/libantimony.js", "public/Conversion.ts", "src/testing/TestLibAntimony.js"  ]
+  ]
 }
