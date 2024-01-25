@@ -62,12 +62,6 @@ const App: React.FC = () => {
 
   return (
     <div className='app'>
-      <header>
-        <h1>The Official Antimony Web Code Editor</h1>
-        <a target="_blank" href={"https://reproduciblebiomodels.org/"}>
-          https://reproduciblebiomodels.org/
-        </a>
-      </header>
       <div className="middle">
         <Split
           renderSplitter={() => <SolidSplitter/>}

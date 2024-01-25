@@ -24,6 +24,12 @@ interface MyDB extends DBSchema {
 
 let currentHoverDisposable: monaco.IDisposable | null = null;
 
+declare global {
+  interface Window {
+    antimonyString: string;
+  }
+}
+
 const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({ content, fileName, database }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -94,6 +100,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       setEditorInstance(editor);
 
       setSelectedFile(fileName);
+
+      window.antimonyString = editor.getValue();
+      console.log('string' + window.antimonyString);
 
       // processAntimony(editor.getValue());
 
