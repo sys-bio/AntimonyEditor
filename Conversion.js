@@ -26,7 +26,6 @@ window.onload = function() {
 
 function processAntimony() {
   let antimonyString = window.antimonyString;
-  console.log(antimonyString);
   try {
     libantimony().then((libantimony) => {
       //	Format: libantimony.cwrap( function name, return type, input param array of types).
@@ -46,12 +45,13 @@ function processAntimony() {
       jsUTF8ToString = (strPtr) => libantimony.UTF8ToString(strPtr);
       jsFree = (strPtr) => libantimony._free(strPtr);
       var ptrAntCode = jsAllocateUTF8(antimonyString);
-      console.log("ptrAntCode: ", ptrAntCode)
       var load_int = loadAntimonyString(antimonyString);
-      console.log("load_int: ", load_int)
       if (load_int > 0) {
         sbmlResult = getSBMLString();
-        console.log("sbmlResult: ", sbmlResult)
+        window.sbmlString = sbmlResult;
+        const event = new CustomEvent('grabbedSBMLResult', { detail: window.sbmlString });
+        window.dispatchEvent(event);
+        console.log(window.sbmlString);
       } else {
         var errStr = getLastError();
         window.alert(errStr);

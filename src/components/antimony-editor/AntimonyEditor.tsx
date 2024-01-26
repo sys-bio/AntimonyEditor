@@ -27,6 +27,7 @@ let currentHoverDisposable: monaco.IDisposable | null = null;
 declare global {
   interface Window {
     antimonyString: string;
+    sbmlString: string;
   }
 }
 
@@ -102,7 +103,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       setSelectedFile(fileName);
 
       window.antimonyString = editor.getValue();
-      console.log('string' + window.antimonyString);
+
+      window.addEventListener('grabbedSBMLResult', function(event) {
+        console.log('sbmlResult event received');
+        editor.setValue(window.sbmlString);
+      });
 
       // processAntimony(editor.getValue());
 
