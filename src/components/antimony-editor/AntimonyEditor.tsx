@@ -4,12 +4,11 @@ import { antimonyLanguage } from '../../languages/antlr/AntimonyLanguage';
 import { antimonyTheme } from '../../languages/AntimonyTheme';
 import CustomButton from '../CustomButton';
 import './AntimonyEditor.css';
-import { getBiomodels, getModel, searchModels } from '../../features/BrowseBiomodels';
+import { getBiomodels, getModel } from '../../features/BrowseBiomodels';
 import Loader from '../Loader';
 import ModelParser from '../../languages/ModelParser';
 import handleDownload from '../../features/HandleDownload';
 import { IDBPDatabase, DBSchema } from 'idb';
-// import { loadAntimonyString, loadSBMLString, processAntimony } from '../../libAntimony/UseLibAnt';
 
 interface AntimonyEditorProps {
   content: string;
@@ -21,8 +20,6 @@ interface MyDB extends DBSchema {
     value: { name: string; content: string };
   };
 }
-
-let currentHoverDisposable: monaco.IDisposable | null = null;
 
 declare global {
   interface Window {
@@ -36,18 +33,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const [loading, setLoading] = useState<boolean>(false);
   const [chosenModel, setChosenModel] = useState<string | null>(null);
   const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
+  // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
   const [selectedFile, setSelectedFile] = useState<string>('')
-
-  let typingTimer: any;
-  
-  const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(() => {
-      ModelParser(editor, true);
-    }, 300);
-  };
 
   useEffect(() => {
     if (editorRef.current) {
@@ -62,7 +50,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       // Retrieve content and file name from IndexedDB
       database.transaction('files').objectStore('files').get(fileName).then((data) => {
         if (data) {
-          setOriginalContent(data.content);
+          // setOriginalContent(data.content);
           setNewContent(data.content);
           setSelectedFile(data.name);
           editor.setValue(data.content);
@@ -82,14 +70,18 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           ['{', '}'],
           ['[', ']'],
           ['(', ')'],
-          // Add any other bracket pairs used in your language, including nested ones
         ],
       });
 
-      // Set the hover provider
-      ModelParser(editor, false);
+      // setOriginalContent(editor.getValue());
 
-      setOriginalContent(editor.getValue());
+      let typingTimer: any;
+      const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+          ModelParser(editor, true);
+        }, 300);
+      };
 
       editor.onDidChangeModelContent(() => {
         setNewContent(editor.getValue());
@@ -109,10 +101,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         editor.setValue(window.sbmlString);
       });
 
-      // processAntimony(editor.getValue());
-
-      // loadAntimonyString(editor.getValue());
-
       return () => editor.dispose();
     }
   }, [content, database, fileName]);
@@ -127,7 +115,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         content: newContent,
       });
     }
-  }, [newContent, selectedFile, database]);
+  }, [newContent, selectedFile, database, editorInstance]);
 
   useEffect(() => {
     // Display dropdown when a user searches for a model
@@ -151,7 +139,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         <CustomButton name={'Create Annotations'} />
         <CustomButton name={'Navigate to Edit Annotations'} />
         <CustomButton name={'Insert Rate Law'} />
-        <CustomButton name={'Convert to SBML'} />
         <CustomButton name={'Annotated Variable Highlight Off'} />
         <input id='biomodel-browse' type='text' placeholder='Search for a model' />
         <ul id='dropdown' />

@@ -110,7 +110,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
 
     enterDeclaration (ctx: DeclarationContext) {
       const varType = ctx.decl_modifiers().text; // Get modifier
-      if (varType == 'compartment') {
+      if (varType === 'compartment') {
         ctx.decl_item().forEach((item) => {
           const varName = item.namemaybein().var_name().text; // Get variable name
           let variable = variables.get(varName);
@@ -232,7 +232,6 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       }
     };
   }
-  console.log(variables)
 
   // Create the listener
   const listener: AntimonyGrammarListener = new AntimonySyntax();
@@ -241,7 +240,6 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   parser.addErrorListener(errorListener);
 
   let hoverInfo = parseAntimony(variables, errorListener.getErrors());
-  let typingTimer: any;
   if (hoverInfo) {
     editor.onDidDispose(() => {
       hoverInfo.dispose();
@@ -254,7 +252,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
 
 function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
   let hoverContents: monaco.IMarkdownString[] = [];
-
+  console.log(variables);
   // Register the hover provider
   let hoverInfo = monaco.languages.registerHoverProvider('antimony', {
     provideHover: (model, position) => {

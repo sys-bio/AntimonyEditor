@@ -83,7 +83,9 @@ const App: React.FC = () => {
         </Split>
       </div>
       <footer>
-        Copyright © 2023 Center for Reproducible Biomedical Modeling
+        <a target="_blank" href={"https://reproduciblebiomodels.org/"}>
+          Copyright © 2023 Center for Reproducible Biomedical Modeling
+        </a>
       </footer>
     </div>
   );
