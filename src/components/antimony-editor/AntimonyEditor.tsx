@@ -10,10 +10,27 @@ import ModelParser from '../../languages/ModelParser';
 import handleDownload from '../../features/HandleDownload';
 import { IDBPDatabase, DBSchema } from 'idb';
 
+/**
+ * @description AntimonyEditorProps interface
+ * @interface
+ * @property {string} content - The content of the editor
+ * @property {string} fileName - The name of the file
+ */
 interface AntimonyEditorProps {
   content: string;
   fileName: string;
 }
+
+/**
+ * @description IndexedDB schema
+ * @interface
+ * @property {object} files - The files object
+ * @property {string} files.key - The key of the files object
+ * @property {object} files.value - The value of the files object
+ * @property {string} files.value.name - The name of the file
+ * @property {string} files.value.content - The content of the file
+ * @extends DBSchema
+ */
 interface MyDB extends DBSchema {
   files: {
     key: string;
@@ -21,14 +38,30 @@ interface MyDB extends DBSchema {
   };
 }
 
+/**
+ * @description Declare global variables
+ * @global
+ * @property {string} antimonyString - The Antimony string
+ * @property {string} sbmlString - The SBML string
+ * @property {function} processAntimony - The processAntimony function
+ */
 declare global {
   interface Window {
-    antimonyString: string;
-    sbmlString: string;
-    processAntimony?: () => void; // Define the processAntimony function signature
+    antimonyString: string; // Define the antimonyString variable
+    sbmlString: string; // Define the sbmlString variable
+    processAntimony?: () => void; // Define the processAntimony function
   }
 }
 
+/**
+ * @description AntimonyEditor component
+ * @param content - AntimonyEditorProp
+ * @param fileName - AntimonyEditorProp
+ * @param database - IDBPDatabase<MyDB>
+ * @example
+ * <AntimonyEditor content={content} fileName={fileName} database={database} />
+ * @returns - AntimonyEditor component
+ */
 const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({ content, fileName, database }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -38,6 +71,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
   const [selectedFile, setSelectedFile] = useState<string>('')
 
+  /**
+   * @description Loads the editor and sets the language, theme, and content
+   */
   useEffect(() => {
     if (editorRef.current) {
       // Load the custom language
@@ -76,6 +112,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
       // setOriginalContent(editor.getValue());
 
+      // Delay the model parser to avoid parsing while the user is typing
       let typingTimer: any;
       const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
         clearTimeout(typingTimer);
@@ -84,6 +121,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         }, 300);
       };
 
+      // Parse the model whenever the user types
       editor.onDidChangeModelContent(() => {
         setNewContent(editor.getValue());
         delayedModelParser(editor);
@@ -95,8 +133,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
       setSelectedFile(fileName);
 
+      // Set the antimonyString variable to the editor content
       window.antimonyString = editor.getValue();
 
+      // Listen for the grabbedAntimonyResult event
       window.addEventListener('grabbedSBMLResult', function(event) {
         console.log('sbmlResult event received');
         editor.setValue(window.sbmlString);
@@ -106,7 +146,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     }
   }, [content, database, fileName]);
 
-  // Use IndexedDB to save content and file name whenever they change
+  /**
+   * @description Saves the name and content of the file selected to IndexedDB
+   */
   useEffect(() => {
     if (database && editorInstance) {
       setNewContent(editorInstance.getValue());
@@ -118,8 +160,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     }
   }, [newContent, selectedFile, database, editorInstance]);
 
+  /**
+   * @description Handles displaying the dropdown when a user searches for a model
+   */
   useEffect(() => {
-    // Display dropdown when a user searches for a model
     if (chosenModel) {
       const dropdown = document.getElementById('dropdown');
       dropdown!.style.display = "none";
@@ -132,6 +176,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     }
   }, [chosenModel]);
 
+  /**
+   * @description Handles conversion from Antimony to SBML
+   */
   const handleConversion = () => {
     try {
       if (window.processAntimony) {

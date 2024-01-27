@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import * as monaco from 'monaco-editor';
 import { customLanguageWorker } from './languages/antlr/CustomLanguageWorker';
 
 // Define the getWorker function
@@ -22,7 +21,6 @@ const getWorker = (_moduleId: string, label: string): Worker => {
 (window as any).MonacoEnvironment = {
   getWorker: getWorker,
 };
-
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

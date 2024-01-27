@@ -1,9 +1,19 @@
-
+/**
+ * @description Name interface
+ * @interface
+ * @property {string} name - The name of the file
+ * @property {function} onClick - The onClick function
+ */
 interface Name {
     name: string;
     onClick?: () => void;
 }
 
+/**
+ * @description CustomButton component
+ * @param props - Name
+ * @returns - CustomButton component
+ */
 const CustomButton =  (props: Name) => {
     return (
         <>

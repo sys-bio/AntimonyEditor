@@ -6,6 +6,15 @@ import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
 
+/**
+ * VariableInfo class to store information about variables
+ * label: type of variable
+ * modifiers: var, const, formula
+ * initialize: initial value of variable
+ * display: display name of variable
+ * compartments: compartment variable is in
+ * annotations: annotations of variable
+ */
 class VariableInfo {
   label?: string;
   modifiers?: string;
@@ -15,6 +24,12 @@ class VariableInfo {
   annotations?: string[] = [];
 }
 
+/**
+ * ErrorListener class to store errors
+ * errors: array of errors
+ * syntaxError: function to add errors to array
+ * getErrors: function to return array of errors
+ */
 class ErrorListener implements ANTLRErrorListener<any> {
   private errors: string[] = [];
 
@@ -34,6 +49,11 @@ class ErrorListener implements ANTLRErrorListener<any> {
   }
 }
 
+/**
+ * ModelParser function to parse model
+ * @param editor - monaco editor
+ * @param hoverExists - boolean to check if hover exists
+ */
 const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: boolean) => {
   // Create the lexer and parser
   let inputStream = new ANTLRInputStream(editor.getValue());
@@ -46,13 +66,15 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
 
-  // Parse the input, where `compilationUnit` is whatever entry point you defined
   let tree = parser.root();
 
   var variables: Map<string, VariableInfo> = new Map<string, VariableInfo>();
 
   var annotatedVar: string[] = [];
 
+  /**
+   * AntimonySyntax class to listen for events
+   */
   class AntimonySyntax implements AntimonyGrammarListener {
     // Add the following method to capture parse errors
     syntaxError<T>(
@@ -66,6 +88,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       console.error(`Parse error at Line ${line}:${charPositionInLine} - ${msg}`);
     }
 
+    // Listen for model
     enterModel(ctx: ModelContext) {
       const modelName = ctx.NAME().text; // Get the model name
       const modelInfo = new VariableInfo();
@@ -79,6 +102,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       }
     };
 
+    // Listen for species
     enterSpecies(ctx: SpeciesContext) {
       const speciesInfo = new VariableInfo();
       speciesInfo.label = 'Species';
@@ -92,6 +116,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       }
     };
 
+    // Listen for reactions
     enterReaction (ctx: ReactionContext) {
         const reactionName = ctx.reaction_name()?.namemaybein().text; // Get reaction name
         const reactionInfo = new VariableInfo();
@@ -108,6 +133,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       }
     };
 
+    // Listen for declarations
     enterDeclaration (ctx: DeclarationContext) {
       const varType = ctx.decl_modifiers().text; // Get modifier
       if (varType === 'compartment') {
@@ -137,6 +163,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       });
     };
 
+    // Listen for assignments
     enterAssignment (ctx: AssignmentContext) {
       const varName = ctx.namemaybein().var_name().text; // Get variable name
       const varAssignment = ctx.sum().text; // Get assignment
@@ -150,6 +177,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       }
     };
 
+    // Listen for events
     enterEvent (ctx: EventContext) {
       const eventName = ctx.reaction_name()?.namemaybein().text; // Get variable name
       if (eventName) {
@@ -164,6 +192,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       }
     }
 
+    // Listen for unit declarations
     enterUnit_declaration (ctx: Unit_declarationContext) {
       const varName = ctx.var_name().text; // Get variable name
       const varSum = ctx.sum().text; // Get sum
@@ -181,6 +210,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       }
     };
 
+    // Listen for in compartments
     enterNamemaybein(ctx: NamemaybeinContext) {
       const varName = ctx.var_name().text; // Get the species name
       const compartmentCtx = ctx.in_comp();
@@ -197,6 +227,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       }
     }
 
+    // Listen for is assignments
     enterIs_assignment (ctx: Is_assignmentContext) {
       const varName = ctx.NAME().text; // Get the species name
       const display = ctx.ESCAPED_STRING().text; // Get the display
@@ -212,6 +243,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
       }
     };
 
+    // Listen for annotations
     enterAnnotation(ctx: AnnotationContext) {
       const varName = ctx.var_name().text; // Get the species name
       const annotationlink = ctx.ESCAPED_STRING().text; // Get the annotation
@@ -239,6 +271,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   ParseTreeWalker.DEFAULT.walk(listener, tree)
   parser.addErrorListener(errorListener);
 
+  // If hover exists, dispose of it and create a new one
   let hoverInfo = parseAntimony(variables, errorListener.getErrors());
   if (hoverInfo) {
     editor.onDidDispose(() => {
@@ -250,9 +283,16 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   }
 }
 
+/**
+ * parseAntimony function to parse antimony
+ * @param variables - map of variables
+ * @param errors - array of errors
+ * @returns hoverInfo - hover provider
+ */
 function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
   let hoverContents: monaco.IMarkdownString[] = [];
   console.log(variables);
+
   // Register the hover provider
   let hoverInfo = monaco.languages.registerHoverProvider('antimony', {
     provideHover: (model, position) => {
@@ -260,6 +300,8 @@ function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
       let valueOfHover: string = '';
       let valueOfAnnotation: string = '';
       const word = model.getWordAtPosition(position);
+
+      // Check if word exists
       if (word) {
         // check if position range is in error and if it is, return error message
         // have to figure out entire position range of error first
@@ -268,6 +310,7 @@ function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
             valueOfHover += `Error: ${error} <br/>`; // Include error message in valueOfHover
           });
         }
+        // check if word exists in variables map and if it does, add information to valueOfHover
         if (variables.has(word.word)) {
           const variableInfo = variables.get(word.word);
           if (variableInfo?.modifiers) {
@@ -288,9 +331,11 @@ function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
                 break;
             }
           }
+          // check if variableInfo exists and if it does, add information to valueOfHover
           if (variableInfo?.display) {
             valueOfHover += `<span style="color:#FD7F20;">${variableInfo?.display}</span> <br/> `;
           }
+          // check if variableInfo exists and if it does, add information to valueOfHover
           if (variableInfo?.label) {
             switch (variableInfo?.label) {
               case 'Model':
@@ -312,18 +357,22 @@ function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
                 break;
             }
           }
+          // check if variableInfo exists and if it does, add information to valueOfHover
           if (variableInfo?.initialize) {
             valueOfHover += `Initialized Value: <span style="color:#DEF9CB;">${variableInfo?.initialize}</span> <br/> `;
           }
+          // check if variableInfo exists and if it does, add information to valueOfHover
           if (variableInfo?.compartments) {
             valueOfHover += `In <span style="color:#BC96CA;">${'compartment'}</span>: ${variableInfo?.compartments} <br/> `;
           }
+          // check if variableInfo exists and if it does, add information to valueOfAnnotation
           if (variableInfo?.annotations) {
             variableInfo?.annotations.forEach((annotation) => {
               valueOfAnnotation += `<span style="color:#f2ab7c;">${annotation.replace(/"/g, "")}</span> <br/> `;
             });
           }
         }
+        // add valueOfHover and valueOfAnnotation to hoverContents
         hoverContents.push(
           { supportHtml: true,
             value:  valueOfHover });

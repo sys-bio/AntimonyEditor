@@ -7,6 +7,15 @@ import { Split } from '@geoffcox/react-splitter';
 import AntimonyEditor from './components/antimony-editor/AntimonyEditor';
 import { IDBPDatabase } from 'idb';
 
+/**
+ * @description MyDB interface
+ * @interface
+ * @property {object[]} files - The files object
+ * @property {string} files[].key - The key of the file
+ * @property {object} files[].value - The value of the file
+ * @property {string} files[].value.name - The name of the file
+ * @property {string} files[].value.content - The content of the file
+ */
 interface MyDB extends DBSchema {
   files: {
     key: string;
@@ -14,12 +23,19 @@ interface MyDB extends DBSchema {
   };
 }
 
+/**
+ * @description App component
+ * @returns - App component
+ */
 const App: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; content: string }[]>([]);
   const [selectedFileContent, setSelectedFileContent] = useState<string>('// Enter Antimony Model Here');
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [db, setDb] = useState<IDBPDatabase<MyDB> | null>();
 
+  /**
+   * @description Use the openDB function to open the database
+   */
   useEffect(() => {
     openDB<MyDB>('antimony_editor_db', 1, {
       upgrade(db) {
@@ -35,6 +51,10 @@ const App: React.FC = () => {
     });
   }, []);
 
+  /**
+   * @description Handle the file upload
+   * @param event - The event
+   */
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && db) {
@@ -50,6 +70,11 @@ const App: React.FC = () => {
     }
   };
 
+  /**
+   * @description Handle the file click
+   * @param fileContent - The content of the file
+   * @param fileName - The name of the file
+   */
   const handleFileClick = (fileContent: string, fileName: string) => {
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
@@ -83,7 +108,7 @@ const App: React.FC = () => {
         </Split>
       </div>
       <footer>
-        <a target="_blank" href={"https://reproduciblebiomodels.org/"}>
+        <a target="-no-target-blank" href={"https://reproduciblebiomodels.org/"}>
           Copyright © 2023 Center for Reproducible Biomedical Modeling
         </a>
       </footer>
