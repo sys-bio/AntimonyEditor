@@ -25,6 +25,7 @@ declare global {
   interface Window {
     antimonyString: string;
     sbmlString: string;
+    processAntimony?: () => void; // Define the processAntimony function signature
   }
 }
 
@@ -131,15 +132,28 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     }
   }, [chosenModel]);
 
+  const handleConversion = () => {
+    try {
+      if (window.processAntimony) {
+        window.processAntimony();
+      } else {
+        console.error('processAntimony function not found in the global scope.');
+      }
+    } catch (err) {
+      console.log('Conversion error:', err);
+    }
+  };
+
   return (
     <div>
       <div className='menu'>
-        <button className='button' onClick={() => handleDownload(editorInstance, fileName)}>Save File</button>
+        <button className='button' onClick={() => handleDownload(editorInstance, fileName)}>Save File to Downloads Folder</button>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
-        <CustomButton name={'Create Annotations'} />
+        {/* <CustomButton name={'Create Annotations'} /> */}
         <CustomButton name={'Navigate to Edit Annotations'} />
-        <CustomButton name={'Insert Rate Law'} />
-        <CustomButton name={'Annotated Variable Highlight Off'} />
+        {/* <CustomButton name={'Insert Rate Law'} />
+        <CustomButton name={'Annotated Variable Highlight Off'} /> */}
+        <button className='button' onClick={handleConversion}>Convert Antimony to SBML</button>
         <input id='biomodel-browse' type='text' placeholder='Search for a model' />
         <ul id='dropdown' />
         <Loader loading={loading} />

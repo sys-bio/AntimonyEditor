@@ -17,15 +17,6 @@ var freeAll;      //		"
 var jsFree;         // emscripten function
 var jsAllocateUTF8; //
 
-window.onload = function() {
-  const conversionBtn = document.getElementById("conversion-btn")
-  if (conversionBtn) {
-    conversionBtn.addEventListener('click', processAntimony);
-  } else {
-    console.error('Element not found.');
-  }
-}
-
 function processAntimony() {
   let antimonyString = window.antimonyString;
   try {
@@ -64,3 +55,5 @@ function processAntimony() {
     console.log("Load libantimony error: ", err);
   }
 }
+
+window.processAntimony = processAntimony;
