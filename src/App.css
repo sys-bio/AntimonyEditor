@@ -14,7 +14,7 @@
 
 header { 
   grid-area: top; 
-  padding: 12px;
+  padding: 14px;
   border-bottom: 3px solid #474757;
   text-align: center;
 }
