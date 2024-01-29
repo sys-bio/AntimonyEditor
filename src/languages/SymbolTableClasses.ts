@@ -1,33 +1,36 @@
 
-// this is a record type wow!
-// should probably make this the return of a function 
-// in an error class, so that valid line/column values 
-// can be checked.
-export type SrcPosition = {
-    line: number;
-    column: number;
-}
+// // this is a record type wow!
+// // should probably make this the return of a function 
+// // in an error class, so that valid line/column values 
+// // can be checked.
+// export type SrcPosition = {
+//     line: number;
+//     column: number;
+// }
 
-/**
- * represents a location range relative to the
- * web editor in terms of line and column
- */
-export type SrcRange = {
-    start: SrcPosition;
-    stop: SrcPosition;
-}
+import { SrcRange } from "./Types";
+import { Variable } from "./Variable";
 
-/**
- * stores information about variables
- * in a symbol table
- */
-export type STVariableInfo = {
-    type: string;
-    initialized: boolean;
-    initSrcRange: SrcRange | undefined;
-    compartments: string;
-    srcRange: SrcRange;
-}
+
+// /**
+//  * represents a location range relative to the
+//  * web editor in terms of line and column
+//  */
+// export type SrcRange = {
+//     start: SrcPosition;
+//     stop: SrcPosition;
+// }
+// /**
+//  * stores information about variables
+//  * in a symbol table
+//  */
+// export type Variable = {
+//     type: string;
+//     initialized: boolean;
+//     initSrcRange: SrcRange | undefined;
+//     compartments: string;
+//     srcRange: SrcRange;
+// }
 
 
 /**
@@ -37,7 +40,7 @@ export class SymbolTable {
     // a map from variable name to a list of positions 
     // this variable is found to be declared.
     // this takes care of variable reassignment during ST buildup
-    private varMap: Map<string, STVariableInfo>;
+    private varMap: Map<string, Variable>;
 
     constructor() {
         this.varMap = new Map();
@@ -46,9 +49,9 @@ export class SymbolTable {
     /**
      * Adds variable with varName and info varInfo to the ST 
      * @param varName name of variable
-     * @param varInfo a STVariableInfo that contains information about the variable
+     * @param varInfo a Variable that contains information about the variable
      */
-    setVar(varName: string, varInfo: STVariableInfo): void {
+    setVar(varName: string, varInfo: Variable): void {
         // if (!this.varMap.has(varName)) {
         //     this.varMap.set(varName);
         // }
@@ -59,16 +62,11 @@ export class SymbolTable {
     /**
      * looks up a variable
      * @param varName variable name to look up in the ST
-     * @returns a STVariableInfo if the variable exists, and undefined otherwise
+     * @returns a Variable if the variable exists, and undefined otherwise
      */
     getVar(varName: string) {
         let varInfo = this.varMap.get(varName);
         return varInfo;
-        // if (varInfo) { 
-        //     return varInfo[varInfo.length - 1];
-        // } else {
-        //     return undefined;
-        // }
     }
 }
 
@@ -132,56 +130,81 @@ export class GlobalST extends SymbolTable {
     }
 }
 
-/**
- * Symbol table for a function
- */
-export class FuncST extends SymbolTable {
-    // this contains the location of the function name id
-    private funcIdRange: SrcRange;
+class ParamAndNameTable extends SymbolTable {
+    private srcRange: SrcRange;
+    public params: string[];
 
     constructor(srcRange: SrcRange) {
         super();
-        this.funcIdRange = srcRange;
+        this.srcRange = srcRange;
+        this.params = []
     }
 
-    /**
-     * 
-     * @returns the position of the function ID within the web editor
-     */
-    getPosition(): SrcRange {
-        return this.funcIdRange;
+    public getPosition(): SrcRange {
+        return this.srcRange;
     }
+}
+
+/**
+ * Symbol table for a function
+ */
+export class FuncST extends ParamAndNameTable {
+    // // this contains the location of the function name id
+    // private funcIdRange: SrcRange;
+
+    // constructor(srcRange: SrcRange) {
+    //     super(srcRange);
+    //     this.funcIdRange = srcRange;
+    // }
+
+    // /**
+    //  * 
+    //  * @returns the position of the function ID within the web editor
+    //  */
+    // getPosition(): SrcRange {
+    //     return this.funcIdRange;
+    // }
 }
 
 /**
  * Symbol table for a model
+ * Note: treat model and mmodels as the same thing?
+ * only thing that matters is params being non zero length
+ * for mmodel
+ * 
+ * TODO: make a decision, make fields private or public???
  */
-export class ModelST extends SymbolTable {
-    // this contains the location of the model name id
-    private modelIdRange: SrcRange;
-
-    constructor(srcRange: SrcRange) {
-        super();
-        this.modelIdRange = srcRange;
-    }
-
-    /**
-     * 
-     * @returns the position of the model ID within the web editor
-     */
-    getPosition(): SrcRange {
-        return this.modelIdRange;
-    }
-}
-
-/**
- * Symbol table for a modular model
- */
-export class MModelST extends ModelST {
-    private params: string[];
+export class ModelST extends ParamAndNameTable {
+    // // this contains the location of the model name id
+    // private modelIdRange: SrcRange;
+    // // keep these as strings, to know info about
+    // // each param go to the varTable
+    // public params: string[];
     
-    constructor(srcRange: SrcRange, paramsIn: string[]) {
-        super(srcRange);
-        this.params = paramsIn;
-    }
+
+    // constructor(srcRange: SrcRange) {
+    //     super();
+    //     this.params = [];
+    //     this.modelIdRange = srcRange;
+    // }
+
+    // /**
+    //  * 
+    //  * @returns the position of the model ID within the web editor
+    //  */
+    // public getPosition(): SrcRange {
+    //     return this.modelIdRange;
+    // }
 }
+
+// /**
+//  * Symbol table for a modular model
+//  */
+// export class MModelST extends ModelST {
+//     private params: string[];
+    
+//     constructor(srcRange: SrcRange, paramsIn: string[]) {
+//         super(srcRange);
+//         this.params = paramsIn;
+//     }
+// }

@@ -5,9 +5,6 @@ import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, Declaratio
 import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
-import { AbstractParseTreeVisitor, ParseTree, TerminalNode } from 'antlr4ts/tree'
-import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
-import { SymbolTable, GlobalST, FuncST, ModelST, STVariableInfo, SrcPosition, SrcRange} from './SymbolTableClasses';
 import { Context } from 'vm';
 import { start } from 'repl';
 
@@ -245,15 +242,15 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   parser.addErrorListener(errorListener);
 
   let hoverInfo = parseAntimony(variables, errorListener.getErrors());
-  let typingTimer: any;
-  if (hoverInfo) {
-    editor.onDidDispose(() => {
-      hoverInfo.dispose();
-    });
-    editor.onDidChangeModelContent(() => {
-      hoverInfo.dispose();
-    });
-  }
+  // let typingTimer: any;
+  // if (hoverInfo) {
+  //   editor.onDidDispose(() => {
+  //     hoverInfo.dispose();
+  //   });
+  //   editor.onDidChangeModelContent(() => {
+  //     hoverInfo.dispose();
+  //   });
+  // }
 }
 
 function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
