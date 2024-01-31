@@ -58,6 +58,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           setNewContent(data.content);
           setSelectedFile(data.name);
           editor.setValue(data.content);
+          console.log("11111");
         }
       });
 
@@ -100,6 +101,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
   // Use IndexedDB to save content and file name whenever they change
   useEffect(() => {
+    console.log("changin");
     if (database && editorInstance) {
       setNewContent(editorInstance.getValue());
       const transaction = database.transaction('files', 'readwrite');

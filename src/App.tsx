@@ -6,6 +6,7 @@ import { SolidSplitter } from './components/CustomSplitters';
 import { Split } from '@geoffcox/react-splitter';
 import AntimonyEditor from './components/antimony-editor/AntimonyEditor';
 import { IDBPDatabase } from 'idb';
+import { upload } from '@testing-library/user-event/dist/upload';
 
 interface MyDB extends DBSchema {
   files: {
@@ -54,7 +55,7 @@ const App: React.FC = () => {
       });
     }
   };
-
+  
   const handleFileClick = (fileContent: string, fileName: string) => {
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
@@ -66,21 +67,64 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    openDB<MyDB>('antimony_editor_db', 1, {
-      upgrade(db) {
-      },
-    }).then(database => {
-      setDb(database);
-      database.getAll('files').then(files => {
-        setUploadedFiles(files);
-        // Set the selected file content based on the stored index
-        if (selectedFileIndex !== null && files[selectedFileIndex]) {
-          setSelectedFileContent(files[selectedFileIndex].content);
-          setSelectedFileName(files[selectedFileIndex].name);
+  const loadData = async () => {
+    const database = await openDB<MyDB>('antimony_editor_db', 1);
+    setDb(database);
+    const files = await database.getAll('files');
+    setUploadedFiles(files);
+
+    // Update selectedFileIndex based on the current files
+    const fileIndex = Number(window.localStorage.getItem('current_file_index'));
+    if (fileIndex >= 0 && fileIndex < files.length) {
+      setSelectedFileIndex(fileIndex);
+      setSelectedFileContent(files[fileIndex].content);
+      setSelectedFileName(files[fileIndex].name);
+    } else {
+      setSelectedFileIndex(null);
+      setSelectedFileContent('// Enter Antimony Model Here');
+      setSelectedFileName('');
+      window.localStorage.removeItem('current_file_index');
+    }
+  };
+
+  loadData();
+}, []);
+
+
+  //DELETE FUNCTIONALITY
+  const deleteFile = async (fileName: string) => {
+    if (db) {
+      await db.delete('files', fileName); // Delete from IndexedDB
+      const updatedFiles = uploadedFiles.filter(file => file.name !== fileName);
+      setUploadedFiles(updatedFiles); // Update state
+  
+      // Check if the deleted file was the currently selected file
+      if (selectedFileName === fileName) {
+        console.log("filename matches")
+        setSelectedFileContent('// Enter Antimony Model Here');
+        setSelectedFileName('');
+        setSelectedFileIndex(null);
+        window.localStorage.removeItem('current_file_index');
+        window.localStorage.removeItem('current_file');
+      } else if (selectedFileIndex !== null) {
+        console.log("filename doesnot match");
+        // Update the selectedFileIndex if the deleted file was not selected
+        const newIndex = updatedFiles.findIndex(file => file.name === selectedFileName);
+        setSelectedFileIndex(newIndex !== -1 ? newIndex : null);
+        console.log(newIndex);
+        // Handle case where the current file index is no longer valid
+        if (newIndex === -1) {
+          setSelectedFileContent('// Enter Antimony Model Here');
+          setSelectedFileName('');
+          window.localStorage.removeItem('current_file_index');
+          window.localStorage.removeItem('current_file');
         }
-      });
-    });
-  }, [selectedFileIndex]);
+      }
+      console.log("yoyo");
+    }
+  };
+  
+  
 
   return (
     <div className='app'>
@@ -99,7 +143,7 @@ const App: React.FC = () => {
         >
           <section>
             <input type="file" multiple onChange={handleFileUpload} />
-            <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
+            <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} onDeleteFile={deleteFile}/>
           </section>       
           <div>
           {db ? ( // Conditionally render the AntimonyEditor component when db is defined
