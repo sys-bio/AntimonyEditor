@@ -1,12 +1,14 @@
 import * as monaco from 'monaco-editor';
 import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, ParserRuleContext, RecognitionException, Recognizer } from 'antlr4ts';
-import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Init_paramsContext, Is_assignmentContext, Modular_modelContext, NamemaybeinContext, ReactionContext, SpeciesContext, Species_listContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
+import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Init_paramsContext, Is_assignmentContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { AbstractParseTreeVisitor, ParseTree, TerminalNode } from 'antlr4ts/tree'
 import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
 import { SymbolTable, GlobalST, FuncST, ModelST} from './SymbolTableClasses';
 import { Variable } from './Variable';
-import { SrcPosition, SrcRange, getTypeFromString, varTypes } from './Types';
+import { SrcPosition, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
+import { error } from 'console';
+import { Children } from 'react';
 
 
 
@@ -49,23 +51,40 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
   }
 
   /**
-   * returns a default STVariable info
-   * 
-   * this is fine as Parsetree since it is a superclass to ParserRuleContext, which is 
+   * THIS method is probably usesless.
+   * Use this for stuff in the global scope!
+   * if id exists in the current ST, return that variables info
+   * else if id exists in global ST and is either a model or a function, then return that info
+   * else return undefined
    * taken care of in getSrcRange
-   * @param ctx 
+   *
+   * @param id 
    * @returns 
    */
-  private getVarInfo(ctx: ParseTree): Variable {
-    // let varInfo: Variable =  {
-    //   type: '',
-    //   initialized: false,
-    //   initSrcRange: undefined,
-    //   compartments: '',
-    //   srcRange: this.getSrcRange(ctx)
-    // }
-    let varInfo:  Variable = new Variable(varTypes.Unknown, false, undefined, false, this.getSrcRange(ctx), undefined);
-    return varInfo;
+  private getVarInfo(id: string): Variable | undefined {
+    const currST: SymbolTable | undefined = this.getCurrST();
+    if (currST) {
+      // at the global scope, there is the issue of 
+      // same id with a function or model
+      // at this point as far as I know within a model this is not
+      // an issue
+      if (currST === this.globalST) {
+        let varInfo: Variable | undefined;
+        if ((varInfo = currST.getVar(id)) !== undefined) {
+          return varInfo;
+        }
+
+        if ((varInfo = this.globalST.getVar(id)) !== undefined) {
+          if (varInfo.type === varTypes.Function || varInfo.type === varTypes.Model) {
+            return varInfo;
+          }
+        }
+      } else {
+        return currST.getVar(id);
+      }
+    }
+
+    return undefined;
   }
 
   /**
@@ -175,7 +194,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
 
         if (params && params.children) {
           for (let i = 0; i < params.children.length; i += 2) {
-            const paramInfo: Variable = this.getVarInfo(params.children[i]);
+            const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(params.children[i]), undefined, false);
             const paramId: string = params.children[i].text;
 
             // we need to know what the params are if we want to
@@ -225,7 +244,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
         if (params &&  params.children) {
           // only go over the ids, as we have id1,id2,id3,id4
           for (let i = 0; i < params.children.length; i += 2) {
-            const paramInfo: Variable = this.getVarInfo(params.children[i]);
+            const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(params.children[i]), undefined, false);
             const paramId: string = params.children[i].text;
 
             // we need to know what the params are if we want to
@@ -291,9 +310,8 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
    * @param ctx 
    */
   visitSpecies(ctx: SpeciesContext) {
-    let varInfo: Variable = this.getVarInfo(ctx);
+    let varInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(ctx), undefined, false);
     varInfo.type = varTypes.Species;
-    varInfo.initialized = false;
 
     let speciesName: string = ctx.text;
     // get the relevant ST
@@ -302,20 +320,6 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     if (currST) {
       const existingVarInfo: Variable | undefined = currST.getVar(speciesName);
       if (existingVarInfo) {
-        // var already exists in the ST
-        // if (existingVarInfo.type !== varTypes.Species) {
-        //   if (existingVarInfo.type === varTypes.Variable) {
-        //     // variable case is special.
-        //     existingVarInfo.type = varTypes.Species;
-        //   } else {
-        //     const errorMessage = "Unable to set the type to 'species' because " +
-        //                        "it is already set to be the incompatible type '" +
-        //                       existingVarInfo.type + "' on line " + 
-        //                       existingVarInfo.idSrcRange.start.line + ":" + existingVarInfo.idSrcRange.start.column;
-        //     const errorUnderline: ErrorUnderline = this.getErrorUnderline(varInfo.idSrcRange, errorMessage, true);
-        //     this.errorList.push(errorUnderline);
-        //   }
-        // }
         if (existingVarInfo.canSetType(varTypes.Species)) {
           existingVarInfo.type = varTypes.Species;
         } else {
@@ -336,23 +340,20 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     }
   }
 
+    /**
+   * 
+   * @param ctx 
+   */
   visitDeclaration(ctx: DeclarationContext) {
     // grammar def: declaration : decl_modifiers decl_item (',' decl_item)*;
     if (ctx.children) {
-      // we visit the children first, since decl_itm is defined as
-      // decl_item : namemaybein (decl_assignment)?;
-      // and visiting namemaybein will add variable to the ST.
-      // 
+      // we visit the children first
       // something like this is valid: "species B = 1, C = 2, D = 3;"
 
       // visit children first for convenience.
       for (let i = 0; i < ctx.children.length; i++) {
         this.visit(ctx.children[i]);
       }
-      
-      // figure out the type
-      //const type: string = (ctx.children[0] as Decl_modifiersContext).text;
-      const type: varTypes = getTypeFromString((ctx.children[0] as Decl_modifiersContext).text);
 
       // we are looping this way to only hit the Decl_itemContext nodes.
       for (let i = 1; i < ctx.children.length; i+=2) {
@@ -371,6 +372,18 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
           // should this continue being the case, or should both cases be reported?
           // for now keep it as report both.
 
+
+          // TODO: take care of declaration modifiers? does const, substanceOnly matter?
+          let declModifiers: Decl_modifiersContext = ctx.decl_modifiers();
+          let modifiers: string[] = []
+          if (declModifiers.children) {
+            for (let i = 0; i < declModifiers.children.length; i++) {
+              modifiers.push(declModifiers.children[i].text);
+            }
+          }
+
+          const type: varTypes = getTypeFromString(modifiers[modifiers.length - 1]);
+
           if (varInfo.canSetType(type)) {
             varInfo.type = type;
           } else {
@@ -388,7 +401,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
             // check if it is initialized.
             // varInfo gauranteed not undefined
             // as the children are visited first.
-            if (varInfo.initialized) {
+            if (varInfo.initSrcRange !== undefined) {
               // warning case! reinitalization!
               //
               // guaranteed to pass this check, maybe try and bundle varInfo.initialized and varInfo.initSrcRange
@@ -409,7 +422,6 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
 
               varInfo.initSrcRange = currSrcRange;
             } else {
-              varInfo.initialized = true;
               varInfo.initSrcRange = currSrcRange;
             }
           }
@@ -437,7 +449,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
         // because we visit the children first, it is
         // gauranteed that the var is in the currST.
         if ((varInfo = currST.getVar(varName)) !== undefined) {
-          if (varInfo.initialized) {
+          if (varInfo.initSrcRange != undefined) {
             // warning case! reinitalization!
             if (varInfo.initSrcRange) {
               const errorMessage1: string = "Value assignment to '" + varName +
@@ -455,7 +467,6 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
 
             varInfo.initSrcRange = currSrcRange;
           } else {
-            varInfo.initialized = true;
             varInfo.initSrcRange = currSrcRange;
           }
         }
@@ -493,7 +504,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     } else {
       // create a STVarInfo
       // we initialize as a variable before further info is known.
-      let id1VarInfo: Variable = this.getVarInfo(ctx.var_name());
+      let id1VarInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(ctx.var_name()), undefined, false);
       id1VarInfo.type = varTypes.Variable;
 
       // check for case 2
@@ -503,11 +514,6 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
         let id2VarInfo: Variable | undefined = currST.getVar(id2)
         if (id2VarInfo) {
           // exists, check if it is a compartment
-          // maybe make each type a global const?
-          // if (id2VarInfo.type === varTypes.Compartment) {
-          //   id1VarInfo.compartment = id2;
-          // } else if (id2VarInfo.type === varTypes.Variable) {
-          //   id2VarInfo.type = varTypes.Compartment;
           if (id2VarInfo.canSetType(varTypes.Compartment)) {
             id2VarInfo.type = varTypes.Compartment;
             id1VarInfo.compartment = id2;
@@ -522,7 +528,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
           }
         } else {
           // does not exist in ST yet, add as uninitialized compartment (default value).
-          let id2VarInfo: Variable = this.getVarInfo(in_compCtx.var_name());
+          let id2VarInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(in_compCtx.var_name()), undefined, false);
           id2VarInfo.type = varTypes.Compartment;
 
           currST.setVar(id2, id2VarInfo);
@@ -540,5 +546,125 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
         currST.setVar(id1, id1VarInfo);
       }
     }
+  }
+
+  visitReaction(ctx: ReactionContext) {
+    // visiting will probably need to be done partial manually
+
+    // if there is a reaction id, get it and add to ST
+    let id: string = '';
+    const reactionName: Reaction_nameContext | undefined = ctx.reaction_name();
+    const currST: SymbolTable | undefined = this.getCurrST();
+    if (reactionName) {
+      id = reactionName.namemaybein().text;
+      if (currST) {
+        let existingInfo: Variable | undefined;
+        if ((existingInfo = currST.getVar(id)) !== undefined) {
+          // id already exists
+          if (existingInfo.canSetType(varTypes.Reaction)) {
+            existingInfo.type = varTypes.Reaction;
+          } else {
+            // error cannot have this id be a reaction
+            const errorMessage: string = "Unable to set the type to '" + varTypes.Reaction +
+            "' because it is already set to be the incompatible type '"+ existingInfo.type +
+            "' on line " + existingInfo.idSrcRange.start.toString();
+            this.errorList.push(this.getErrorUnderline(this.getSrcRange(reactionName.namemaybein()), errorMessage, true));
+          }
+        } else {
+          // id does not exist can just insert
+          let varInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(reactionName.namemaybein()), undefined, false);
+          varInfo.type = varTypes.Reaction;
+          currST.setVar(id, varInfo);
+        }
+      }
+    }
+
+    // check if the reaction has a rate rule
+    // no need to remember rate rule for error checking?
+    if (!ctx.sum()) {
+      // although it might make more sense to check in the semantic visitor
+      // it really doesn't matter here I think.
+      const errorMessage: string = "Reaction '"+ id +"' missing rate law";
+      this.errorList.push(this.getErrorUnderline(this.getSrcRange(ctx), errorMessage, false));
+    } else {
+      // record that this reaction var has a rate rule assigned to it
+      if (reactionName && currST) {
+        let varInfo: Variable | undefined = currST.getVar(id);
+        if (varInfo) {
+          varInfo.initSrcRange = varInfo.idSrcRange;
+        }
+      }
+    }
+
+
+    // go through children
+    // if we have in_comp, we need to set compartment info
+    // else we just visit as usual?
+
+    if (ctx.children) {
+      let reactionSpecies = new Set<string>();
+      for (let i = 0; i < ctx.children.length; i++) {
+        this.visit(ctx.children[i]);
+
+        // for compartment case:
+        if (ctx.children[i] instanceof Species_listContext) {
+          let speciesList: Species_listContext = ctx.children[i] as Species_listContext;
+          if (speciesList.children) {
+            for (let j = 0; j < speciesList.children.length; j+=2) {
+              reactionSpecies.add(speciesList.children[j].text);
+            }
+          }
+        }
+      }
+
+      const inComp: In_compContext | undefined = ctx.in_comp();
+      if (inComp && currST) {
+        // in a compartment! need to know which species are in this reaciton
+        // then try to assign compartment to them.
+
+        // get the compartment id
+        const compartmentId: string = inComp.var_name().text;
+        // check if compartment id already exists;
+        let compartmentInfo: Variable | undefined = currST.getVar(compartmentId);
+        let validCompartment: boolean = true;
+        if (compartmentInfo !== undefined) {
+          if (compartmentInfo.canSetType(varTypes.Compartment)) {
+            compartmentInfo.type = varTypes.Compartment;
+          } else {
+            validCompartment = false;
+            // type issue!
+            const errorMessage: string = "Unable to set the type to '" + varTypes.Compartment +
+            "' because it is already set to be the incompatible type '"+ compartmentInfo.type +
+            "' on line " + compartmentInfo.idSrcRange.start.toString();
+            this.errorList.push(this.getErrorUnderline(this.getSrcRange(inComp.var_name()), errorMessage, true));
+          }
+        } else {
+          // compartment id does not exist as a variable yet
+          compartmentInfo = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(inComp.var_name()), undefined, false);
+          compartmentInfo.type = varTypes.Compartment;
+          currST.setVar(compartmentId, compartmentInfo);
+        }
+
+
+        // if there is a type issue with the compartment, we do not set.
+        if (validCompartment) {
+          // set reaction id's compartment
+          let reactionInfo: Variable | undefined = currST.getVar(id);
+          if (reactionInfo) {
+            reactionInfo.compartment = compartmentId;
+          }
+
+          // set compartment of species in reaction
+          for (let speciesId of reactionSpecies) {
+            let speciesInfo: Variable | undefined = currST.getVar(speciesId);
+            if (speciesInfo && speciesInfo.compartment === undefined) {
+              speciesInfo.compartment = compartmentId;
+            }
+          }
+        }
+      }
+    }
+
+    
   }
 }

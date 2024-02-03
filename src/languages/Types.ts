@@ -63,8 +63,6 @@ export enum varTypes {
 }
 
 export function getTypeFromString(type: string): varTypes {
-    // note this does not support consts yet
-    // TODO add const support.
     switch(type) {
         case 'species':
             return varTypes.Species;
@@ -73,9 +71,8 @@ export function getTypeFromString(type: string): varTypes {
         default:
             // this *should* be caught by parsing.
             // error out for now
-            console.error("weird/bad type found");
+            console.error("weird/bad type found " + type);
             return varTypes.Unknown;
-    
     }
 }
 
@@ -111,14 +108,14 @@ export function isSubtTypeOf(type1: varTypes, type2: varTypes) {
         return derives_from_param;
     }
 
-    set.add(varTypes.Parameter);
-    if (set.has(type1) && !set.has(type2)) {
-        return false;
-    }
+    // set.add(varTypes.Parameter);
+    // if (set.has(type1) && !set.has(type2)) {
+    //     return false;
+    // }
 
-    if (set.has(type2) && !set.has(type1)) {
-        return false;
-    }
+    // if (set.has(type2) && !set.has(type1)) {
+    //     return false;
+    // }
 
     return false;
 }

@@ -16,24 +16,26 @@ export class Variable {
     public type: varTypes;
     public isConst: boolean;
     public compartment: string | undefined;
-    public initialized: boolean;
+    // // do we even need an initialized field if we have initSrcRange?
+    // public initialized: boolean;
     public idSrcRange: SrcRange;
     public initSrcRange: SrcRange | undefined;
+    public substanceOnly: boolean;
     
 
     constructor(type: varTypes,
                 isConst: boolean, 
                 compartment: string | undefined, 
-                initialized: boolean,
                 idSrcRange: SrcRange,
-                initSrcRange: SrcRange | undefined) {
+                initSrcRange: SrcRange | undefined,
+                substanceOnly: boolean) {
         // this.id = id;
         this.type = type;
         this.isConst = isConst;
         this.compartment = compartment;
-        this.initialized = initialized;
         this.idSrcRange = idSrcRange;
         this.initSrcRange = initSrcRange;
+        this.substanceOnly = substanceOnly;
     }
 
     /**

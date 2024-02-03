@@ -68,7 +68,7 @@ describe('Type Tests', function() {
 })
 
 describe('SymbolTableVisitor Error Tests', function() {
-    it('func redeclaration', function() {
+    it('func redeclaration errors', function() {
         const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatFuncDecl.ant'), 'utf-8');
         const out: SymbolTableVisitor = getSTVisitor(file1);
         assert.deepStrictEqual(out.getErrors(), [
@@ -99,7 +99,7 @@ describe('SymbolTableVisitor Error Tests', function() {
         ]);
     })
 
-    it('model redeclaration', function() {
+    it('model redeclaration errors', function() {
         const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatModelDecl.ant'), 'utf-8');
         const out: SymbolTableVisitor = getSTVisitor(file1);
         assert.deepStrictEqual(out.getErrors(), [
@@ -130,7 +130,7 @@ describe('SymbolTableVisitor Error Tests', function() {
         ]);
     })
 
-    it('assignment override warning', function() {
+    it('assignment override warnings', function() {
         const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'assignmentOverride.ant'), 'utf-8');
         const out: SymbolTableVisitor = getSTVisitor(file1);
         //'Value assignment to 'S5' is overriding previous assignment on line 14:11'
@@ -204,7 +204,7 @@ describe('SymbolTableVisitor Error Tests', function() {
         ]);
     })
 
-    it('type override error', function() {
+    it('type override errors', function() {
         const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'typeOverride.ant'), 'utf-8');
         const out: SymbolTableVisitor = getSTVisitor(file1);
         assert.deepStrictEqual(out.getErrors(), [
@@ -249,5 +249,100 @@ describe('SymbolTableVisitor Error Tests', function() {
                 severity: monaco.MarkerSeverity.Error
             }
         ]);
+    })
+
+    it('reaction statement errors', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionCompartment.ant'), 'utf-8');
+        const visitor: SymbolTableVisitor = getSTVisitor(file1);
+        
+        assert.deepStrictEqual(visitor.getErrors(), [
+            {
+                startLineNumber: 2,
+                startColumn: 22,
+                endLineNumber: 2,
+                endColumn: 24,
+                message: 'Unable to set the type to \'compartment\' because it is already set to be the incompatible type \'species\' on line 1:9',
+                severity: monaco.MarkerSeverity.Error
+            },
+            {
+                startLineNumber: 3,
+                startColumn: 18,
+                endLineNumber: 3,
+                endColumn: 20,
+                message: 'Unable to set the type to \'compartment\' because it is already set to be the incompatible type \'species\' on line 1:9',
+                severity: monaco.MarkerSeverity.Error
+            },
+            {
+                startLineNumber: 12,
+                startColumn: 22,
+                endLineNumber: 12,
+                endColumn: 24,
+                message: 'Unable to set the type to \'compartment\' because it is already set to be the incompatible type \'function\' on line 9:10',
+                severity: monaco.MarkerSeverity.Error
+            },
+            {
+                startLineNumber: 13,
+                startColumn: 18,
+                endLineNumber: 13,
+                endColumn: 20,
+                message: 'Unable to set the type to \'compartment\' because it is already set to be the incompatible type \'function\' on line 9:10',
+                severity: monaco.MarkerSeverity.Error
+            },
+            {
+                startLineNumber: 18,
+                startColumn: 22,
+                endLineNumber: 18,
+                endColumn: 24,
+                message: 'Unable to set the type to \'compartment\' because it is already set to be the incompatible type \'model\' on line 15:7',
+                severity: monaco.MarkerSeverity.Error
+            },
+            {
+                startLineNumber: 19,
+                startColumn: 18,
+                endLineNumber: 19,
+                endColumn: 20,
+                message: 'Unable to set the type to \'compartment\' because it is already set to be the incompatible type \'model\' on line 15:7',
+                severity: monaco.MarkerSeverity.Error
+            },
+        ]);
+    })
+
+    it('reaction no rate rule warning', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionNoRateRule.ant'), 'utf-8');
+        const visitor: SymbolTableVisitor = getSTVisitor(file1);
+        assert.deepStrictEqual(visitor.getErrors(), [
+            {
+                startLineNumber: 1,
+                startColumn: 1,
+                endLineNumber: 1,
+                endColumn: 21,
+                message: "Reaction 'R4' missing rate law",
+                severity: monaco.MarkerSeverity.Warning
+            },
+            {
+                startLineNumber: 2,
+                startColumn: 1,
+                endLineNumber: 2,
+                endColumn: 16,
+                message: "Reaction 'R5' missing rate law",
+                severity: monaco.MarkerSeverity.Warning
+            },
+            {
+                startLineNumber: 3,
+                startColumn: 1,
+                endLineNumber: 3,
+                endColumn: 17,
+                message: "Reaction '' missing rate law",
+                severity: monaco.MarkerSeverity.Warning
+            },
+            {
+                startLineNumber: 4,
+                startColumn: 1,
+                endLineNumber: 4,
+                endColumn: 12,
+                message: "Reaction '' missing rate law",
+                severity: monaco.MarkerSeverity.Warning
+            },
+        ])
     })
 })

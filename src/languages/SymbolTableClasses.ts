@@ -8,7 +8,7 @@
 //     column: number;
 // }
 
-import { SrcRange } from "./Types";
+import { SrcRange, varTypes } from "./Types";
 import { Variable } from "./Variable";
 
 
@@ -91,6 +91,7 @@ export class GlobalST extends SymbolTable {
     setFunction(funcName: string, srcRange: SrcRange): void {
         if (!this.funcMap.has(funcName)) {
             this.funcMap.set(funcName, new FuncST(srcRange));
+            this.setVar(funcName, new Variable(varTypes.Function, false, undefined, srcRange, srcRange, false));
         } else {
             // function already exists
             console.log("function " + funcName + " already exists")
@@ -114,6 +115,7 @@ export class GlobalST extends SymbolTable {
     setModel(modelName: string, srcRange: SrcRange): void {
         if (!this.modelMap.has(modelName)) {
             this.modelMap.set(modelName, new ModelST(srcRange));
+            this.setVar(modelName, new Variable(varTypes.Model, false, undefined, srcRange, srcRange, false));
         } else {
             // model already exists
             console.log("model " + modelName + " already exists")

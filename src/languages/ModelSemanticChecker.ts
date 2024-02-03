@@ -28,7 +28,7 @@ class ErrorListener implements ANTLRErrorListener<any> {
 const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: boolean) => {
 
   const stVisitor: SymbolTableVisitor = getSTVisitor(editor.getValue());
-  console.log(stVisitor.globalST);
+  // console.log(stVisitor.globalST);
 
   //this is how to add error squiglies 
   let model: monaco.editor.ITextModel | null = editor.getModel();
@@ -50,9 +50,11 @@ export function getSTVisitor(antimonyCode: string): SymbolTableVisitor {
   // Parse the input, where `compilationUnit` is whatever entry point you defined
   let tree = parser.root();
   // printing the tree for debugging purposes
+  // console.log(tree);
   
   // create and buildup a global symbol table from the parse tree.
   let globalSymbolTable: GlobalST = new GlobalST();
+  console.log(globalSymbolTable);
   const stVisitor: SymbolTableVisitor = new SymbolTableVisitor(globalSymbolTable);
   stVisitor.visit(tree);
   return stVisitor;
