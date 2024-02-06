@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [selectedFileContent, setSelectedFileContent] = useState<string>('// Enter Antimony Model Here');
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [db, setDb] = useState<IDBPDatabase<MyDB> | null>();
+  const [fileExplorerKey, setFileExplorerKey] = useState<number>(0);
 
   /**
    * @description Use the openDB function to open the database
@@ -64,7 +65,12 @@ const App: React.FC = () => {
         reader.onload = async () => {
           const fileData = { name: file.name, content: reader.result as string };
           await db.put('files', fileData);
-          setUploadedFiles(prevFiles => [...prevFiles, fileData]);
+          setUploadedFiles(prevFiles => {
+            const updatedFiles = [...prevFiles, fileData];
+            // Sort the files alphabetically and numerically based on their names
+            return updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+          });
+          setFileExplorerKey(prevKey => prevKey + 1); // Increment key to trigger re-render
         };
       });
     }
@@ -85,6 +91,15 @@ const App: React.FC = () => {
     }
   };
 
+  // Listen for the grabbedAntimonyResult event
+  window.addEventListener('grabbedSBMLResult', function(event) {
+    console.log('sbmlResult event received');
+    if (selectedFileName.includes('.ant')) {
+      handleFileClick(window.sbmlString, selectedFileName.replace('ant', 'xml'));
+    }
+    window.antimonyActive = false;
+  });
+
   return (
     <div className='app'>
       <div className="middle">
@@ -96,15 +111,16 @@ const App: React.FC = () => {
         >
           <section>
             <input type="file" multiple onChange={handleFileUpload} />
-            <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
+            <FileExplorer key={fileExplorerKey} files={uploadedFiles} onFileClick={handleFileClick} />
           </section>       
           <div>
-          {db ? ( // Conditionally render the AntimonyEditor component when db is defined
-              <AntimonyEditor content={selectedFileContent} fileName={selectedFileName} database={db} />
-            ) : (
-              // You can provide a loading message or handle the absence of the database as needed
-              <div>Loading...</div>
-            )}          </div>
+            {db ? ( // Conditionally render the AntimonyEditor component when db is defined
+                <AntimonyEditor content={selectedFileContent} fileName={selectedFileName} database={db} />
+              ) : (
+                // You can provide a loading message or handle the absence of the database as needed
+                <div>Loading...</div>
+              )}         
+          </div>
         </Split>
       </div>
       <footer>

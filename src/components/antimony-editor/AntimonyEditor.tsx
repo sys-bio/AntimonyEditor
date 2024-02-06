@@ -49,6 +49,7 @@ declare global {
   interface Window {
     antimonyString: string; // Define the antimonyString variable
     sbmlString: string; // Define the sbmlString variable
+    antimonyActive: boolean; // Define the antimonyActive variable
     processAntimony?: () => void; // Define the processAntimony function
   }
 }
@@ -101,6 +102,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         language: 'antimony',
       });
 
+      window.antimonyActive = true;
+
       // Set language configuration for bracket pair colorization
       monaco.languages.setLanguageConfiguration('antimony', {
         brackets: [
@@ -135,12 +138,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
       // Set the antimonyString variable to the editor content
       window.antimonyString = editor.getValue();
-
-      // Listen for the grabbedAntimonyResult event
-      window.addEventListener('grabbedSBMLResult', function(event) {
-        console.log('sbmlResult event received');
-        editor.setValue(window.sbmlString);
-      });
 
       return () => editor.dispose();
     }
