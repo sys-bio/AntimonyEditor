@@ -24,6 +24,7 @@ var jsAllocateUTF8; //
 function processAntimony() {
   // Grab antimonyString global variable from AntimonyEditor to get ant model string
   let antimonyString = window.antimonyString;
+  const event = new CustomEvent('grabbedSBMLResult', { detail: window.sbmlString });
   try {
     libantimony().then((libantimony) => {
       // Load LibAntimonyJs
@@ -52,9 +53,7 @@ function processAntimony() {
       if (load_int > 0) {
         sbmlResult = getSBMLString();
         window.sbmlString = sbmlResult;
-        const event = new CustomEvent('grabbedSBMLResult', { detail: window.sbmlString });
         window.dispatchEvent(event);
-        console.log(window.sbmlString);
       } else {
         var errStr = getLastError();
         window.alert(errStr);

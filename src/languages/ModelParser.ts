@@ -291,7 +291,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
  */
 function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
   let hoverContents: monaco.IMarkdownString[] = [];
-  console.log(variables);
+  // console.log(variables);
 
   // Register the hover provider
   let hoverInfo = monaco.languages.registerHoverProvider('antimony', {

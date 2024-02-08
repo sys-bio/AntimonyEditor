@@ -33,6 +33,7 @@ const App: React.FC = () => {
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [db, setDb] = useState<IDBPDatabase<MyDB> | null>();
   const [fileExplorerKey, setFileExplorerKey] = useState<number>(0);
+  const [sbmlResultListenerAdded, setSbmlResultListenerAdded] = useState<boolean>(false);
 
   /**
    * @description Use the openDB function to open the database
@@ -91,14 +92,50 @@ const App: React.FC = () => {
     }
   };
 
-  // Listen for the grabbedAntimonyResult event
-  window.addEventListener('grabbedSBMLResult', function(event) {
-    console.log('sbmlResult event received');
-    if (selectedFileName.includes('.ant')) {
-      handleFileClick(window.sbmlString, selectedFileName.replace('ant', 'xml'));
+  const handleFileConversion = async (fileContent: string, fileName: string) => {
+    setSelectedFileContent(fileContent);
+    setSelectedFileName(fileName);
+  
+    // Store the selected file's information in IndexedDB
+    if (db) {
+      setUploadedFiles(prevFiles => {
+        window.removeEventListener('grabbedSBMLResult', sbmlResultHandler);
+        setSbmlResultListenerAdded(false);
+        let updatedFiles = [...prevFiles];
+        const existingFileIndex = prevFiles.findIndex(file => file.name === fileName);
+  
+        if (existingFileIndex !== -1) {
+        } else {
+          // If the file doesn't exist, add it to the array
+          updatedFiles = [...prevFiles, { name: fileName, content: fileContent }];
+          db.put('files', { name: fileName, content: fileContent });
+          console.log('add')
+        }
+  
+        // Sort the files alphabetically and numerically based on their names
+        return updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      });
     }
-    window.antimonyActive = false;
-  });
+  };
+
+  function sbmlResultHandler() {
+    console.log('sbmlResult event received');
+    let sbml = window.sbmlString;
+    console.log(selectedFileName)
+    if (selectedFileName !== '' && selectedFileName.includes('.ant')) {
+      console.log('ran')
+      handleFileConversion(sbml, selectedFileName.replace('ant', 'xml'))
+        .then(() => {
+          window.antimonyActive = false;
+          window.sbmlString = '';
+        })
+        .catch(error => {
+          console.error('Error in handleFileConversion:', error);
+        });
+    }
+  }
+
+  window.addEventListener('grabbedSBMLResult', sbmlResultHandler, { once: true });
 
   return (
     <div className='app'>
@@ -111,8 +148,8 @@ const App: React.FC = () => {
         >
           <section>
             <input type="file" multiple onChange={handleFileUpload} />
-            <FileExplorer key={fileExplorerKey} files={uploadedFiles} onFileClick={handleFileClick} />
-          </section>       
+            <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
+          </section>
           <div>
             {db ? ( // Conditionally render the AntimonyEditor component when db is defined
                 <AntimonyEditor content={selectedFileContent} fileName={selectedFileName} database={db} />
