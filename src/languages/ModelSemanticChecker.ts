@@ -4,10 +4,17 @@ import { AntimonyGrammarLexer } from './antlr/AntimonyGrammarLexer';
 import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Is_assignmentContext, NamemaybeinContext, ReactionContext, SpeciesContext, Species_listContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
 import { SymbolTable, GlobalST, FuncST, ModelST} from './SymbolTableClasses';
 import { SymbolTableVisitor } from './SymbolTableVisitor';
+import { error } from 'console';
 
+
+type parseErrors = {
+  line: number,
+  column: number,
+  msg: string
+}
 // copied from ModelParser for now
 class ErrorListener implements ANTLRErrorListener<any> {
-  private errors: string[] = [];
+  private errors: parseErrors[] = [];
 
   syntaxError<T>(
     recognizer: Recognizer<T, any>,
@@ -17,10 +24,10 @@ class ErrorListener implements ANTLRErrorListener<any> {
     msg: string,
     e: RecognitionException | undefined
   ): void {
-    this.errors.push(`Line ${line}:${charPositionInLine} - ${msg}`);
+    this.errors.push({line: line, column: charPositionInLine, msg: msg});
   }
 
-  getErrors(): string[] {
+  getErrors(): parseErrors[] {
     return this.errors;
   }
 }
@@ -50,14 +57,35 @@ export function getSTVisitor(antimonyCode: string): SymbolTableVisitor {
   // Parse the input, where `compilationUnit` is whatever entry point you defined
   let tree = parser.root();
   // printing the tree for debugging purposes
-  // console.log(tree);
+  console.log(tree);
   
   // create and buildup a global symbol table from the parse tree.
   let globalSymbolTable: GlobalST = new GlobalST();
   console.log(globalSymbolTable);
   const stVisitor: SymbolTableVisitor = new SymbolTableVisitor(globalSymbolTable);
   stVisitor.visit(tree);
+  stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
   return stVisitor;
+}
+
+function addParseErrors(errors: parseErrors[]) {
+  let parseErrors = []
+  for (let i = 0; i < errors.length; i++) {
+    const line: number = errors[i].line;
+    const column: number = errors[i].column + 1;
+    const unexpectedChar = errors[i].msg;
+
+    let error = {
+      startLineNumber: line,
+      startColumn: column,
+      endLineNumber: line,
+      endColumn: column + 1,
+      message: "Unexpected token " + unexpectedChar,
+      severity: monaco.MarkerSeverity.Error
+    }
+    parseErrors.push(error);
+  }
+  return parseErrors;
 }
 
 export default ModelSemanticsChecker;

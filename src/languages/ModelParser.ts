@@ -240,8 +240,8 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   // Use the entry point for listeners
   ParseTreeWalker.DEFAULT.walk(listener, tree)
   parser.addErrorListener(errorListener);
-
-  let hoverInfo = parseAntimony(variables, errorListener.getErrors());
+  console.log(errorListener.getErrors());
+  //let hoverInfo = parseAntimonyV2(errorListener.getErrors());
   // let typingTimer: any;
   // if (hoverInfo) {
   //   editor.onDidDispose(() => {
