@@ -120,7 +120,7 @@ const App: React.FC = () => {
 
   function sbmlResultHandler() {
     console.log('sbmlResult event received');
-    let sbml = window.sbmlString;
+    let sbml = window.sbmlResult;
     console.log(selectedFileName)
     if (selectedFileName !== '' && selectedFileName.includes('.ant')) {
       console.log('ran')

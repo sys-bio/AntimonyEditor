@@ -49,8 +49,11 @@ declare global {
   interface Window {
     antimonyString: string; // Define the antimonyString variable
     sbmlString: string; // Define the sbmlString variable
+    sbmlResult: string; // Define the sbmlResult variable
+    antimonyResult: string; // Define the antimonyResult variable
     antimonyActive: boolean; // Define the antimonyActive variable
     processAntimony?: () => void; // Define the processAntimony function
+    processSBML?: () => void; // Define the processSBML function
   }
 }
 
@@ -77,6 +80,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    */
   useEffect(() => {
     if (editorRef.current) {
+      let editor: any;
       // Load the custom language
       monaco.languages.register({ id: 'antimony' });
       monaco.languages.setMonarchTokensProvider('antimony', antimonyLanguage);
@@ -95,12 +99,27 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         }
       });
 
-      // Create the editor
-      const editor = monaco.editor.create(editorRef.current, {
-        bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
-        value: content,
-        language: 'antimony',
-      });
+      if (fileName.includes('.xml')) {
+        // Create the editor
+        editor = monaco.editor.create(editorRef.current, {
+          bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
+          value: content,
+          language: 'xml',
+        });
+        console.log('SBML Editor');
+        // Set the antimonyString variable to the editor content
+        window.sbmlString = editor.getValue();
+      } else {
+        editor = monaco.editor.create(editorRef.current, {
+          bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
+          value: content,
+          language: 'antimony',
+        });
+        console.log('Antimony Editor');
+        // Set the antimonyString variable to the editor content
+        window.antimonyString = editor.getValue();
+      }
+
 
       window.antimonyActive = true;
 
@@ -135,9 +154,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       setEditorInstance(editor);
 
       setSelectedFile(fileName);
-
-      // Set the antimonyString variable to the editor content
-      window.antimonyString = editor.getValue();
 
       return () => editor.dispose();
     }
@@ -176,7 +192,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   /**
    * @description Handles conversion from Antimony to SBML
    */
-  const handleConversion = () => {
+  const handleConversionAnt = () => {
     try {
       if (window.processAntimony) {
         window.processAntimony();
@@ -188,6 +204,23 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     }
   };
 
+    /**
+   * @description Handles conversion from SBML to Antimony
+   */
+    const handleConversionSBML = () => {
+      try {
+        if (window.processSBML) {
+          window.processSBML();
+        } else {
+          console.error('processSBML function not found in the global scope.');
+        }
+      } catch (err) {
+        console.log('Conversion error:', err);
+      }
+    };
+
+
+
   return (
     <div>
       <div className='menu'>
@@ -197,7 +230,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         <CustomButton name={'Navigate to Edit Annotations'} />
         {/* <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Annotated Variable Highlight Off'} /> */}
-        <button className='button' onClick={handleConversion}>Convert Antimony to SBML</button>
+        
+        <button className='button' onClick={handleConversionAnt}>Convert Antimony to SBML</button>
+        <button className='button' onClick={handleConversionSBML}>Convert SBML to Antimony</button>
         <input id='biomodel-browse' type='text' placeholder='Search for a model' />
         <ul id='dropdown' />
         <Loader loading={loading} />

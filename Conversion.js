@@ -24,7 +24,7 @@ var jsAllocateUTF8; //
 function processAntimony() {
   // Grab antimonyString global variable from AntimonyEditor to get ant model string
   let antimonyString = window.antimonyString;
-  const event = new CustomEvent('grabbedSBMLResult', { detail: window.sbmlString });
+  const event = new CustomEvent('grabbedSBMLResult', { detail: window.sbmlResult });
   try {
     libantimony().then((libantimony) => {
       // Load LibAntimonyJs
@@ -52,7 +52,7 @@ function processAntimony() {
       // If Antimony string has no errors, grab sbml string and save to sbmlString global variable.
       if (load_int > 0) {
         sbmlResult = getSBMLString();
-        window.sbmlString = sbmlResult;
+        window.sbmlResult = sbmlResult;
         window.dispatchEvent(event);
       } else {
         var errStr = getLastError();
@@ -65,5 +65,52 @@ function processAntimony() {
   }
 }
 
-// Save processAntimony function as global function to be used in AntimonyEditor. THIS IS IMPORTANT DO NOT REMOVE.
+function processSBML() {
+  // Grab antimonyString global variable from AntimonyEditor to get ant model string
+  let sbmlString = window.sbmlString;
+  const event = new CustomEvent('grabbedAntimonyResult', { detail: window.antimonyString });
+  try {
+    libantimony().then((libantimony) => {
+      // Load LibAntimonyJs
+      // Format: libantimony.cwrap( function name, return type, input param array of types).
+      loadString = libantimony.cwrap('loadString', 'number', ['string']);
+      loadAntimonyString = libantimony.cwrap('loadAntimonyString', 'number', ['string']);
+      loadSBMLString = libantimony.cwrap('loadSBMLString', 'number', ['string']);
+      getSBMLString = libantimony.cwrap('getSBMLString', 'string', ['null']);
+      getAntimonyString = libantimony.cwrap('getAntimonyString', 'string', ['null']);
+      getCompSBMLString = libantimony.cwrap('getCompSBMLString', 'string', ['string']); 
+      clearPreviousLoads = libantimony.cwrap('clearPreviousLoads', 'null', ['null']);
+      getLastError = libantimony.cwrap('getLastError', 'string', ['null']);
+      getWarnings = libantimony.cwrap('getWarnings', 'string', ['null']);
+      getSBMLInfoMessages = libantimony.cwrap('getSBMLInfoMessages', 'string', ['string']);
+      getSBMLWarnings = libantimony.cwrap('getSBMLWarnings', 'string', ['string']);
+      freeAll = libantimony.cwrap('freeAll', 'null', ['null']);
+      jsAllocateUTF8 = (newStr) => libantimony.allocateUTF8(newStr);
+      jsUTF8ToString = (strPtr) => libantimony.UTF8ToString(strPtr);
+      jsFree = (strPtr) => libantimony._free(strPtr);
+
+      sbmlCode = sbmlString;
+      console.log(sbmlCode);
+      clearPreviousLoads();
+      var ptrSBMLCode = jsAllocateUTF8(sbmlCode);
+      var load_int = loadSBMLString(ptrSBMLCode);
+      //console.log("processSBML: int returned: ", load_int);
+      if (load_int > 0) {
+        antResult = getAntimonyString();
+        window.antimonyResult = antResult;
+        console.log(antResult);
+        window.dispatchEvent(event);
+      } else {
+        var errStr = getLastError();
+        window.alert(errStr);
+      }
+      jsFree(ptrSBMLCode);
+    });
+  } catch (err) {
+    console.log("Load libantimony error: ", err);
+  }
+}
+
+// Save processAntimony and processSBML function as global function to be used in AntimonyEditor. THIS IS IMPORTANT DO NOT REMOVE.
 window.processAntimony = processAntimony;
+window.processSBML = processSBML;
