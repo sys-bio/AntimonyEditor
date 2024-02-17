@@ -92,7 +92,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleFileConversion = async (fileContent: string, fileName: string) => {
+  const handleAntToSBML = async (fileContent: string, fileName: string) => {
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
   
@@ -124,7 +124,7 @@ const App: React.FC = () => {
     console.log(selectedFileName)
     if (selectedFileName !== '' && selectedFileName.includes('.ant')) {
       console.log('ran')
-      handleFileConversion(sbml, selectedFileName.replace('ant', 'xml'))
+      handleAntToSBML(sbml, selectedFileName.replace('ant', 'xml'))
         .then(() => {
           window.antimonyActive = false;
           window.sbmlString = '';
@@ -136,6 +136,51 @@ const App: React.FC = () => {
   }
 
   window.addEventListener('grabbedSBMLResult', sbmlResultHandler, { once: true });
+
+  const handleSBMLtoAntConversion = async (fileContent: string, fileName: string) => {
+    setSelectedFileContent(fileContent);
+    setSelectedFileName(fileName);
+  
+    // Store the selected file's information in IndexedDB
+    if (db) {
+      setUploadedFiles(prevFiles => {
+        window.removeEventListener('grabbedAntimonyResult', antimonyResultHandler);
+        setSbmlResultListenerAdded(false);
+        let updatedFiles = [...prevFiles];
+        const existingFileIndex = prevFiles.findIndex(file => file.name === fileName);
+  
+        if (existingFileIndex !== -1) {
+        } else {
+          // If the file doesn't exist, add it to the array
+          updatedFiles = [...prevFiles, { name: fileName, content: fileContent }];
+          db.put('files', { name: fileName, content: fileContent });
+          console.log('add')
+        }
+  
+        // Sort the files alphabetically and numerically based on their names
+        return updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      });
+    }
+  };
+
+  function antimonyResultHandler() {
+    console.log('antimonyResult event received');
+    let antimony = window.antimonyResult;
+    console.log(selectedFileName)
+    if (selectedFileName !== '' && selectedFileName.includes('.xml')) {
+      console.log('ran')
+      handleSBMLtoAntConversion(antimony, selectedFileName.replace('xml', 'ant'))
+        .then(() => {
+          window.antimonyActive = true;
+          window.antimonyString = '';
+        })
+        .catch(error => {
+          console.error('Error in handleFileConversion:', error);
+        });
+    }
+  }
+
+  window.addEventListener('grabbedAntimonyResult', antimonyResultHandler, { once: true });
 
   return (
     <div className='app'>
