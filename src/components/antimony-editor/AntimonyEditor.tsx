@@ -62,8 +62,7 @@ declare global {
  * @param content - AntimonyEditorProp
  * @param fileName - AntimonyEditorProp
  * @param database - IDBPDatabase<MyDB>
- * @example
- * <AntimonyEditor content={content} fileName={fileName} database={database} />
+ * @example - <AntimonyEditor content={content} fileName={fileName} database={database} />
  * @returns - AntimonyEditor component
  */
 const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({ content, fileName, database }) => {
@@ -115,13 +114,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           value: content,
           language: 'antimony',
         });
+        window.antimonyActive = true;
         console.log('Antimony Editor');
         // Set the antimonyString variable to the editor content
         window.antimonyString = editor.getValue();
       }
-
-
-      window.antimonyActive = true;
 
       // Set language configuration for bracket pair colorization
       monaco.languages.setLanguageConfiguration('antimony', {
@@ -204,7 +201,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     }
   };
 
-    /**
+  /**
    * @description Handles conversion from SBML to Antimony
    */
     const handleConversionSBML = () => {
@@ -218,8 +215,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         console.log('Conversion error:', err);
       }
     };
-
-
 
   return (
     <div>
