@@ -1,14 +1,13 @@
 import * as monaco from 'monaco-editor';
-import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, ParserRuleContext, RecognitionException, Recognizer } from 'antlr4ts';
-import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Init_paramsContext, Is_assignmentContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
+import { ParserRuleContext} from 'antlr4ts';
+import {AssignmentContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { AbstractParseTreeVisitor, ParseTree, TerminalNode } from 'antlr4ts/tree'
 import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
 import { SymbolTable, GlobalST, FuncST, ModelST} from './SymbolTableClasses';
 import { Variable } from './Variable';
-import { SrcPosition, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
-import { error } from 'console';
-import { Children } from 'react';
+import { SrcPosition, SrcRange, getTypeFromString, varTypes } from './Types';
+import { functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning } from './SemanticErrors';
 
 
 
@@ -21,7 +20,7 @@ type ErrorUnderline = {
   endLineNumber: number,
   endColumn: number,
   message: string,
-  severity: monaco.MarkerSeverity.Warning | monaco.MarkerSeverity.Error
+  severity: monaco.MarkerSeverity
 }
 
 export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implements AntimonyGrammarVisitor<void> {
@@ -49,6 +48,10 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
   public getErrors(): ErrorUnderline[] {
     return this.errorList;
   }
+
+  public addErrorList(errors: ErrorUnderline[]) {
+    this.errorList = this.errorList.concat(errors);
+  } 
 
   /**
    * THIS method is probably usesless.
@@ -178,6 +181,23 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     }
     return errorUnderline;
   }
+
+  /**
+   * checks for the $varName case, 
+   * returns just the varname
+   * @param id 
+   */
+  private getVarName(id: string): string {
+    if (id.length === 0) {
+      return id;
+    }
+
+    if (id.charAt(0) === '$') {
+      return id.slice(1);
+    }
+
+    return id;
+  }
   
   visitFunction(ctx: FunctionContext) {
     if (ctx.children) {
@@ -205,8 +225,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
         }
       } else {
         // redeclared function, error
-        const errorMessage: string = 'function \'' + funcName+ '\' already defined on line ' + 
-                                      funcST.getPosition().start.toString();
+        const errorMessage: string = functionAlreadyExistsError(funcName, funcST.getPosition());
         let errorUnderline: ErrorUnderline = this.getErrorUnderline(funcIDSrcRange, errorMessage, true);
         this.errorList.push(errorUnderline);
       }
@@ -263,8 +282,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
       } else {
         // redeclared function, error
         // should make a function to return errorUnderlines.
-        const errorMessage = 'model \'' + modName+ '\' already defined on line ' + 
-                              modelST.getPosition().start.toString();
+        const errorMessage = modelAlreadyExistsError(modName, modelST.getPosition());
         let errorUnderline: ErrorUnderline = this.getErrorUnderline(this.getSrcRange(ctx), errorMessage, true);
         this.errorList.push(errorUnderline);
       }
@@ -296,8 +314,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
       } else {
         // redeclared function, error
         // should make a function to return errorUnderlines.
-        const errorMessage = 'model \'' + modName+ '\' already defined on line ' + 
-                              modelST.getPosition().start.toString();
+        const errorMessage = modelAlreadyExistsError(modName, modelST.getPosition());
         let errorUnderline: ErrorUnderline = this.getErrorUnderline(this.getSrcRange(ctx), errorMessage, true);
         this.errorList.push(errorUnderline);
       }
@@ -310,10 +327,11 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
    * @param ctx 
    */
   visitSpecies(ctx: SpeciesContext) {
-    let varInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(ctx), undefined, false);
-    varInfo.type = varTypes.Species;
+    let varInfo: Variable = new Variable(varTypes.Species, false, undefined, this.getSrcRange(ctx), undefined, false);
 
-    let speciesName: string = ctx.text;
+    let speciesName: string = this.getVarName(ctx.text);
+    varInfo.isConst = (ctx.text.charAt(0) === '$');
+
     // get the relevant ST
     const currST: SymbolTable | undefined = this.getCurrST();
 
@@ -323,10 +341,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
         if (existingVarInfo.canSetType(varTypes.Species)) {
           existingVarInfo.type = varTypes.Species;
         } else {
-          const errorMessage = "Unable to set the type to 'species' because " +
-                               "it is already set to be the incompatible type '" +
-                              existingVarInfo.type + "' on line " + 
-                              existingVarInfo.idSrcRange.start.toString();
+          const errorMessage = incompatibleTypesError(varTypes.Species, existingVarInfo);
           const errorUnderline: ErrorUnderline = this.getErrorUnderline(varInfo.idSrcRange, errorMessage, true);
           this.errorList.push(errorUnderline);
         }
@@ -358,9 +373,16 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
       // we are looping this way to only hit the Decl_itemContext nodes.
       for (let i = 1; i < ctx.children.length; i+=2) {
         const declItem: Decl_itemContext = ctx.children[i] as Decl_itemContext;
-        const varName: string = declItem.namemaybein().var_name().text;
+        let varName: string = this.getVarName(declItem.namemaybein().var_name().text);
         const currSrcRange: SrcRange = this.getSrcRange(declItem);
         const currST: SymbolTable | undefined = this.getCurrST();
+
+        // check if we are using $ to apply const
+        let varIsConst: boolean = (varName.charAt(0) === '$');
+        if (varIsConst) {
+          currSrcRange.start.column += 1;
+        }
+
         let varInfo: Variable | undefined;
         if (currST) {
           varInfo = currST.getVar(varName);
@@ -373,27 +395,25 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
           // for now keep it as report both.
 
 
-          // TODO: take care of declaration modifiers? does const, substanceOnly matter?
+          // take care of modifiers
           let declModifiers: Decl_modifiersContext = ctx.decl_modifiers();
-          let modifiers: string[] = []
-          if (declModifiers.children) {
-            for (let i = 0; i < declModifiers.children.length; i++) {
-              modifiers.push(declModifiers.children[i].text);
+          varInfo.substanceOnly = (declModifiers.SUB_MODIFIER() !== undefined) || varInfo.substanceOnly;
+          varInfo.isConst = (declModifiers.VAR_MODIFIER()?.text === varTypes.Const) || varInfo.isConst;
+
+          let typeString: string | undefined = declModifiers.TYPE_MODIFIER()?.text;
+          
+          if (typeString) {
+            const type: varTypes = getTypeFromString(typeString);
+
+            if (varInfo.canSetType(type)) {
+              varInfo.type = type;
+            } else {
+              // error! trying to overried previous type decl
+              const errorMessage = incompatibleTypesError(type, varInfo);
+              varInfo.idSrcRange.start.toString();
+              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage, true);
+              this.errorList.push(errorUnderline);
             }
-          }
-
-          const type: varTypes = getTypeFromString(modifiers[modifiers.length - 1]);
-
-          if (varInfo.canSetType(type)) {
-            varInfo.type = type;
-          } else {
-            // error! trying to overried previous type decl
-            const errorMessage: string = "Unable to set the type to '" + type +
-            "' because it is already set to be the incompatible type '"+ varInfo.type +
-            "' on line " + 
-            varInfo.idSrcRange.start.toString();
-            const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage, true);
-            this.errorList.push(errorUnderline);
           }
 
           // 2) check if initialize node exists
@@ -407,15 +427,11 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
               // guaranteed to pass this check, maybe try and bundle varInfo.initialized and varInfo.initSrcRange
               // as one field would be better?
               if (varInfo.initSrcRange) {
-                const errorMessage1: string = "Value assignment to '" + varName +
-                                              "' is being overridden by a later assignment on line " +
-                                              currSrcRange.start.toString();
+                const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
                 const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
                 this.errorList.push(errorUnderline1);
 
-                const errorMessage2: string = "Value assignment to '" + varName +
-                                            "' is overriding previous assignment on line " +
-                                            varInfo.initSrcRange.start.toString()
+                const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
                 const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
                 this.errorList.push(errorUnderline2);
               }
@@ -426,7 +442,6 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
             }
           }
         }
-
       }
     }
   }
@@ -449,19 +464,15 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
         // because we visit the children first, it is
         // gauranteed that the var is in the currST.
         if ((varInfo = currST.getVar(varName)) !== undefined) {
-          if (varInfo.initSrcRange != undefined) {
+          if (varInfo.initSrcRange !== undefined) {
             // warning case! reinitalization!
             if (varInfo.initSrcRange) {
-              const errorMessage1: string = "Value assignment to '" + varName +
-                                            "' is being overridden by a later assignment on line " +
-                                            currSrcRange.start.toString();
+              const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
               const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
               this.errorList.push(errorUnderline1);
 
-              const errorMessage: string = "Value assignment to '" + varName +
-                                         "' is overriding previous assignment on line " +
-                                         varInfo.initSrcRange.start.toString();
-              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage, false);
+              const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
+              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
               this.errorList.push(errorUnderline);
             }
 
@@ -491,8 +502,9 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     // here if ID2 does not exist, assume it is a compartment
     // if ID2 does exist, it must be of type compartment.
 
-    const id1: string = ctx.var_name().text;
+    const id1: string = this.getVarName(ctx.var_name().text);
     const in_compCtx: In_compContext | undefined = ctx.in_comp();
+    let isConst: boolean = (ctx.var_name().text.charAt(0) === '$');
 
     // case 1, we will always deal with ID
     const currST: SymbolTable | undefined = this.getCurrST();
@@ -504,12 +516,17 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     } else {
       // create a STVarInfo
       // we initialize as a variable before further info is known.
-      let id1VarInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(ctx.var_name()), undefined, false);
+      let id1SrcRange = this.getSrcRange(ctx.var_name())
+      if (isConst) {
+        // we do this so we odn't underline the $
+        id1SrcRange.start.column += 1;
+      }
+      let id1VarInfo: Variable = new Variable(varTypes.Unknown, isConst, undefined, id1SrcRange, undefined, false);
       id1VarInfo.type = varTypes.Variable;
 
       // check for case 2
       if (in_compCtx) {
-        const id2: string = in_compCtx.var_name().text;
+        const id2: string = this.getVarName(in_compCtx.var_name().text);
         // check if the compartment is already defined.
         let id2VarInfo: Variable | undefined = currST.getVar(id2)
         if (id2VarInfo) {
@@ -517,12 +534,11 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
           if (id2VarInfo.canSetType(varTypes.Compartment)) {
             id2VarInfo.type = varTypes.Compartment;
             id1VarInfo.compartment = id2;
+            //  check for const
+            id1VarInfo.isConst = id1VarInfo.isConst || (in_compCtx.var_name().text.charAt(0) === '$');
           } else {
             //error, trying to say some value is in a noncompartment type
-            const errorMessage: string = "Unable to set the type to 'compartment'" + 
-                                         "because it is already set to be the incompatible type '"+
-                                          id2VarInfo.type +"' on line " + 
-                                          id2VarInfo.idSrcRange.start.toString();
+            const errorMessage = incompatibleTypesError(varTypes.Compartment, id2VarInfo);
             const errorUnderline = this.getErrorUnderline(this.getSrcRange(in_compCtx.var_name()), errorMessage, true);
             this.errorList.push(errorUnderline);
           }
@@ -548,6 +564,10 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     }
   }
 
+  visitVariable_in(ctx: Variable_inContext) {
+    this.visitNamemaybein(ctx);
+  }
+
   visitReaction(ctx: ReactionContext) {
     // visiting will probably need to be done partial manually
 
@@ -565,9 +585,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
             existingInfo.type = varTypes.Reaction;
           } else {
             // error cannot have this id be a reaction
-            const errorMessage: string = "Unable to set the type to '" + varTypes.Reaction +
-            "' because it is already set to be the incompatible type '"+ existingInfo.type +
-            "' on line " + existingInfo.idSrcRange.start.toString();
+            const errorMessage = incompatibleTypesError(varTypes.Reaction, existingInfo);
             this.errorList.push(this.getErrorUnderline(this.getSrcRange(reactionName.namemaybein()), errorMessage, true));
           }
         } else {
@@ -633,9 +651,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
           } else {
             validCompartment = false;
             // type issue!
-            const errorMessage: string = "Unable to set the type to '" + varTypes.Compartment +
-            "' because it is already set to be the incompatible type '"+ compartmentInfo.type +
-            "' on line " + compartmentInfo.idSrcRange.start.toString();
+            const errorMessage = incompatibleTypesError(varTypes.Compartment, compartmentInfo);
             this.errorList.push(this.getErrorUnderline(this.getSrcRange(inComp.var_name()), errorMessage, true));
           }
         } else {
@@ -664,7 +680,10 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
         }
       }
     }
+  }
 
+  visitEvent(ctx: EventContext) {
     
   }
+
 }

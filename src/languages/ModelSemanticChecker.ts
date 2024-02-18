@@ -1,10 +1,11 @@
 import * as monaco from 'monaco-editor';
-import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, ParserRuleContext, RecognitionException, Recognizer } from 'antlr4ts';
+import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, DefaultErrorStrategy, Parser, RecognitionException, Recognizer} from 'antlr4ts';
 import { AntimonyGrammarLexer } from './antlr/AntimonyGrammarLexer';
-import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Is_assignmentContext, NamemaybeinContext, ReactionContext, SpeciesContext, Species_listContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
-import { SymbolTable, GlobalST, FuncST, ModelST} from './SymbolTableClasses';
+import { AntimonyGrammarParser} from './antlr/AntimonyGrammarParser';
+import { GlobalST} from './SymbolTableClasses';
 import { SymbolTableVisitor } from './SymbolTableVisitor';
-import { error } from 'console';
+import { ATNState } from 'antlr4ts/atn/ATNState';
+import { IntervalSet } from 'antlr4ts/misc/IntervalSet';
 
 
 type parseErrors = {
@@ -12,6 +13,26 @@ type parseErrors = {
   column: number,
   msg: string
 }
+
+class MyErrorStrat extends DefaultErrorStrategy {
+  private errors: string[] = [];
+
+  recover(recognizer: Parser, e: RecognitionException): void {
+    this.errors.push("Recovering from " + e + " at " + recognizer.currentToken);
+  }
+
+  sync(recognizer: Parser): void {
+      if (!this.inErrorRecoveryMode(recognizer)) {
+        let s: ATNState | undefined = recognizer.interpreter.atn.states.at(recognizer.state);
+        if (s) {
+          let next = s.transition(0).target;
+          let expecting: IntervalSet = recognizer.getExpectedTokens();
+          let nextTokens: IntervalSet = recognizer.getExpectedTokensWithinCurrentRule();
+        }
+      }
+  }
+}
+
 // copied from ModelParser for now
 class ErrorListener implements ANTLRErrorListener<any> {
   private errors: parseErrors[] = [];
@@ -53,6 +74,7 @@ export function getSTVisitor(antimonyCode: string): SymbolTableVisitor {
   const errorListener = new ErrorListener();
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
+  // parser.errorHandler = new MyErrorStrat();
 
   // Parse the input, where `compilationUnit` is whatever entry point you defined
   let tree = parser.root();
@@ -64,7 +86,8 @@ export function getSTVisitor(antimonyCode: string): SymbolTableVisitor {
   console.log(globalSymbolTable);
   const stVisitor: SymbolTableVisitor = new SymbolTableVisitor(globalSymbolTable);
   stVisitor.visit(tree);
-  stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
+
+  //stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
   return stVisitor;
 }
 

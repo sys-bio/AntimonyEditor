@@ -36,6 +36,7 @@ export class SrcRange {
 // copied from vscode-antimony types file.
 export enum varTypes {
     Unknown = 'unknown',
+    Const = 'const',
     
     // Subtypes of unknown
     Variable = 'variable',
@@ -68,6 +69,10 @@ export function getTypeFromString(type: string): varTypes {
             return varTypes.Species;
         case 'compartment':
             return varTypes.Compartment;
+        case 'const':
+            return varTypes.Const;
+        case 'var':
+            return varTypes.Variable;
         default:
             // this *should* be caught by parsing.
             // error out for now
