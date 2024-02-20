@@ -87,7 +87,7 @@ export function getSTVisitor(antimonyCode: string): SymbolTableVisitor {
   const stVisitor: SymbolTableVisitor = new SymbolTableVisitor(globalSymbolTable);
   stVisitor.visit(tree);
 
-  //stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
+  stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
   return stVisitor;
 }
 

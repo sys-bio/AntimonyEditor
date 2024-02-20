@@ -8,7 +8,7 @@ import { SymbolTable, GlobalST, FuncST, ModelST} from './SymbolTableClasses';
 import { Variable } from './Variable';
 import { SrcPosition, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
 import { functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning, unitializationRateLawWarning } from './SemanticErrors';
-import { error } from 'console';
+
 
 
 
