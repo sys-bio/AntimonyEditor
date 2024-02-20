@@ -62,5 +62,12 @@ export function overridingValueWarning(name: string, srcRange: SrcRange): string
   return warningMessage;
 }
 
+/**
+ * Warning over a reaction that has no rate law
+ * @returns warning message
+ */
+export function unitializationRateLawWarning(id: string): string {
+  return "Reaction '"+ id +"' missing rate law";
+}
 
 export {}

@@ -1,13 +1,14 @@
 import * as monaco from 'monaco-editor';
 import { ParserRuleContext} from 'antlr4ts';
-import {AssignmentContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
+import {AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { AbstractParseTreeVisitor, ParseTree, TerminalNode } from 'antlr4ts/tree'
 import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
 import { SymbolTable, GlobalST, FuncST, ModelST} from './SymbolTableClasses';
 import { Variable } from './Variable';
-import { SrcPosition, SrcRange, getTypeFromString, varTypes } from './Types';
-import { functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning } from './SemanticErrors';
+import { SrcPosition, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
+import { functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning, unitializationRateLawWarning } from './SemanticErrors';
+import { error } from 'console';
 
 
 
@@ -55,7 +56,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
 
   /**
    * THIS method is probably usesless.
-   * Use this for stuff in the global scope!
+   * Use this for stuff in the global scope!?
    * if id exists in the current ST, return that variables info
    * else if id exists in global ST and is either a model or a function, then return that info
    * else return undefined
@@ -207,20 +208,29 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
       const funcST: FuncST | undefined = this.globalST.getFunctionST(funcName);
       if (!funcST){
         // func has not been declared yet
-        this.globalST.setFunction(funcName, funcIDSrcRange)
+        // can still error if another var has same name!
+        const existingVarInfo: Variable | undefined = this.globalST.getVar(funcName)
+        if (existingVarInfo) {
+          // error, already exists!
+          const errorMessage: string = incompatibleTypesError(varTypes.Function, existingVarInfo);
+          const errorUnderline: ErrorUnderline = this.getErrorUnderline(funcIDSrcRange, errorMessage, true);
+          this.errorList.push(errorUnderline);
+        } else {
+          this.globalST.setFunction(funcName, funcIDSrcRange)
 
-        // look for params
-        let params: Init_paramsContext | undefined = ctx.init_params();
+          // look for params
+          let params: Init_paramsContext | undefined = ctx.init_params();
 
-        if (params && params.children) {
-          for (let i = 0; i < params.children.length; i += 2) {
-            const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(params.children[i]), undefined, false);
-            const paramId: string = params.children[i].text;
+          if (params && params.children) {
+            for (let i = 0; i < params.children.length; i += 2) {
+              const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(params.children[i]), undefined, false);
+              const paramId: string = params.children[i].text;
 
-            // we need to know what the params are if we want to
-            // use this function anywhere.
-            this.globalST.getFunctionST(funcName)?.params.push(paramId);
-            this.globalST.getFunctionST(funcName)?.setVar(paramId, paramInfo);
+              // we need to know what the params are if we want to
+              // use this function anywhere.
+              this.globalST.getFunctionST(funcName)?.params.push(paramId);
+              this.globalST.getFunctionST(funcName)?.setVar(paramId, paramInfo);
+            }
           }
         }
       } else {
@@ -329,8 +339,9 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
   visitSpecies(ctx: SpeciesContext) {
     let varInfo: Variable = new Variable(varTypes.Species, false, undefined, this.getSrcRange(ctx), undefined, false);
 
-    let speciesName: string = this.getVarName(ctx.text);
-    varInfo.isConst = (ctx.text.charAt(0) === '$');
+    let speciesName: string = this.getVarName(ctx.NAME().text);
+    // gets the $ location within the grammar def of "species : (NUMBER)? ('$')? NAME;"
+    varInfo.isConst = (ctx.text.charAt((ctx.text.length - ctx.NAME().text.length - 1)) === '$');
 
     // get the relevant ST
     const currST: SymbolTable | undefined = this.getCurrST();
@@ -340,6 +351,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
       if (existingVarInfo) {
         if (existingVarInfo.canSetType(varTypes.Species)) {
           existingVarInfo.type = varTypes.Species;
+          existingVarInfo.idSrcRange = this.getSrcRange(ctx.NAME());
         } else {
           const errorMessage = incompatibleTypesError(varTypes.Species, existingVarInfo);
           const errorUnderline: ErrorUnderline = this.getErrorUnderline(varInfo.idSrcRange, errorMessage, true);
@@ -349,13 +361,10 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
         // var does not exist, insert into ST
         currST.setVar(speciesName, varInfo);
       }
-    } else {
-      // fail fast!
-      console.error("could not find symbol table in visit species!");
     }
   }
 
-    /**
+  /**
    * 
    * @param ctx 
    */
@@ -373,7 +382,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
       // we are looping this way to only hit the Decl_itemContext nodes.
       for (let i = 1; i < ctx.children.length; i+=2) {
         const declItem: Decl_itemContext = ctx.children[i] as Decl_itemContext;
-        let varName: string = this.getVarName(declItem.namemaybein().var_name().text);
+        const varName: string = this.getVarName(declItem.namemaybein().var_name().text);
         const currSrcRange: SrcRange = this.getSrcRange(declItem);
         const currST: SymbolTable | undefined = this.getCurrST();
 
@@ -399,7 +408,6 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
           let declModifiers: Decl_modifiersContext = ctx.decl_modifiers();
           varInfo.substanceOnly = (declModifiers.SUB_MODIFIER() !== undefined) || varInfo.substanceOnly;
           varInfo.isConst = (declModifiers.VAR_MODIFIER()?.text === varTypes.Const) || varInfo.isConst;
-
           let typeString: string | undefined = declModifiers.TYPE_MODIFIER()?.text;
           
           if (typeString) {
@@ -407,6 +415,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
 
             if (varInfo.canSetType(type)) {
               varInfo.type = type;
+              varInfo.idSrcRange = currSrcRange;
             } else {
               // error! trying to overried previous type decl
               const errorMessage = incompatibleTypesError(type, varInfo);
@@ -475,11 +484,9 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
               const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
               this.errorList.push(errorUnderline);
             }
-
-            varInfo.initSrcRange = currSrcRange;
-          } else {
-            varInfo.initSrcRange = currSrcRange;
           }
+          varInfo.initSrcRange = currSrcRange;
+          varInfo.type = varTypes.Parameter;
         }
       }
     }
@@ -544,9 +551,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
           }
         } else {
           // does not exist in ST yet, add as uninitialized compartment (default value).
-          let id2VarInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(in_compCtx.var_name()), undefined, false);
-          id2VarInfo.type = varTypes.Compartment;
-
+          let id2VarInfo: Variable = new Variable(varTypes.Compartment, false, undefined, this.getSrcRange(in_compCtx.var_name()), undefined, false);
           currST.setVar(id2, id2VarInfo);
 
           // we do NOT error for unitialization! that will be taken care of
@@ -602,7 +607,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     if (!ctx.sum()) {
       // although it might make more sense to check in the semantic visitor
       // it really doesn't matter here I think.
-      const errorMessage: string = "Reaction '"+ id +"' missing rate law";
+      const errorMessage: string = unitializationRateLawWarning(id);
       this.errorList.push(this.getErrorUnderline(this.getSrcRange(ctx), errorMessage, false));
     } else {
       // record that this reaction var has a rate rule assigned to it
@@ -686,4 +691,49 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     
   }
 
+  // this is for sum expressions
+  // or perhaps "some" expressions? wink wink XD
+  visitAtom(ctx: AtomContext) {
+    const varNameCtx: Var_nameContext | undefined = ctx.var_name();
+    if (varNameCtx) {
+      const varName = this.getVarName(varNameCtx.NAME().text);
+      const isConst = (varNameCtx.text.charAt(0) === '$');
+      const idSrcRange: SrcRange = this.getSrcRange(varNameCtx.NAME());
+      
+      // if it exists, type checks, etc
+      // if not, then add to ST as a parameter.
+      const currST: SymbolTable | undefined = this.getCurrST();
+      if (currST) {
+        let existingVarInfo: Variable | undefined = currST.getVar(varName);
+
+        if (existingVarInfo) {
+          // already exists
+          if (existingVarInfo.canSetType(varTypes.Parameter)) {
+            existingVarInfo.type = varTypes.Parameter;
+            existingVarInfo.idSrcRange = idSrcRange;
+          } else if (!isSubtTypeOf(existingVarInfo.type, varTypes.Parameter)) {
+            const errorMessage = incompatibleTypesError(varTypes.Parameter, existingVarInfo);
+            const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
+            this.errorList.push(errorUnderline);
+          }
+
+        } else {
+          // does not exist.
+          const varInfo = new Variable(varTypes.Parameter, isConst, undefined, idSrcRange, undefined, false);
+          currST.setVar(varName, varInfo);
+        } 
+      }
+
+    } else {
+      // not at an atom that has a varname
+      // we only care about ones with varNames because that is 
+      // where semantic checking is relevant, so here we just
+      // continue on to the children.
+      if (ctx.children) {
+        for (let i = 0; i < ctx.children.length; i++) {
+          this.visit(ctx.children[i]);
+        }
+      }
+    }
+  }
 }
