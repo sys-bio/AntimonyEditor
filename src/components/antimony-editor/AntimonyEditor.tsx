@@ -138,6 +138,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
           ModelParser(editor, true);
+          ModelSemanticsChecker(editor, true);
         }, 300);
       };
 

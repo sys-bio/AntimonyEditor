@@ -274,15 +274,15 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   parser.addErrorListener(errorListener);
 
   // If hover exists, dispose of it and create a new one
-  let hoverInfo = parseAntimony(variables, errorListener.getErrors());
-  if (hoverInfo) {
-    editor.onDidDispose(() => {
-      hoverInfo.dispose();
-    });
-    editor.onDidChangeModelContent(() => {
-      hoverInfo.dispose();
-    });
-  }
+  // let hoverInfo = parseAntimony(variables, errorListener.getErrors());
+  // if (hoverInfo) {
+  //   editor.onDidDispose(() => {
+  //     hoverInfo.dispose();
+  //   });
+  //   editor.onDidChangeModelContent(() => {
+  //     hoverInfo.dispose();
+  //   });
+  // }
 }
 
 /**
