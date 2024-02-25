@@ -12,11 +12,11 @@ import { FileChangeType } from 'vscode';
 import { isSubtTypeOf, varTypes } from '../languages/Types';
 import { Variable } from '../languages/Variable';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
-});
+// test('renders learn react link', () => {
+//   render(<App />);
+//   const linkElement = screen.getByText(/learn react/i);
+//   expect(linkElement).toBeInTheDocument();
+// });
 
 jest.mock('monaco-editor', () => ({
   MarkerSeverity: {

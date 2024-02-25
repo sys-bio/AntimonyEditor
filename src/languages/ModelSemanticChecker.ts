@@ -79,15 +79,15 @@ export function getSTVisitor(antimonyCode: string): SymbolTableVisitor {
   // Parse the input, where `compilationUnit` is whatever entry point you defined
   let tree = parser.root();
   // printing the tree for debugging purposes
-  console.log(tree);
+  // console.log(tree);
   
   // create and buildup a global symbol table from the parse tree.
   let globalSymbolTable: GlobalST = new GlobalST();
-  console.log(globalSymbolTable);
+  // console.log(globalSymbolTable);
   const stVisitor: SymbolTableVisitor = new SymbolTableVisitor(globalSymbolTable);
   stVisitor.visit(tree);
 
-  stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
+  // stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
   return stVisitor;
 }
 
