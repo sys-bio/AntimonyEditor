@@ -157,7 +157,7 @@ const App: React.FC = () => {
           db.put('files', { name: fileName, content: fileContent });
           console.log('add')
         }
-  
+
         // Sort the files alphabetically and numerically based on their names
         return updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
       });
