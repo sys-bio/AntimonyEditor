@@ -204,17 +204,40 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   /**
    * @description Handles conversion from SBML to Antimony
    */
-    const handleConversionSBML = () => {
-      try {
-        if (window.processSBML) {
-          window.processSBML();
-        } else {
-          console.error('processSBML function not found in the global scope.');
-        }
-      } catch (err) {
-        console.log('Conversion error:', err);
+  const handleConversionSBML = () => {
+    try {
+      if (window.processSBML) {
+        window.processSBML();
+      } else {
+        console.error('processSBML function not found in the global scope.');
       }
+    } catch (err) {
+      console.log('Conversion error:', err);
+    }
+  };
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isDropdownVisible, setDropdownVisible] = useState(false);
+
+  const handleButtonClick = () => {
+    if (dropdownRef.current) {
+      setDropdownVisible(!isDropdownVisible);
+    }
+  };
+
+  const handleOutsideClick = (event: MouseEvent) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      setDropdownVisible(false);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('click', handleOutsideClick);
+
+    return () => {
+      window.removeEventListener('click', handleOutsideClick);
     };
+  }, []);
 
   return (
     <div>
@@ -222,12 +245,19 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         <button className='button' onClick={() => handleDownload(editorInstance, fileName)}>Save File to Downloads Folder</button>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
         {/* <CustomButton name={'Create Annotations'} /> */}
-        <CustomButton name={'Navigate to Edit Annotations'} />
+        {/* <CustomButton name={'Navigate to Edit Annotations'} /> */}
+        <button className='btn'>Navigate to Edit Annotations</button>
         {/* <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Annotated Variable Highlight Off'} /> */}
-        
-        <button className='button' onClick={handleConversionAnt}>Convert Antimony to SBML</button>
-        <button className='button' onClick={handleConversionSBML}>Convert SBML to Antimony</button>
+        <div className="dropdown" ref={dropdownRef}>
+          <button onClick={handleButtonClick} className="dropbtn">
+            Convert Antimony/SBML
+          </button>
+          <div id="myDropdown" className={`dropdown-content ${isDropdownVisible ? 'show' : ''}`}>
+            <button className='button' onClick={handleConversionAnt}>Convert Antimony to SBML</button>
+            <button className='button' onClick={handleConversionSBML}>Convert SBML to Antimony</button>
+          </div>
+        </div>
         <input id='biomodel-browse' type='text' placeholder='Search for a model' />
         <ul id='dropdown' />
         <Loader loading={loading} />
