@@ -150,6 +150,7 @@ const App: React.FC = () => {
         const existingFileIndex = prevFiles.findIndex(file => file.name === fileName);
   
         if (existingFileIndex !== -1) {
+          // alert('File already exists');
         } else {
           // If the file doesn't exist, add it to the array
           updatedFiles = [...prevFiles, { name: fileName, content: fileContent }];
