@@ -109,15 +109,15 @@ export async function getModel(modelId: string) {
         });
         // If the model is found, decode the content and return it
         if ("content" in response.data) {
-          return decodeURIComponent(Array.prototype.map.call(atob(response.data.content), (c: string) => {
-            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join(""));         
+          return [modelId, decodeURIComponent(Array.prototype.map.call(atob(response.data.content), (c: string) => {
+            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join(""))];
         } else {
           throwError("Unable to fetch model from GitHub repository.");
-          return "";
+          return [modelId, ""];
         }
     } catch (error) {
         throwError("Model not found, please choose another model.");
-        return "";
+        return [modelId, ""];
     }
 }
 

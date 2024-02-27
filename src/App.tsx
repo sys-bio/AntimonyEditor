@@ -177,6 +177,16 @@ const App: React.FC = () => {
         .catch(error => {
           console.error('Error in handleFileConversion:', error);
         });
+    } else {
+      console.log('ran empty antimony')
+      handleSBMLtoAntConversion(antimony, window.fileName + '.ant')
+        .then(() => {
+          window.antimonyActive = true;
+          window.antimonyString = '';
+        })
+        .catch(error => {
+          console.error('Error in handleFileConversion:', error);
+        });
     }
   }
 
