@@ -102,6 +102,7 @@ export function isSubtTypeOf(type1: varTypes, type2: varTypes) {
     set.add(varTypes.Compartment);
     set.add(varTypes.Reaction);
     set.add(varTypes.Constraint);
+    set.add(varTypes.Event);
 
     let derives_from_param: boolean = set.has(type1);
 

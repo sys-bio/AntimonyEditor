@@ -1,6 +1,6 @@
 import * as monaco from 'monaco-editor';
 import { ParserRuleContext} from 'antlr4ts';
-import {AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
+import {AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { AbstractParseTreeVisitor, ParseTree, TerminalNode } from 'antlr4ts/tree'
 import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
@@ -419,7 +419,6 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
             } else {
               // error! trying to overried previous type decl
               const errorMessage = incompatibleTypesError(type, varInfo);
-              varInfo.idSrcRange.start.toString();
               const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage, true);
               this.errorList.push(errorUnderline);
             }
@@ -481,8 +480,8 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
               this.errorList.push(errorUnderline1);
 
               const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
-              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
-              this.errorList.push(errorUnderline);
+              const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
+              this.errorList.push(errorUnderline2);
             }
           }
           varInfo.initSrcRange = currSrcRange;
@@ -553,6 +552,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
           // does not exist in ST yet, add as uninitialized compartment (default value).
           let id2VarInfo: Variable = new Variable(varTypes.Compartment, false, undefined, this.getSrcRange(in_compCtx.var_name()), undefined, false);
           currST.setVar(id2, id2VarInfo);
+          id1VarInfo.compartment = id2;
 
           // we do NOT error for unitialization! that will be taken care of
           // by the semantic visitor!
@@ -573,34 +573,37 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     this.visitNamemaybein(ctx);
   }
 
-  visitReaction(ctx: ReactionContext) {
-    // visiting will probably need to be done partial manually
-
-    // if there is a reaction id, get it and add to ST
-    let id: string = '';
-    const reactionName: Reaction_nameContext | undefined = ctx.reaction_name();
+  visitReaction_name(ctx: Reaction_nameContext) {
+    this.visit(ctx.namemaybein());
+    const id = ctx.namemaybein().var_name().text;
     const currST: SymbolTable | undefined = this.getCurrST();
-    if (reactionName) {
-      id = reactionName.namemaybein().text;
-      if (currST) {
-        let existingInfo: Variable | undefined;
-        if ((existingInfo = currST.getVar(id)) !== undefined) {
-          // id already exists
-          if (existingInfo.canSetType(varTypes.Reaction)) {
-            existingInfo.type = varTypes.Reaction;
-          } else {
-            // error cannot have this id be a reaction
-            const errorMessage = incompatibleTypesError(varTypes.Reaction, existingInfo);
-            this.errorList.push(this.getErrorUnderline(this.getSrcRange(reactionName.namemaybein()), errorMessage, true));
-          }
-        } else {
-          // id does not exist can just insert
-          let varInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(reactionName.namemaybein()), undefined, false);
+    const idSrcRange: SrcRange = this.getSrcRange(ctx.namemaybein().var_name());
+
+    if (currST) {
+      const varInfo: Variable | undefined = currST.getVar(id);
+
+      if (varInfo) {
+        if (isSubtTypeOf(varTypes.Reaction, varInfo.type)) {
           varInfo.type = varTypes.Reaction;
-          currST.setVar(id, varInfo);
+        } else {
+          const errorMessage = incompatibleTypesError(varTypes.Reaction, varInfo);
+          const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
+          this.errorList.push(errorUnderline);
         }
       }
     }
+  }
+
+  visitReaction(ctx: ReactionContext) {
+    // visiting will probably need to be done partial manually
+    const reactionName: Reaction_nameContext | undefined = ctx.reaction_name()
+    let id = "";
+    if (reactionName) {
+      id = reactionName.namemaybein().text;
+      this.handleEventOrReactionName(id, reactionName, varTypes.Reaction);
+    }
+
+    const currST: SymbolTable | undefined = this.getCurrST();
 
     // check if the reaction has a rate rule
     // no need to remember rate rule for error checking?
@@ -687,8 +690,98 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
     }
   }
 
+  /**
+   * // event
+        event : reaction_name? 'at' event_delay? bool_exp event_trigger_list? ':' event_assignment_list;
+
+        event_delay : bool_exp 'after';
+
+        event_trigger_list : (',' event_trigger)*;
+
+        // atom has to be changed to (NUMBER | var_name)
+        event_trigger : 't0' '=' BOOLEAN
+            | 'priority' '=' sum
+            | 'fromTrigger' '=' BOOLEAN
+            | 'persistent' '=' BOOLEAN;
+   * @param ctx 
+   */
   visitEvent(ctx: EventContext) {
+    const eventName: Reaction_nameContext | undefined = ctx.reaction_name()
+    let id = "";
+    if ( eventName) {
+      id =  eventName.namemaybein().text;
+      this.handleEventOrReactionName(id, eventName, varTypes.Event);
+    }
+
+    if (ctx.children) {
+      for (let i = 0; i < ctx.children.length; i++) {
+        this.visit(ctx.children[i]);
+      }
+    }
+  }
+
+  visitEvent_assignment(ctx: Event_assignmentContext) {
+    const varNameCtx: Var_nameContext = ctx.var_name();
+    this.handleParameterVarNameContext(varNameCtx);
+    this.visit(ctx.sum());
+  }
+
+  /**
+   * handles the reaction_nameContext that declares the
+   * id of either a reaction or an event, handling error checking type 
+   * assignment, and inserting into the ST if needed.
+   * @param id the id of the reaction/event
+   * @param name
+   * @param type
+   */
+  private handleEventOrReactionName(id: string, name: Reaction_nameContext, type: varTypes.Event | varTypes.Reaction) {
+    this.visit(name.namemaybein());
+    const currST: SymbolTable | undefined = this.getCurrST();
+    const idSrcRange: SrcRange = this.getSrcRange(name.namemaybein().var_name());
+
+    if (currST) {
+      const varInfo: Variable | undefined = currST.getVar(id);
+
+      if (varInfo) {
+        if (isSubtTypeOf(type, varInfo.type)) {
+          varInfo.type = type;
+        } else {
+          const errorMessage = incompatibleTypesError(type, varInfo);
+          const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
+          this.errorList.push(errorUnderline);
+        }
+      }
+    }
+  }
+
+  private handleParameterVarNameContext(varNameCtx: Var_nameContext) {
+    const varName = this.getVarName(varNameCtx.NAME().text);
+    const isConst = (varNameCtx.text.charAt(0) === '$');
+    const idSrcRange: SrcRange = this.getSrcRange(varNameCtx.NAME());
     
+    // if it exists, type checks, etc
+    // if not, then add to ST as a parameter.
+    const currST: SymbolTable | undefined = this.getCurrST();
+    if (currST) {
+      let existingVarInfo: Variable | undefined = currST.getVar(varName);
+
+      if (existingVarInfo) {
+        // already exists
+        if (existingVarInfo.canSetType(varTypes.Parameter)) {
+          existingVarInfo.type = varTypes.Parameter;
+          existingVarInfo.idSrcRange = idSrcRange;
+        } else if (!isSubtTypeOf(existingVarInfo.type, varTypes.Parameter)) {
+          const errorMessage = incompatibleTypesError(varTypes.Parameter, existingVarInfo);
+          const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
+          this.errorList.push(errorUnderline);
+        }
+
+      } else {
+        // does not exist.
+        const varInfo = new Variable(varTypes.Parameter, isConst, undefined, idSrcRange, undefined, false);
+        currST.setVar(varName, varInfo);
+      }
+    }
   }
 
   // this is for sum expressions
@@ -696,34 +789,7 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
   visitAtom(ctx: AtomContext) {
     const varNameCtx: Var_nameContext | undefined = ctx.var_name();
     if (varNameCtx) {
-      const varName = this.getVarName(varNameCtx.NAME().text);
-      const isConst = (varNameCtx.text.charAt(0) === '$');
-      const idSrcRange: SrcRange = this.getSrcRange(varNameCtx.NAME());
-      
-      // if it exists, type checks, etc
-      // if not, then add to ST as a parameter.
-      const currST: SymbolTable | undefined = this.getCurrST();
-      if (currST) {
-        let existingVarInfo: Variable | undefined = currST.getVar(varName);
-
-        if (existingVarInfo) {
-          // already exists
-          if (existingVarInfo.canSetType(varTypes.Parameter)) {
-            existingVarInfo.type = varTypes.Parameter;
-            existingVarInfo.idSrcRange = idSrcRange;
-          } else if (!isSubtTypeOf(existingVarInfo.type, varTypes.Parameter)) {
-            const errorMessage = incompatibleTypesError(varTypes.Parameter, existingVarInfo);
-            const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
-            this.errorList.push(errorUnderline);
-          }
-
-        } else {
-          // does not exist.
-          const varInfo = new Variable(varTypes.Parameter, isConst, undefined, idSrcRange, undefined, false);
-          currST.setVar(varName, varInfo);
-        } 
-      }
-
+      this.handleParameterVarNameContext(varNameCtx);
     } else {
       // not at an atom that has a varname
       // we only care about ones with varNames because that is 

@@ -1,0 +1,11 @@
+R: A + 12.1231$B -> A; 2*k/(12*q)*A;
+
+a = z^c / A
+
+function c(x)
+  x
+end
+
+function k(x)
+  x
+end
