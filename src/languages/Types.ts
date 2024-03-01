@@ -1,5 +1,6 @@
 // empty
 // gonna try and copy the way vscode antimony does things.
+import * as monaco from 'monaco-editor';
 
 export class SrcPosition {
     public line: number;
@@ -28,6 +29,16 @@ export class SrcRange {
         return this.start.toString() + ' - ' + this.end.toString();
     }
 }
+
+export type ErrorUnderline = {
+    startLineNumber: number,
+    startColumn: number,
+    endLineNumber: number,
+    endColumn: number,
+    message: string,
+    severity: monaco.MarkerSeverity
+}
+  
 
 
 //---------------------------------------//

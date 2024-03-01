@@ -2,94 +2,17 @@ import * as monaco from 'monaco-editor';
 import { ParserRuleContext} from 'antlr4ts';
 import {AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
-import { AbstractParseTreeVisitor, ParseTree, TerminalNode } from 'antlr4ts/tree'
-import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
-import { SymbolTable, GlobalST, FuncST, ModelST} from './SymbolTableClasses';
+import { ParseTree, TerminalNode } from 'antlr4ts/tree'
+import { SymbolTable, FuncST, ModelST} from './SymbolTableClasses';
 import { Variable } from './Variable';
-import { SrcPosition, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
+import { ErrorUnderline, SrcPosition, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
 import { functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning, unitializationRateLawWarning } from './SemanticErrors';
+import { ErrorVisitor } from './ErrorVisitor';
 
+// type scope = "model" | "mmodel" | "function";
+// type nameAndScope = {name: string, scope: scope};
 
-
-
-type scope = "model" | "mmodel" | "function";
-type nameAndScope = {name: string, scope: scope};
-
-type ErrorUnderline = {
-  startLineNumber: number,
-  startColumn: number,
-  endLineNumber: number,
-  endColumn: number,
-  message: string,
-  severity: monaco.MarkerSeverity
-}
-
-export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implements AntimonyGrammarVisitor<void> {
-  public globalST: GlobalST;
-  private errorList: ErrorUnderline[];
-  
-  // these keep track of scoping when traversing 
-  // so we know to which ST to add a variable: 
-  private currNameAndScope: nameAndScope | undefined;
-
-  constructor(globalST: GlobalST) {
-    super();
-    this.globalST = globalST;
-    this.currNameAndScope = undefined;
-    this.errorList = [];
-  }
-
-  protected defaultResult(): void {
-  }
-
-  /**
-   * gets the list of accumulated errors
-   * @returns 
-   */
-  public getErrors(): ErrorUnderline[] {
-    return this.errorList;
-  }
-
-  public addErrorList(errors: ErrorUnderline[]) {
-    this.errorList = this.errorList.concat(errors);
-  } 
-
-  /**
-   * THIS method is probably usesless.
-   * Use this for stuff in the global scope!?
-   * if id exists in the current ST, return that variables info
-   * else if id exists in global ST and is either a model or a function, then return that info
-   * else return undefined
-   * taken care of in getSrcRange
-   *
-   * @param id 
-   * @returns 
-   */
-  private getVarInfo(id: string): Variable | undefined {
-    const currST: SymbolTable | undefined = this.getCurrST();
-    if (currST) {
-      // at the global scope, there is the issue of 
-      // same id with a function or model
-      // at this point as far as I know within a model this is not
-      // an issue
-      if (currST === this.globalST) {
-        let varInfo: Variable | undefined;
-        if ((varInfo = currST.getVar(id)) !== undefined) {
-          return varInfo;
-        }
-
-        if ((varInfo = this.globalST.getVar(id)) !== undefined) {
-          if (varInfo.type === varTypes.Function || varInfo.type === varTypes.Model) {
-            return varInfo;
-          }
-        }
-      } else {
-        return currST.getVar(id);
-      }
-    }
-
-    return undefined;
-  }
+export class SymbolTableVisitor extends ErrorVisitor {
 
   /**
    * given a node, finds the (startline, startcolumn), (endline, endcolumn).
@@ -721,9 +644,20 @@ export class SymbolTableVisitor extends AbstractParseTreeVisitor<void> implement
   }
 
   visitEvent_assignment(ctx: Event_assignmentContext) {
-    const varNameCtx: Var_nameContext = ctx.var_name();
-    this.handleParameterVarNameContext(varNameCtx);
-    this.visit(ctx.sum());
+    try {
+      const varNameCtx: Var_nameContext = ctx.var_name();
+      this.handleParameterVarNameContext(varNameCtx);
+      this.visit(ctx.sum());
+    } catch(e) {
+      // TODO: improve this error message.
+      // just error the whole event Assignemnt here for now
+      // quite possibly occurs when we have (x > true) instead of (x > 1) for example.
+      // but keep this error message for now.
+      const errorMessage = (e as Error).message;
+      const ErrorUnderline = this.getErrorUnderline(this.getSrcRange(ctx), errorMessage, true);
+      this.errorList.push(ErrorUnderline);
+      console.error(errorMessage);
+    }
   }
 
   /**
