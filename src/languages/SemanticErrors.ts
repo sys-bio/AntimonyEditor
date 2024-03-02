@@ -66,8 +66,26 @@ export function overridingValueWarning(name: string, srcRange: SrcRange): string
  * Warning over a reaction that has no rate law
  * @returns warning message
  */
-export function unitializationRateLawWarning(id: string): string {
+export function unitializedRateLawWarning(id: string): string {
   return "Reaction '"+ id +"' missing rate law";
+}
+
+/**
+ * 
+ * @param id 
+ * @returns 
+ */
+export function unitializedParameterError(id: string): string {
+  return "Parameter \'" + id + "\' missing value assignment";
+}
+
+/**
+ * 
+ * @param id 
+ * @returns 
+ */
+export function defaultValueWarning(id: string): string {
+  return "Species \'" + id + "\' has not been initialized, using default value";
 }
 
 export {}

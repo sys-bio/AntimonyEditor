@@ -1,134 +1,23 @@
-import * as monaco from 'monaco-editor';
-import { ParserRuleContext} from 'antlr4ts';
 import {AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
-import { ParseTree, TerminalNode } from 'antlr4ts/tree'
 import { SymbolTable, FuncST, ModelST} from './SymbolTableClasses';
 import { Variable } from './Variable';
-import { ErrorUnderline, SrcPosition, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
-import { functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning, unitializationRateLawWarning } from './SemanticErrors';
+import { ErrorUnderline, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
+import { functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning, unitializedRateLawWarning } from './SemanticErrors';
 import { ErrorVisitor } from './ErrorVisitor';
+import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
 
 // type scope = "model" | "mmodel" | "function";
 // type nameAndScope = {name: string, scope: scope};
 
-export class SymbolTableVisitor extends ErrorVisitor {
-
-  /**
-   * given a node, finds the (startline, startcolumn), (endline, endcolumn).
-   * TODO: fix this method!! wrong srcRange for assignements.
-   *       Also just cleanup the code, it is terrible rn.
-   * @param ctx the parse tree node
-   * @returns a SrcRange to represent the location range
-   */
-  private getSrcRange(ctx: ParseTree): SrcRange {
-    if (ctx instanceof ParserRuleContext) {
-      let startLine: number = ctx._start.line;
-      let startColumn: number = ctx._start.charPositionInLine;
-      let stopLine: number = -1;
-      let stopColumn: number = -1;
-
-      if (ctx._stop) {
-        stopLine = ctx._stop.line;
-        stopColumn = ctx._stop.charPositionInLine + 1;
-      } else {
-        stopLine = startLine;
-        stopColumn = startColumn + 1;
-      }
-
-      if (stopLine === startLine && stopColumn === startColumn + 1) {
-        stopColumn += ctx.text.length - 1;
-      }
-
-      let srcRange: SrcRange = new SrcRange(new SrcPosition(startLine, startColumn+1), 
-                                            new SrcPosition(stopLine, stopColumn+1));
-      return srcRange;
-    } else if (ctx instanceof TerminalNode) {
-
-      let start: SrcPosition = new SrcPosition(ctx._symbol.line, ctx._symbol.charPositionInLine + 1);
-      let end: SrcPosition = new SrcPosition(ctx._symbol.line, ctx._symbol.charPositionInLine + ctx.text.length + 1);
-      let srcRange: SrcRange = new SrcRange(start, end);
-
-      return srcRange;
-    } else {
-
-      let srcRange: SrcRange = new SrcRange(new SrcPosition(0, 0), new SrcPosition(0, 0));
-      return srcRange;
-    }
-  }
-
-  /**
-   * returns the ST relevant to the current location
-   * in the tree the traversal is at.
-   * @returns either the symbol table or undefined (although it should never be undefined).
-   */
-  private getCurrST(): SymbolTable | undefined {
-    let currST: SymbolTable | undefined = undefined;
-    if (this.currNameAndScope) {
-      // get the ST (this really needs to be a private function lol)
-      if (this.currNameAndScope.scope === "model") {
-        // make sure that this the symbol table this var is in exists
-        currST = this.globalST.getModelST(this.currNameAndScope.name);
-      } else  if (this.currNameAndScope.scope === "mmodel")  {
-        // TODO: take care of mmodels
-      } else {
-        // function
-        currST = this.globalST.getFunctionST(this.currNameAndScope.name);
-      }
-    } else {
-      // this.currNameAndScope is undefined, outermost scope
-      currST = this.globalST;
-    }
-    
-    return currST;
-  }
-
-  /**
-   * Creates a ErrorUnderline type to represent a distinct semantic error.
-   * @param idSrcRange the line column range the error will give underline to
-   * @param message the error message shown when hovering over idSrcRange
-   * @param isError true if an error, false if a warning
-   * @returns an ErrorUnderline that can be passed to monaco.editor.setModelMarkers()
-   */
-  private getErrorUnderline(idSrcRange: SrcRange, message: string, isError: boolean): ErrorUnderline {
-    let severity = monaco.MarkerSeverity.Error;
-    if (!isError) {
-      severity = monaco.MarkerSeverity.Warning;
-    }
-    let errorUnderline: ErrorUnderline = {
-      startLineNumber:  idSrcRange.start.line,
-      startColumn:  idSrcRange.start.column,
-      endLineNumber:  idSrcRange.end.line,
-      endColumn:  idSrcRange.end.column,
-      message: message,
-      severity: severity
-    }
-    return errorUnderline;
-  }
-
-  /**
-   * checks for the $varName case, 
-   * returns just the varname
-   * @param id 
-   */
-  private getVarName(id: string): string {
-    if (id.length === 0) {
-      return id;
-    }
-
-    if (id.charAt(0) === '$') {
-      return id.slice(1);
-    }
-
-    return id;
-  }
+export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarVisitor<void> {
   
   visitFunction(ctx: FunctionContext) {
     if (ctx.children) {
-      const funcName: string = ctx.children[1].text;
-      const funcIDSrcRange: SrcRange = this.getSrcRange(ctx.children[1]);
-
+      const funcName = this.getVarName(ctx.NAME().text);
+      const funcIDSrcRange: SrcRange = this.getSrcRange(ctx.NAME());
       const funcST: FuncST | undefined = this.globalST.getFunctionST(funcName);
+
       if (!funcST){
         // func has not been declared yet
         // can still error if another var has same name!
@@ -533,7 +422,7 @@ export class SymbolTableVisitor extends ErrorVisitor {
     if (!ctx.sum()) {
       // although it might make more sense to check in the semantic visitor
       // it really doesn't matter here I think.
-      const errorMessage: string = unitializationRateLawWarning(id);
+      const errorMessage: string = unitializedRateLawWarning(id);
       this.errorList.push(this.getErrorUnderline(this.getSrcRange(ctx), errorMessage, false));
     } else {
       // record that this reaction var has a rate rule assigned to it

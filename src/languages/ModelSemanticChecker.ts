@@ -6,6 +6,9 @@ import { GlobalST} from './SymbolTableClasses';
 import { SymbolTableVisitor } from './SymbolTableVisitor';
 import { ATNState } from 'antlr4ts/atn/ATNState';
 import { IntervalSet } from 'antlr4ts/misc/IntervalSet';
+import { SemanticContext } from 'antlr4ts/atn/SemanticContext';
+import { SemanticVisitor } from './SemanticVisitor';
+import { ErrorUnderline } from './Types';
 
 
 type parseErrors = {
@@ -55,17 +58,18 @@ class ErrorListener implements ANTLRErrorListener<any> {
 
 const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: boolean) => {
 
-  const stVisitor: SymbolTableVisitor = getSTVisitor(editor.getValue());
+  // const stVisitor: SymbolTableVisitor = getSTVisitor(editor.getValue());
   // console.log(stVisitor.globalST);
+  const errors: ErrorUnderline[] = getErrors(editor.getValue());
 
   //this is how to add error squiglies 
   let model: monaco.editor.ITextModel | null = editor.getModel();
   if (model !== null) {
-    monaco.editor.setModelMarkers(model, "owner", stVisitor.getErrors());
+    monaco.editor.setModelMarkers(model, "owner", errors);
   }
 }
 
-export function getSTVisitor(antimonyCode: string): SymbolTableVisitor {
+export function getErrors(antimonyCode: string): ErrorUnderline[] {
   let inputStream = new ANTLRInputStream(antimonyCode);
   let lexer = new AntimonyGrammarLexer(inputStream);
   let tokenStream = new CommonTokenStream(lexer);
@@ -86,9 +90,12 @@ export function getSTVisitor(antimonyCode: string): SymbolTableVisitor {
   console.log(globalSymbolTable);
   const stVisitor: SymbolTableVisitor = new SymbolTableVisitor(globalSymbolTable);
   stVisitor.visit(tree);
+  const semanticVisitor: SemanticVisitor = new SemanticVisitor(stVisitor.globalST);
+  semanticVisitor.visit(tree);
+  
 
-  // stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
-  return stVisitor;
+  stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
+  return stVisitor.getErrors().concat(semanticVisitor.getErrors());
 }
 
 function addParseErrors(errors: parseErrors[]) {
