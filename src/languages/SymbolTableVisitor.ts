@@ -3,7 +3,7 @@ import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { SymbolTable, FuncST, ModelST} from './SymbolTableClasses';
 import { Variable } from './Variable';
 import { ErrorUnderline, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
-import { functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning, unitializedRateLawWarning } from './SemanticErrors';
+import { duplicateParameterError, functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning, unitializedRateLawWarning } from './SemanticErrors';
 import { ErrorVisitor } from './ErrorVisitor';
 import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
 
@@ -34,14 +34,24 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           let params: Init_paramsContext | undefined = ctx.init_params();
 
           if (params && params.children) {
+            const seenParams: Map<string, Variable> = new Map();
+            // only go over the ids, as we have id1,id2,id3,id4,etc
             for (let i = 0; i < params.children.length; i += 2) {
-              const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(params.children[i]), undefined, false);
               const paramId: string = params.children[i].text;
-
-              // we need to know what the params are if we want to
-              // use this function anywhere.
-              this.globalST.getFunctionST(funcName)?.params.push(paramId);
-              this.globalST.getFunctionST(funcName)?.setVar(paramId, paramInfo);
+              if (seenParams.has(paramId)) {
+                // handle repeat params ids in parameter list!!
+                const errorMessage = duplicateParameterError(paramId);
+                const errorUnderline = this.getErrorUnderline(this.getSrcRange(params.children[i]), errorMessage, true);
+                this.errorList.push(errorUnderline);
+              } else {
+                //TODO: figure out what to do with saying that a passed in paramter is uninitialized even when it is. 
+                const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(params.children[i]), undefined, false);
+                seenParams.set(paramId, paramInfo);
+                // we need to know what the params are if we want to
+                // initialize this model as a variable somwewhere.
+                this.globalST.getFunctionST(funcName)?.addParameter(paramId);
+                this.globalST.getFunctionST(funcName)?.setVar(paramId, paramInfo);
+              }
             }
           }
         }
@@ -52,13 +62,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         this.errorList.push(errorUnderline);
       }
 
-
-      // this can be a private function
-      this.currNameAndScope = {name: funcName, scope: "function"};
-      for (let i = 0; i < ctx.children.length; i++) {
-        this.visit(ctx.children[i]);
-      }
-      this.currNameAndScope = undefined;
+      this.setScopeVisitChildren(funcName, ctx, 'function');
     }
   }
 
@@ -82,25 +86,29 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         
         // add init params to the model as Unknown types.
         const params: Init_paramsContext | undefined = ctx.init_params();
-        if (params &&  params.children) {
+        if (params && params.children) {
+          const seenParams: Map<string, Variable> = new Map();
           // only go over the ids, as we have id1,id2,id3,id4
           for (let i = 0; i < params.children.length; i += 2) {
-            const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(params.children[i]), undefined, false);
             const paramId: string = params.children[i].text;
-
-            // we need to know what the params are if we want to
-            // initialize this model as a variable somwewhere.
-            this.globalST.getModelST(modName)?.params.push(paramId);
-            this.globalST.getModelST(modName)?.setVar(paramId, paramInfo);
+            if (seenParams.has(paramId)) {
+              // handle repeat params ids in parameter list!!
+              const errorMessage = duplicateParameterError(paramId);
+              const errorUnderline = this.getErrorUnderline(this.getSrcRange(params.children[i]), errorMessage, true);
+              this.errorList.push(errorUnderline);
+            } else {
+              const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(params.children[i]), undefined, false);
+              seenParams.set(paramId, paramInfo);
+              // we need to know what the params are if we want to
+              // initialize this model as a variable somwewhere.
+              this.globalST.getModelST(modName)?.addParameter(paramId);
+              this.globalST.getModelST(modName)?.setVar(paramId, paramInfo);
+            }
           }
         }
 
         // go through what is inside this model
-        this.currNameAndScope = {name: modName, scope: "model"};
-        for (let i = 0; i < ctx.children.length; i++) {
-          this.visit(ctx.children[i]);
-        }
-        this.currNameAndScope = undefined;
+        this.setScopeVisitChildren(modName, ctx, 'model');
       } else {
         // redeclared function, error
         // should make a function to return errorUnderlines.
@@ -128,11 +136,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         this.globalST.setModel(modName,  modelIDsrcRange)
 
          // go through what is inside this model
-        this.currNameAndScope = {name: modName, scope: "model"};
-        for (let i = 0; i < ctx.children.length; i++) {
-          this.visit(ctx.children[i]);
-        }
-        this.currNameAndScope = undefined;
+        this.setScopeVisitChildren(modName, ctx, 'model');
       } else {
         // redeclared function, error
         // should make a function to return errorUnderlines.

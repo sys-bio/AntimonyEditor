@@ -135,15 +135,28 @@ export class GlobalST extends SymbolTable {
 class ParamAndNameTable extends SymbolTable {
     private srcRange: SrcRange;
     public params: string[];
+    public paramSet: Set<string>;
+
 
     constructor(srcRange: SrcRange) {
         super();
         this.srcRange = srcRange;
         this.params = []
+        this.paramSet = new Set();
     }
 
     public getPosition(): SrcRange {
         return this.srcRange;
+    }
+
+    /**
+     * adds a parameter to either a model or function
+     * assumes that this parameter name is unique and has not been added before.
+     * @param name 
+     */
+    public addParameter(name: string) {
+        this.params.push(name);
+        this.paramSet.add(name);
     }
 }
 

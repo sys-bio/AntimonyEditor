@@ -4,6 +4,7 @@ import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
 import { GlobalST, SymbolTable} from './SymbolTableClasses';
 import { ErrorUnderline, SrcPosition, SrcRange } from './Types';
 import { ParserRuleContext } from 'antlr4ts';
+import { FunctionContext, ModelContext, Modular_modelContext } from './antlr/AntimonyGrammarParser';
 
 export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements AntimonyGrammarVisitor<void> {
   public globalST: GlobalST;
@@ -146,6 +147,22 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
     }
 
     return id;
+  }
+
+  /**
+   * 
+   * @param name 
+   * @param ctx 
+   * @param scope 
+   */
+  protected setScopeVisitChildren(name: string, ctx: ModelContext | FunctionContext | Modular_modelContext, scope: ErrorVisitor.scope) {
+    if (ctx.children) {
+      this.currNameAndScope = {name: name, scope: scope};
+      for (let i = 0; i < ctx.children.length; i++) {
+        this.visit(ctx.children[i]);
+      }
+      this.currNameAndScope = undefined;
+    }
   }
 }
 

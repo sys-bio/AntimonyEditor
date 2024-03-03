@@ -88,4 +88,8 @@ export function defaultValueWarning(id: string): string {
   return "Species \'" + id + "\' has not been initialized, using default value";
 }
 
+export function duplicateParameterError(id: string): string {
+  return "Duplicate param \'" + id + "\'";
+}
+
 export {}

@@ -1,7 +1,7 @@
 import { AntimonyGrammarVisitor } from "./antlr/AntimonyGrammarVisitor";
 import { SymbolTable } from "./SymbolTableClasses";
 import { ErrorVisitor } from "./ErrorVisitor";
-import { FunctionContext, ModelContext, SpeciesContext, Var_nameContext } from "./antlr/AntimonyGrammarParser";
+import { FunctionContext, ModelContext, Modular_modelContext, SpeciesContext, Var_nameContext } from "./antlr/AntimonyGrammarParser";
 import { ErrorUnderline, SrcRange, isSubtTypeOf, varTypes } from "./Types";
 import { defaultValueWarning, unitializedParameterError } from "./SemanticErrors";
 
@@ -9,24 +9,17 @@ import { defaultValueWarning, unitializedParameterError } from "./SemanticErrors
 export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisitor<void> {
   visitModel(ctx: ModelContext) {
     const name = ctx.NAME().text;
-    if (ctx.children) {
-      this.currNameAndScope = {name: name, scope: "model"};
-      for (let i = 0; i < ctx.children.length; i++) {
-        this.visit(ctx.children[i]);
-      }
-      this.currNameAndScope = undefined;
-    }
+    this.setScopeVisitChildren(name, ctx, 'model');
+  }
+
+  visitModular_model(ctx: Modular_modelContext) {
+    const name = ctx.NAME().text;
+    this.setScopeVisitChildren(name, ctx, 'model');
   }
 
   visitFunction(ctx: FunctionContext) {
     const name = ctx.NAME().text;
-    if (ctx.children) {
-      this.currNameAndScope = {name: name, scope: "function"};
-      for (let i = 0; i < ctx.children.length; i++) {
-        this.visit(ctx.children[i]);
-      }
-      this.currNameAndScope = undefined;
-    }
+    this.setScopeVisitChildren(name, ctx, 'function');
   }
 
   
@@ -45,26 +38,35 @@ export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisi
    * @param ctx context of an variable
    */
   private varInitializationCheck(ctx: SpeciesContext | Var_nameContext) {
-    const currST: SymbolTable | undefined = this.getCurrST();
-    const varName = ctx.NAME().text;
-    const idSrcRange: SrcRange = this.getSrcRange(ctx.NAME());
-    if (currST) {
-      const varInfo = currST.getVar(varName);
-      if (varInfo && varInfo.initSrcRange === undefined) {
-        if (varInfo.type === varTypes.Parameter) {
-          // error, needs initialized value
-          //Parameter 'k' missing value assignment
-          const errorMessage: string = unitializedParameterError(varName);
-          const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
-          this.errorList.push(errorUnderline);
-        } else if (isSubtTypeOf(varInfo.type, varTypes.Parameter)) {
-          // warning, using default value
-          //Species 'Z' has not been initialized, using default value
-          const errorMessage: string = defaultValueWarning(varName);
-          const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, false);
-          this.errorList.push(errorUnderline);
+    try {
+      const currST: SymbolTable | undefined = this.getCurrST();
+      const varName = ctx.NAME().text;
+      const idSrcRange: SrcRange = this.getSrcRange(ctx.NAME());
+      if (currST) {
+        const varInfo = currST.getVar(varName);
+        if (this.currNameAndScope?.scope === 'function') {
+
+        } else if (varInfo && varInfo.initSrcRange === undefined) {
+          if (varInfo.type === varTypes.Parameter) {
+            // error, needs initialized value
+            //Parameter 'k' missing value assignment
+            const errorMessage: string = unitializedParameterError(varName);
+            const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
+            this.errorList.push(errorUnderline);
+          } else if (isSubtTypeOf(varInfo.type, varTypes.Parameter)) {
+            // warning, using default value
+            //Species 'Z' has not been initialized, using default value
+            const errorMessage: string = defaultValueWarning(varName);
+            const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, false);
+            this.errorList.push(errorUnderline);
+          }
         }
-      }
-    } 
+      } 
+    } catch(e) {
+      const errorMessage = (e as Error).message;
+      const ErrorUnderline = this.getErrorUnderline(this.getSrcRange(ctx), errorMessage, true);
+      this.errorList.push(ErrorUnderline);
+      console.error(errorMessage);
+    }
   }
 }
