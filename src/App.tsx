@@ -169,6 +169,7 @@ const App: React.FC = () => {
     console.log(selectedFileName)
     if (selectedFileName !== '' && selectedFileName.includes('.xml')) {
       console.log('ran')
+      window.conversion = "standard";
       handleSBMLtoAntConversion(antimony, selectedFileName.replace('xml', 'ant'))
         .then(() => {
           window.antimonyActive = true;

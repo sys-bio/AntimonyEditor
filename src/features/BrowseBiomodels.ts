@@ -1,16 +1,20 @@
-import cache from "./test_cache.json";
+import cache from "./testCache.json";
 import { Octokit, App } from "octokit";
+import values from "./appConfig.json";
+
 /**
 * Interface for storing a model
 * @interface Model
 * @property {string} name - The name of the model
 * @property {string} url - The URL of the model
 * @property {string} id - The ID of the model
+* @property {string} title - The title of the model
 */
 interface Model {
     name: string;
     url: string;
     id: string;
+    title: string;
 }
 
 /**
@@ -46,6 +50,9 @@ interface Models {
 // The cache of models retrieved from a JSON file
 const cachedData: CachedData = cache;
 
+// URL for the chosen model
+let url: string;
+
 /**
  * Function to search for models using the cached data
  * @param {KeyboardEvent} search - The search event
@@ -68,7 +75,8 @@ export async function searchModels(search: KeyboardEvent) {
               models.models.set(id, {
                 name: modelData.name,
                 url: modelData.url,
-                id: modelData.model_id
+                id: modelData.model_id,
+                title: modelData.title
               });
             }
           }
@@ -78,7 +86,8 @@ export async function searchModels(search: KeyboardEvent) {
             models.models.set(id, {
               name: modelData.name,
               url: modelData.url,
-              id: modelData.model_id
+              id: modelData.model_id,
+              title: modelData.title
             });
           }
         }
@@ -86,7 +95,7 @@ export async function searchModels(search: KeyboardEvent) {
     } catch (error) {
         // If there is an error, throw it
         console.log(error);
-        throw error;
+        throwError("Unable to fetch models from cache.");
     }
 }
 
@@ -110,7 +119,7 @@ export async function getModel(modelId: string) {
         // If the model is found, decode the content and return it
         if ("content" in response.data) {
           return [modelId, decodeURIComponent(Array.prototype.map.call(atob(response.data.content), (c: string) => {
-            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join(""))];
+            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join("")), url];
         } else {
           throwError("Unable to fetch model from GitHub repository.");
           return [modelId, ""];
@@ -155,6 +164,7 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
   const dropdown = document.getElementById("dropdown");
   var biomodels: any;
   var chosenModel: any;
+  const modelListCount = values.display_count;
 
   biomodelBrowse.addEventListener("keyup", async (val) => {
     const biomodel = val;
@@ -179,17 +189,26 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
       // Otherwise, display the models in the dropdown
       dropdown!.style.display = "block";
       biomodels.models.forEach(function (model: any) {
+        if (modelListCount && dropdown!.childElementCount >= modelListCount) {
+          return;
+        }
         setLoading(false);
         const a = document.createElement("a");
         a.addEventListener("click", () => {
           biomodelBrowse.value = "";
           dropdown!.innerHTML = "";
           chosenModel = model.id;
+          url = model.url;
           setChosenModel(chosenModel);
         });
-        a.innerHTML = model.name + ": " + model.id + "\n";
+        a.innerHTML = model.id + ": " + model.title + "\n";
         dropdown!.appendChild(a);
       });
     }, 300);
+    document.addEventListener("click", (e) => {
+      if ((e.target as HTMLInputElement).id !== "biomodel-browse") {
+        dropdown!.style.display = "none";
+      }
+    });
   });
 }

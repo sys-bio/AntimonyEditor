@@ -97,8 +97,11 @@ function processSBML() {
       //console.log("processSBML: int returned: ", load_int);
       if (load_int > 0) {
         antResult = getAntimonyString();
+        if (window.conversion != "standard") {
+          antResult = "// Link to the model: " + window.url + "\n" + antResult
+        }
         window.antimonyResult = antResult;
-        console.log(antResult);
+        console.log(window.antimonyResult);
         window.dispatchEvent(event);
       } else {
         var errStr = getLastError();
