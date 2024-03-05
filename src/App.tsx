@@ -51,8 +51,16 @@ const App: React.FC = () => {
         setUploadedFiles(files);
       });
     });
-  }, []);
+    window.addEventListener('grabbedSBMLResult', sbmlResultHandler);
+    window.addEventListener('grabbedAntimonyResult', antimonyResultHandler);
 
+    // Cleanup: Remove the event listeners when the component is unmounted
+    return () => {
+      window.removeEventListener('grabbedSBMLResult', sbmlResultHandler);
+      window.removeEventListener('grabbedAntimonyResult', antimonyResultHandler);
+    };
+  }, []);
+  
   /**
    * @description Handle the file upload
    * @param event - The event
@@ -83,6 +91,7 @@ const App: React.FC = () => {
    * @param fileName - The name of the file
    */
   const handleFileClick = (fileContent: string, fileName: string) => {
+    window.selectedFile = fileName;
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
   
@@ -95,23 +104,23 @@ const App: React.FC = () => {
   const handleAntToSBML = async (fileContent: string, fileName: string) => {
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
-  
+    window.selectedFile = fileName;
     // Store the selected file's information in IndexedDB
     if (db) {
       setUploadedFiles(prevFiles => {
         window.removeEventListener('grabbedSBMLResult', sbmlResultHandler);
         setSbmlResultListenerAdded(false);
         let updatedFiles = [...prevFiles];
-        const existingFileIndex = prevFiles.findIndex(file => file.name === fileName);
+        // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
   
-        if (existingFileIndex !== -1) {
-        } else {
+        // if (existingFileIndex !== -1) {
+        // } else {
           // If the file doesn't exist, add it to the array
-          updatedFiles = [...prevFiles, { name: fileName, content: fileContent }];
-          db.put('files', { name: fileName, content: fileContent });
+          updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
+          db.put('files', { name: window.selectedFile, content: fileContent });
           console.log('add')
-        }
-  
+        // }
+        window.addEventListener('grabbedSBMLResult', sbmlResultHandler, { once: true });
         // Sort the files alphabetically and numerically based on their names
         return updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
       });
@@ -121,10 +130,10 @@ const App: React.FC = () => {
   function sbmlResultHandler() {
     console.log('sbmlResult event received');
     let sbml = window.sbmlResult;
-    console.log(selectedFileName)
-    if (selectedFileName !== '' && selectedFileName.includes('.ant')) {
+    console.log(window.selectedFile)
+    if (window.selectedFile !== '' && window.selectedFile.includes('.ant')) {
       console.log('ran')
-      handleAntToSBML(sbml, selectedFileName.replace('ant', 'xml'))
+      handleAntToSBML(sbml, window.selectedFile.replace('ant', 'xml'))
         .then(() => {
           window.antimonyActive = false;
           window.sbmlString = '';
@@ -135,29 +144,26 @@ const App: React.FC = () => {
     }
   }
 
-  window.addEventListener('grabbedSBMLResult', sbmlResultHandler, { once: true });
-
   const handleSBMLtoAntConversion = async (fileContent: string, fileName: string) => {
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
-  
+    window.selectedFile = fileName;
     // Store the selected file's information in IndexedDB
     if (db) {
       setUploadedFiles(prevFiles => {
         window.removeEventListener('grabbedAntimonyResult', antimonyResultHandler);
         setSbmlResultListenerAdded(false);
         let updatedFiles = [...prevFiles];
-        const existingFileIndex = prevFiles.findIndex(file => file.name === fileName);
+        // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
   
-        if (existingFileIndex !== -1) {
-          // alert('File already exists');
-        } else {
+        // if (existingFileIndex !== -1) {
+        //   // alert('File already exists');
+        // } else {
           // If the file doesn't exist, add it to the array
-          updatedFiles = [...prevFiles, { name: fileName, content: fileContent }];
-          db.put('files', { name: fileName, content: fileContent });
+          updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
+          db.put('files', { name: window.selectedFile, content: fileContent });
           console.log('add')
-        }
-
+        // }
         // Sort the files alphabetically and numerically based on their names
         return updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
       });
@@ -167,10 +173,10 @@ const App: React.FC = () => {
   function antimonyResultHandler() {
     console.log('antimonyResult event received');
     let antimony = window.antimonyResult;
-    console.log(selectedFileName)
-    if (selectedFileName !== '' && selectedFileName.includes('.xml')) {
+    console.log(window.selectedFile)
+    if (window.selectedFile !== '' && window.selectedFile.includes('.xml')) {
       console.log('ran')
-      handleSBMLtoAntConversion(antimony, selectedFileName.replace('xml', 'ant'))
+      handleSBMLtoAntConversion(antimony, window.selectedFile.replace('xml', 'ant'))
         .then(() => {
           window.antimonyActive = true;
           window.antimonyString = '';
@@ -180,8 +186,6 @@ const App: React.FC = () => {
         });
     }
   }
-
-  window.addEventListener('grabbedAntimonyResult', antimonyResultHandler, { once: true });
 
   return (
     <div className='app'>

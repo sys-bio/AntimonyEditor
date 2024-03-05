@@ -54,6 +54,7 @@ declare global {
     antimonyActive: boolean; // Define the antimonyActive variable
     processAntimony?: () => void; // Define the processAntimony function
     processSBML?: () => void; // Define the processSBML function
+    selectedFile: string; // Define the selectedFile variable
   }
 }
 
@@ -93,7 +94,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         if (data) {
           // setOriginalContent(data.content);
           setNewContent(data.content);
-          setSelectedFile(data.name);
+          // setSelectedFile(data.name);
+          window.selectedFile = data.name;
           editor.setValue(data.content);
         }
       });

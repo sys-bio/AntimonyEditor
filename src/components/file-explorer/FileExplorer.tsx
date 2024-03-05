@@ -34,6 +34,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
   const handleFileButtonClick = (index: number, fileName: string) => {
     setSelectedFileIndex(index);
     // setSelectedFileName(fileName)
+    window.selectedFile = fileName;
     onFileClick(files[index].content, fileName);
   };
 
