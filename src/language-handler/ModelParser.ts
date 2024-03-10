@@ -5,7 +5,7 @@ import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, Declaratio
 import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
-import { hover } from '@testing-library/user-event/dist/hover';
+//import { hover } from '@testing-library/user-event/dist/hover';
 
 class VariableInfo {
   label?: string;
