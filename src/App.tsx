@@ -6,7 +6,7 @@ import { SolidSplitter } from './components/CustomSplitters';
 import { Split } from '@geoffcox/react-splitter';
 import AntimonyEditor from './components/antimony-editor/AntimonyEditor';
 import { IDBPDatabase } from 'idb';
-import { upload } from '@testing-library/user-event/dist/upload';
+//import { upload } from '@testing-library/user-event/dist/upload';
 
 interface MyDB extends DBSchema {
   files: {
@@ -28,7 +28,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     openDB<MyDB>('antimony_editor_db', 1, {
-      upgrade(db) {
+      upgrade(db) { 
         if (!db.objectStoreNames.contains('files')) {
           db.createObjectStore('files', { keyPath: 'name' });
         }
@@ -101,30 +101,36 @@ const App: React.FC = () => {
       // Check if the deleted file was the currently selected file
       if (selectedFileName === fileName) {
         console.log("filename matches")
+
         setSelectedFileContent('// Enter Antimony Model Here');
         setSelectedFileName('');
         setSelectedFileIndex(null);
+        window.localStorage.removeItem('current_file_name');
         window.localStorage.removeItem('current_file_index');
-        window.localStorage.removeItem('current_file');
+        window.localStorage.setItem('current_file', '// Enter Antimony Model Here');
       } else if (selectedFileIndex !== null) {
         console.log("filename doesnot match");
+
         // Update the selectedFileIndex if the deleted file was not selected
         const newIndex = updatedFiles.findIndex(file => file.name === selectedFileName);
         setSelectedFileIndex(newIndex !== -1 ? newIndex : null);
         console.log(newIndex);
+
         // Handle case where the current file index is no longer valid
         if (newIndex === -1) {
           setSelectedFileContent('// Enter Antimony Model Here');
           setSelectedFileName('');
           window.localStorage.removeItem('current_file_index');
           window.localStorage.removeItem('current_file');
+          window.localStorage.setItem('current_file', '// Enter Antimony Model Here');
         }
       }
-      console.log("yoyo");
+      console.log("delete has gone through");
+      const files = await db.getAll('files');
+      const fileNames = files.map(file => file.name);
+      
     }
   };
-  
-  
 
   return (
     <div className='app'>
@@ -147,7 +153,7 @@ const App: React.FC = () => {
           </section>       
           <div>
           {db ? ( // Conditionally render the AntimonyEditor component when db is defined
-              <AntimonyEditor content={selectedFileContent} fileName={selectedFileName} database={db} />
+              <AntimonyEditor key={selectedFileName} content={selectedFileContent} fileName={selectedFileName} database={db} />
             ) : (
               // You can provide a loading message or handle the absence of the database as needed
               <div>Loading...</div>

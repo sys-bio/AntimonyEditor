@@ -126,6 +126,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     }
   }, [chosenModel]);
 
+ 
+
   return (
     <div>
       <div className='menu'>
