@@ -94,7 +94,7 @@ export function getErrors(antimonyCode: string): ErrorUnderline[] {
   semanticVisitor.visit(tree);
   
 
-  stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
+  // stVisitor.addErrorList(addParseErrors(errorListener.getErrors()))
   return stVisitor.getErrors().concat(semanticVisitor.getErrors());
 }
 

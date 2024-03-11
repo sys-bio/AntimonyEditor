@@ -1,16 +1,9 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import App from '../App';
-
 import assert from 'assert';
-import { getSTVisitor } from '../languages/ModelSemanticChecker';
-import { SymbolTableVisitor } from '../languages/SymbolTableVisitor';
 import * as monaco from 'monaco-editor';
 import * as fs from 'fs';
 import { join } from 'path';
-import { FileChangeType } from 'vscode';
 import { isSubtTypeOf, varTypes } from '../languages/Types';
-import { Variable } from '../languages/Variable';
+import { getErrors } from '../languages/ModelSemanticChecker';
 
 // test('renders learn react link', () => {
 //   render(<App />);
@@ -27,7 +20,6 @@ jest.mock('monaco-editor', () => ({
   },
 }));
   
-
 describe('Type Tests', function() {
   it('isSubTypeOf tests', function() {
       assert.deepStrictEqual(isSubtTypeOf(varTypes.Variable, varTypes.Unknown), true);
@@ -72,8 +64,8 @@ describe('Type Tests', function() {
 describe('SymbolTableVisitor Error Tests', function() {
   it('Event errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'eventBasic.ant'), 'utf-8');
-    const out: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(out.getErrors(), [
+    // const out: SymbolTableVisitor = getSTVisitor(file1);
+    assert.deepStrictEqual(getErrors(file1), [
     //   {
     //     startLineNumber: 5,
     //     startColumn: 10,
@@ -87,8 +79,8 @@ describe('SymbolTableVisitor Error Tests', function() {
   
   it('Math expression errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'mathExprBasic.ant'), 'utf-8');
-    const out: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(out.getErrors(), [
+    // const out: SymbolTableVisitor = getSTVisitor(file1);
+    assert.deepStrictEqual(getErrors(file1), [
       {
         startLineNumber: 5,
         startColumn: 10,
@@ -110,8 +102,8 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('func redeclaration errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatFuncDecl.ant'), 'utf-8');
-    const out: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(out.getErrors(), [
+    // const out: SymbolTableVisitor = getSTVisitor(file1);
+    assert.deepStrictEqual(getErrors(file1), [
         {
             startLineNumber: 5,
             startColumn: 10,
@@ -141,8 +133,8 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('model redeclaration errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatModelDecl.ant'), 'utf-8');
-    const out: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(out.getErrors(), [
+    // const out: SymbolTableVisitor = getSTVisitor(file1);
+    assert.deepStrictEqual(getErrors(file1), [
         {
             startLineNumber: 6,
             startColumn: 1,
@@ -172,10 +164,10 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('assignment override warnings', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'assignmentOverride.ant'), 'utf-8');
-    const out: SymbolTableVisitor = getSTVisitor(file1);
+    // const out: SymbolTableVisitor = getSTVisitor(file1);
     //'Value assignment to 'S5' is overriding previous assignment on line 14:11'
     //'Value assignment to 'S2' is being overridden by a later assignment on line 12:3'
-    assert.deepStrictEqual(out.getErrors(), [
+    assert.deepStrictEqual(getErrors(file1), [
         {
             startLineNumber: 1,
             startColumn: 1,
@@ -246,8 +238,8 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('type override errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'typeOverride.ant'), 'utf-8');
-    const out: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(out.getErrors(), [
+    // const out: SymbolTableVisitor = getSTVisitor(file1);
+    assert.deepStrictEqual(getErrors(file1), [
         {
             startLineNumber: 3,
             startColumn: 9,
@@ -293,9 +285,9 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('reaction statement errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionCompartment.ant'), 'utf-8');
-    const visitor: SymbolTableVisitor = getSTVisitor(file1);
+    // const visitor: SymbolTableVisitor = getSTVisitor(file1);
     
-    assert.deepStrictEqual(visitor.getErrors(), [
+    assert.deepStrictEqual(getErrors(file1), [
         {
             startLineNumber: 2,
             startColumn: 22,
@@ -349,8 +341,8 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('reaction no rate rule warning', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionNoRateRule.ant'), 'utf-8');
-    const visitor: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(visitor.getErrors(), [
+    // const visitor: SymbolTableVisitor = getSTVisitor(file1);
+    assert.deepStrictEqual(getErrors(file1), [
         {
             startLineNumber: 1,
             startColumn: 1,
@@ -383,6 +375,18 @@ describe('SymbolTableVisitor Error Tests', function() {
             message: "Reaction '' missing rate law",
             severity: monaco.MarkerSeverity.Warning
         },
+    ])
+
+    const file2: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'uninitRateRuleRepeatError.ant'), 'utf-8');
+    assert.deepStrictEqual(getErrors(file2), [
+        {
+            startLineNumber: 7,
+            startColumn: 5,
+            endLineNumber: 7,
+            endColumn: 24,
+            message: "Reaction 'R1' missing rate law",
+            severity: monaco.MarkerSeverity.Warning
+        }
     ])
   })
 })

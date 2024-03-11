@@ -1,9 +1,9 @@
 import { AntimonyGrammarVisitor } from "./antlr/AntimonyGrammarVisitor";
 import { SymbolTable } from "./SymbolTableClasses";
 import { ErrorVisitor } from "./ErrorVisitor";
-import { FunctionContext, ModelContext, Modular_modelContext, SpeciesContext, Var_nameContext } from "./antlr/AntimonyGrammarParser";
+import { FunctionContext, ModelContext, Modular_modelContext, ReactionContext, SpeciesContext, Var_nameContext } from "./antlr/AntimonyGrammarParser";
 import { ErrorUnderline, SrcRange, isSubtTypeOf, varTypes } from "./Types";
-import { defaultValueWarning, unitializedParameterError } from "./SemanticErrors";
+import { defaultValueWarning, unitializedParameterError, unitializedRateLawWarning } from "./SemanticErrors";
 
 // goal is to loop through and look at all variables, classes, 
 export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisitor<void> {
@@ -22,14 +22,31 @@ export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisi
     this.setScopeVisitChildren(name, ctx, 'function');
   }
 
-  
-
   visitVar_name(ctx: Var_nameContext) {
     this.varInitializationCheck(ctx);
   }
 
   visitSpecies(ctx: SpeciesContext) {
     this.varInitializationCheck(ctx);
+  }
+
+  visitReaction(ctx: ReactionContext) {
+    let id = ctx.reaction_name()?.namemaybein().text;
+    if (id === undefined) {
+      id = '';
+    }
+    if (!ctx.sum()) {
+       // although it might make more sense to check in the semantic visitor
+      // it really doesn't matter here I think.
+      const errorMessage: string = unitializedRateLawWarning(id);
+      this.errorList.push(this.getErrorUnderline(this.getSrcRange(ctx), errorMessage, false));
+    }
+
+    if (ctx.children) {
+      for (let i = 0; i < ctx.children.length; i++) {
+        this.visit(ctx.children[i]);
+      }
+    }
   }
 
   /**
@@ -53,10 +70,10 @@ export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisi
             const errorMessage: string = unitializedParameterError(varName);
             const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
             this.errorList.push(errorUnderline);
-          } else if (isSubtTypeOf(varInfo.type, varTypes.Parameter)) {
+          } else if (isSubtTypeOf(varInfo.type, varTypes.Parameter) && varInfo.type !== varTypes.Reaction && varInfo.type !== varTypes.Event) {
             // warning, using default value
-            //Species 'Z' has not been initialized, using default value
-            const errorMessage: string = defaultValueWarning(varName);
+            // Species 'Z' has not been initialized, using default value
+            const errorMessage: string = defaultValueWarning(varName, varInfo.type);
             const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, false);
             this.errorList.push(errorUnderline);
           }

@@ -1,12 +1,10 @@
 import * as monaco from 'monaco-editor';
-import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, ParserRuleContext, RecognitionException, Recognizer } from 'antlr4ts';
+import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, RecognitionException, Recognizer } from 'antlr4ts';
 import { AntimonyGrammarLexer } from './antlr/AntimonyGrammarLexer';
-import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, DeclarationContext, EventContext, FunctionContext, In_compContext, Is_assignmentContext, NamemaybeinContext, ReactionContext, SpeciesContext, Species_listContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
+import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, DeclarationContext, EventContext, Is_assignmentContext, NamemaybeinContext, ReactionContext, SpeciesContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
 import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
-import { Context } from 'vm';
-import { start } from 'repl';
 
 /**
  * VariableInfo class to store information about variables

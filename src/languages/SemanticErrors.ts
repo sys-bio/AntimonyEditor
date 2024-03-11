@@ -76,7 +76,7 @@ export function unitializedRateLawWarning(id: string): string {
  * @returns 
  */
 export function unitializedParameterError(id: string): string {
-  return "Parameter \'" + id + "\' missing value assignment";
+  return "Parameter '" + id + "' missing value assignment";
 }
 
 /**
@@ -84,12 +84,15 @@ export function unitializedParameterError(id: string): string {
  * @param id 
  * @returns 
  */
-export function defaultValueWarning(id: string): string {
-  return "Species \'" + id + "\' has not been initialized, using default value";
+export function defaultValueWarning(id: string, type: varTypes): string {
+  return type + " '" + id + "' has not been initialized, using default value";
 }
 
+/**
+ * 
+ * @param id 
+ * @returns 
+ */
 export function duplicateParameterError(id: string): string {
-  return "Duplicate param \'" + id + "\'";
+  return "Duplicate param '" + id + "'";
 }
-
-export {}

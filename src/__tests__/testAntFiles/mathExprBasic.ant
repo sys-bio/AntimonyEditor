@@ -9,3 +9,10 @@ end
 function k(x)
   x
 end
+
+A = 1
+B = 2
+k = 3
+q = 4
+c = 5
+z = 6

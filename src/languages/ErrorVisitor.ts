@@ -151,9 +151,9 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
 
   /**
    * 
-   * @param name 
+   * @param name the name of the function or model scope
    * @param ctx 
-   * @param scope 
+   * @param scope either "function" or "model"
    */
   protected setScopeVisitChildren(name: string, ctx: ModelContext | FunctionContext | Modular_modelContext, scope: ErrorVisitor.scope) {
     if (ctx.children) {

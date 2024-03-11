@@ -139,7 +139,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         typingTimer = setTimeout(() => {
           ModelParser(editor, true);
           ModelSemanticsChecker(editor, true);
-        }, 300);
+        }, 600);
       };
 
       // Parse the model whenever the user types
