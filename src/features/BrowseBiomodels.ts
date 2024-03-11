@@ -1,6 +1,5 @@
 import cache from "./testCache.json";
 import { Octokit, App } from "octokit";
-import values from "./appConfig.json";
 
 /**
 * Interface for storing a model
@@ -15,6 +14,7 @@ interface Model {
     url: string;
     id: string;
     title: string;
+    authors: string[];
 }
 
 /**
@@ -76,7 +76,8 @@ export async function searchModels(search: KeyboardEvent) {
                 name: modelData.name,
                 url: modelData.url,
                 id: modelData.model_id,
-                title: modelData.title
+                title: modelData.title,
+                authors: modelData.authors
               });
             }
           }
@@ -87,7 +88,8 @@ export async function searchModels(search: KeyboardEvent) {
               name: modelData.name,
               url: modelData.url,
               id: modelData.model_id,
-              title: modelData.title
+              title: modelData.title,
+              authors: modelData.authors
             });
           }
         }
@@ -164,7 +166,6 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
   const dropdown = document.getElementById("dropdown");
   var biomodels: any;
   var chosenModel: any;
-  const modelListCount = values.display_count;
 
   biomodelBrowse.addEventListener("keyup", async (val) => {
     const biomodel = val;
@@ -189,9 +190,6 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
       // Otherwise, display the models in the dropdown
       dropdown!.style.display = "block";
       biomodels.models.forEach(function (model: any) {
-        if (modelListCount && dropdown!.childElementCount >= modelListCount) {
-          return;
-        }
         setLoading(false);
         const a = document.createElement("a");
         a.addEventListener("click", () => {
@@ -201,7 +199,12 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
           url = model.url;
           setChosenModel(chosenModel);
         });
-        a.innerHTML = model.id + ": " + model.title + "\n";
+        if (model.title.length > 60) {
+          model.title = model.title.slice(0, 61) + "...";
+        }
+        // if author exists, display author, else display "No authors found"
+        const author = model.authors.length > 0 ? model.authors[0] : "No authors found";
+        a.innerHTML = `${model.id}: ${model.title} <br /><br /> ${author}`;
         dropdown!.appendChild(a);
       });
     }, 300);
