@@ -1,8 +1,14 @@
-// empty
-// gonna try and copy the way vscode antimony does things.
 import * as monaco from 'monaco-editor';
 
+/**
+ * represents a single location
+ * in the web editor, ie (line, col)
+ */
 export class SrcPosition {
+    /**
+     * line: the line within the editor
+     * columb: the column within the editor
+     */
     public line: number;
     public column: number;
 
@@ -16,7 +22,15 @@ export class SrcPosition {
     }
 }
 
+/**
+ * represents a range consisting of a 
+ * starting and ending SrcPosition
+ */
 export class SrcRange {
+    /**
+     * start: the starting line and column for this range
+     * end: ending line and column
+     */
     public start: SrcPosition;
     public end: SrcPosition;
 
@@ -30,6 +44,11 @@ export class SrcRange {
     }
 }
 
+/**
+ * a type that holds all 
+ * relevant information needed to be passed to 
+ * monaco.editor.setModelMarkers() for error underlining
+ */
 export type ErrorUnderline = {
     startLineNumber: number,
     startColumn: number,
@@ -124,15 +143,6 @@ export function isSubtTypeOf(type1: varTypes, type2: varTypes) {
     if (type2 === varTypes.Parameter) {
         return derives_from_param;
     }
-
-    // set.add(varTypes.Parameter);
-    // if (set.has(type1) && !set.has(type2)) {
-    //     return false;
-    // }
-
-    // if (set.has(type2) && !set.has(type1)) {
-    //     return false;
-    // }
 
     return false;
 }

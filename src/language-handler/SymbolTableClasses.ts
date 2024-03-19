@@ -1,36 +1,5 @@
-
-// // this is a record type wow!
-// // should probably make this the return of a function 
-// // in an error class, so that valid line/column values 
-// // can be checked.
-// export type SrcPosition = {
-//     line: number;
-//     column: number;
-// }
-
 import { SrcRange, varTypes } from "./Types";
 import { Variable } from "./Variable";
-
-
-// /**
-//  * represents a location range relative to the
-//  * web editor in terms of line and column
-//  */
-// export type SrcRange = {
-//     start: SrcPosition;
-//     stop: SrcPosition;
-// }
-// /**
-//  * stores information about variables
-//  * in a symbol table
-//  */
-// export type Variable = {
-//     type: string;
-//     initialized: boolean;
-//     initSrcRange: SrcRange | undefined;
-//     compartments: string;
-//     srcRange: SrcRange;
-// }
 
 
 /**
@@ -74,8 +43,8 @@ export class SymbolTable {
  * symbol table for the global scope in an Antimony file
  */
 export class GlobalST extends SymbolTable {
-    private funcMap: Map<string, FuncST>;
-    private modelMap: Map<string, ModelST>
+    private funcMap: Map<string, ParamAndNameTable>;
+    private modelMap: Map<string, ParamAndNameTable>
 
     constructor() {
         super();
@@ -90,7 +59,7 @@ export class GlobalST extends SymbolTable {
      */
     setFunction(funcName: string, srcRange: SrcRange): void {
         if (!this.funcMap.has(funcName)) {
-            this.funcMap.set(funcName, new FuncST(srcRange));
+            this.funcMap.set(funcName, new ParamAndNameTable(srcRange));
             this.setVar(funcName, new Variable(varTypes.Function, false, undefined, srcRange, srcRange, false));
         } else {
             // function already exists
@@ -114,7 +83,7 @@ export class GlobalST extends SymbolTable {
      */
     setModel(modelName: string, srcRange: SrcRange): void {
         if (!this.modelMap.has(modelName)) {
-            this.modelMap.set(modelName, new ModelST(srcRange));
+            this.modelMap.set(modelName, new ParamAndNameTable(srcRange));
             this.setVar(modelName, new Variable(varTypes.Model, false, undefined, srcRange, srcRange, false));
         } else {
             // model already exists
@@ -132,11 +101,13 @@ export class GlobalST extends SymbolTable {
     }
 }
 
-class ParamAndNameTable extends SymbolTable {
+/**
+ * a ST that is used for functions and models
+ */
+export class ParamAndNameTable extends SymbolTable {
     private srcRange: SrcRange;
     public params: string[];
     public paramSet: Set<string>;
-
 
     constructor(srcRange: SrcRange) {
         super();
@@ -145,6 +116,10 @@ class ParamAndNameTable extends SymbolTable {
         this.paramSet = new Set();
     }
 
+    /**
+     * gets the id positino of the model or function represented by this ST
+     * @returns a SrcRange representing the position of the id that represents this table
+     */
     public getPosition(): SrcRange {
         return this.srcRange;
     }
@@ -160,66 +135,21 @@ class ParamAndNameTable extends SymbolTable {
     }
 }
 
-/**
- * Symbol table for a function
- */
-export class FuncST extends ParamAndNameTable {
-    // // this contains the location of the function name id
-    // private funcIdRange: SrcRange;
-
-    // constructor(srcRange: SrcRange) {
-    //     super(srcRange);
-    //     this.funcIdRange = srcRange;
-    // }
-
-    // /**
-    //  * 
-    //  * @returns the position of the function ID within the web editor
-    //  */
-    // getPosition(): SrcRange {
-    //     return this.funcIdRange;
-    // }
-}
-
-/**
- * Symbol table for a model
- * Note: treat model and mmodels as the same thing?
- * only thing that matters is params being non zero length
- * for mmodel
- * 
- * TODO: make a decision, make fields private or public???
- */
-export class ModelST extends ParamAndNameTable {
-    // // this contains the location of the model name id
-    // private modelIdRange: SrcRange;
-    // // keep these as strings, to know info about
-    // // each param go to the varTable
-    // public params: string[];
-    
-
-    // constructor(srcRange: SrcRange) {
-    //     super();
-    //     this.params = [];
-    //     this.modelIdRange = srcRange;
-    // }
-
-    // /**
-    //  * 
-    //  * @returns the position of the model ID within the web editor
-    //  */
-    // public getPosition(): SrcRange {
-    //     return this.modelIdRange;
-    // }
-}
+// these may be needed in the future if more info specific to 
+// models are needed
+// /**
+//  * Symbol table for a function
+//  */
+// export class FuncST extends ParamAndNameTable {
+// }
 
 // /**
-//  * Symbol table for a modular model
+//  * Symbol table for a model
+//  * Note: treat model and mmodels as the same thing?
+//  * only thing that matters is params being non zero length
+//  * for mmodel
+//  * 
+//  * TODO: make a decision, make fields private or public???
 //  */
-// export class MModelST extends ModelST {
-//     private params: string[];
-    
-//     constructor(srcRange: SrcRange, paramsIn: string[]) {
-//         super(srcRange);
-//         this.params = paramsIn;
-//     }
+// export class ModelST extends ParamAndNameTable {
 // }

@@ -3,7 +3,8 @@ import { Variable } from "./Variable";
 
 
 /**
- * 
+ * Error for incompatible types, occurs when it is 
+ * illegal for oldVar's type to be set to newType
  * @param newType the type we are trying to set oldVar to
  * @param oldVar Variable representing oldVar
  * @returns the error message string
@@ -17,7 +18,7 @@ export function incompatibleTypesError(newType: varTypes, oldVar: Variable): str
 }
 
 /**
- * 
+ * Error when you declare multiple models with the same name
  * @param name the name of the model
  * @param srcRange the model id location at definition
  * @returns the error message
@@ -27,7 +28,7 @@ export function modelAlreadyExistsError(name: string, srcRange: SrcRange): strin
 }
 
 /**
- * 
+ * Error when you declare multiple functions with the same name
  * @param name the name of the function
  * @param srcRange the function id location at definition
  * @returns the error message
@@ -71,27 +72,28 @@ export function unitializedRateLawWarning(id: string): string {
 }
 
 /**
- * 
+ * Error when a parameter is not assigned a value
  * @param id 
- * @returns 
+ * @returns error message
  */
 export function unitializedParameterError(id: string): string {
   return "Parameter '" + id + "' missing value assignment";
 }
 
 /**
- * 
+ * Warning for when a Species or Compartment is not initialized,
+ * and so uses the default value.
  * @param id 
- * @returns 
+ * @returns warning message
  */
 export function defaultValueWarning(id: string, type: varTypes): string {
   return type + " '" + id + "' has not been initialized, using default value";
 }
 
 /**
- * 
+ * Error for when a model or a function has a duplicate parameter name
  * @param id 
- * @returns 
+ * @returns error message
  */
 export function duplicateParameterError(id: string): string {
   return "Duplicate param '" + id + "'";

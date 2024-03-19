@@ -7,7 +7,9 @@ import { ParserRuleContext } from 'antlr4ts';
 import { FunctionContext, ModelContext, Modular_modelContext } from './antlr/AntimonyGrammarParser';
 
 export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements AntimonyGrammarVisitor<void> {
+  // ST for the outermost scope in a file.
   public globalST: GlobalST;
+
   // we use a map so that if we have a duplicate error report
   // somehow it will only be outputed once when getErrors is called.
   private errorMap: Map<string, ErrorUnderline>;
@@ -224,7 +226,9 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
   }
 }
 
-
+/**
+ * types that are used exclusively in an ErrorVisitor.
+ */
 module ErrorVisitor {
   export type scope = "model" | "mmodel" | "function";
   export type nameAndScope = {name: string, scope: scope};

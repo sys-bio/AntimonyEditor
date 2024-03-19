@@ -1,6 +1,6 @@
 import {AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
-import { SymbolTable, FuncST, ModelST} from './SymbolTableClasses';
+import { SymbolTable, ParamAndNameTable} from './SymbolTableClasses';
 import { Variable } from './Variable';
 import { ErrorUnderline, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
 import { duplicateParameterError, functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning } from './SemanticErrors';
@@ -18,7 +18,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     if (ctx.children) {
       const funcName = this.getVarName(ctx.NAME().text);
       const funcIDSrcRange: SrcRange = this.getSrcRange(ctx.NAME());
-      const funcST: FuncST | undefined = this.globalST.getFunctionST(funcName);
+      const funcST: ParamAndNameTable | undefined = this.globalST.getFunctionST(funcName);
 
       if (!funcST){
         // func has not been declared yet
@@ -88,7 +88,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       }
       const modelIDsrcRange: SrcRange = this.getSrcRange(ctx.children[idIndex]);
 
-      const modelST: ModelST | undefined = this.globalST.getModelST(modName);
+      const modelST: ParamAndNameTable | undefined = this.globalST.getModelST(modName);
       if (!modelST){
         // model has not been declared yet
         this.globalST.setModel(modName,  modelIDsrcRange)
@@ -113,7 +113,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
                 seenParams.set(paramId, paramInfo);
                 // we need to know what the params are if we want to
                 // initialize this model as a variable somwewhere.
-                let modST: ModelST | undefined = this.globalST.getModelST(modName)
+                let modST: ParamAndNameTable | undefined = this.globalST.getModelST(modName)
                 modST?.addParameter(paramId);
                 modST?.setVar(paramId, paramInfo);
               }
