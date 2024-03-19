@@ -2,8 +2,8 @@ import assert from 'assert';
 import * as monaco from 'monaco-editor';
 import * as fs from 'fs';
 import { join } from 'path';
-import { isSubtTypeOf, varTypes } from '../languages/Types';
-import { getErrors, removeCarriageReturn } from '../languages/ModelSemanticChecker';
+import { isSubtTypeOf, varTypes } from '../language-handler/Types';
+import { getErrors, removeCarriageReturn } from '../language-handler/ModelSemanticChecker';
 
 // test('renders learn react link', () => {
 //   render(<App />);
