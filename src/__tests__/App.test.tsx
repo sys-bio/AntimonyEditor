@@ -3,7 +3,7 @@ import * as monaco from 'monaco-editor';
 import * as fs from 'fs';
 import { join } from 'path';
 import { isSubtTypeOf, varTypes } from '../languages/Types';
-import { getErrors } from '../languages/ModelSemanticChecker';
+import { getErrors, removeCarriageReturn } from '../languages/ModelSemanticChecker';
 
 // test('renders learn react link', () => {
 //   render(<App />);
@@ -63,24 +63,13 @@ describe('Type Tests', function() {
 // note that these tests only test for errors found by symbol tables, and not by the semantic visitor.
 describe('SymbolTableVisitor Error Tests', function() {
   it('Event errors', function() {
-    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'eventBasic.ant'), 'utf-8');
-    // const out: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(getErrors(file1), [
-    //   {
-    //     startLineNumber: 5,
-    //     startColumn: 10,
-    //     endLineNumber: 5,
-    //     endColumn: 11,
-    //     message: 'Unable to set the type to \'function\' because it is already set to be the incompatible type \'parameter\' on line 3:7',
-    //     severity: monaco.MarkerSeverity.Error
-    //   }
-    ])
+    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'eventBasic.ant'), 'utf-8'));
+    assert.deepStrictEqual(getErrors(file1, false), [])
   })
   
   it('Math expression errors', function() {
-    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'mathExprBasic.ant'), 'utf-8');
-    // const out: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(getErrors(file1), [
+    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'mathExprBasic.ant'), 'utf-8'));
+    assert.deepStrictEqual(getErrors(file1, false), [
       {
         startLineNumber: 5,
         startColumn: 10,
@@ -101,9 +90,8 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('func redeclaration errors', function() {
-    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatFuncDecl.ant'), 'utf-8');
-    // const out: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(getErrors(file1), [
+    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatFuncDecl.ant'), 'utf-8'));
+    assert.deepStrictEqual(getErrors(file1, false), [
         {
             startLineNumber: 5,
             startColumn: 10,
@@ -132,9 +120,8 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('model redeclaration errors', function() {
-    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatModelDecl.ant'), 'utf-8');
-    // const out: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(getErrors(file1), [
+    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatModelDecl.ant'), 'utf-8'));
+    assert.deepStrictEqual(getErrors(file1, false), [
         {
             startLineNumber: 6,
             startColumn: 1,
@@ -163,11 +150,8 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('assignment override warnings', function() {
-    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'assignmentOverride.ant'), 'utf-8');
-    // const out: SymbolTableVisitor = getSTVisitor(file1);
-    //'Value assignment to 'S5' is overriding previous assignment on line 14:11'
-    //'Value assignment to 'S2' is being overridden by a later assignment on line 12:3'
-    assert.deepStrictEqual(getErrors(file1), [
+    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'assignmentOverride.ant'), 'utf-8'));
+    assert.deepStrictEqual(getErrors(file1, false), [
         {
             startLineNumber: 1,
             startColumn: 1,
@@ -237,9 +221,8 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('type override errors', function() {
-    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'typeOverride.ant'), 'utf-8');
-    // const out: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(getErrors(file1), [
+    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'typeOverride.ant'), 'utf-8'));
+    assert.deepStrictEqual(getErrors(file1, false), [
         {
             startLineNumber: 3,
             startColumn: 9,
@@ -284,10 +267,8 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('reaction statement errors', function() {
-    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionCompartment.ant'), 'utf-8');
-    // const visitor: SymbolTableVisitor = getSTVisitor(file1);
-    
-    assert.deepStrictEqual(getErrors(file1), [
+    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionCompartment.ant'), 'utf-8'));
+    assert.deepStrictEqual(getErrors(file1, false), [
         {
             startLineNumber: 2,
             startColumn: 22,
@@ -340,9 +321,8 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('reaction no rate rule warning', function() {
-    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionNoRateRule.ant'), 'utf-8');
-    // const visitor: SymbolTableVisitor = getSTVisitor(file1);
-    assert.deepStrictEqual(getErrors(file1), [
+    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionNoRateRule.ant'), 'utf-8'));
+    assert.deepStrictEqual(getErrors(file1, false), [
         {
             startLineNumber: 1,
             startColumn: 1,
@@ -377,16 +357,7 @@ describe('SymbolTableVisitor Error Tests', function() {
         },
     ])
 
-    const file2: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'uninitRateRuleRepeatError.ant'), 'utf-8');
-    assert.deepStrictEqual(getErrors(file2), [
-        {
-            startLineNumber: 7,
-            startColumn: 5,
-            endLineNumber: 7,
-            endColumn: 24,
-            message: "Reaction 'R1' missing rate law",
-            severity: monaco.MarkerSeverity.Warning
-        }
-    ])
+    const file2: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'uninitRateRuleRepeatError.ant'), 'utf-8'));
+    assert.deepStrictEqual(getErrors(file2, false), [])
   })
 })

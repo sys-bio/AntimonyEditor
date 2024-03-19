@@ -1,5 +1,5 @@
 import * as monaco from 'monaco-editor';
-import { AbstractParseTreeVisitor, ParseTree, TerminalNode } from 'antlr4ts/tree'
+import { AbstractParseTreeVisitor, ErrorNode, ParseTree, TerminalNode } from 'antlr4ts/tree'
 import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
 import { GlobalST, SymbolTable} from './SymbolTableClasses';
 import { ErrorUnderline, SrcPosition, SrcRange } from './Types';
@@ -8,7 +8,9 @@ import { FunctionContext, ModelContext, Modular_modelContext } from './antlr/Ant
 
 export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements AntimonyGrammarVisitor<void> {
   public globalST: GlobalST;
-  protected errorList: ErrorUnderline[];
+  // we use a map so that if we have a duplicate error report
+  // somehow it will only be outputed once when getErrors is called.
+  private errorMap: Map<string, ErrorUnderline>;
   
   // these keep track of scoping when traversing 
   // so we know to which ST to add a variable: 
@@ -18,10 +20,52 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
     super();
     this.globalST = globalST;
     this.currNameAndScope = undefined;
-    this.errorList = [];
+    this.errorMap = new Map();
   }
 
   protected defaultResult(): void {
+  }
+
+  /**
+   * tells a method if it is safe to error check
+   * its contents.
+   * @param ctx the ctx in question
+   * @returns true if safe, false otherwise
+   */
+  protected hasParseError(ctx: ParserRuleContext): boolean {
+    if (ctx.exception) {
+      return true;
+    }
+    // don't do anything if children contain an error node
+    if (ctx.children) {
+      for (let i = 0; i < ctx.children.length; i++) {
+        if (ctx.children[i] instanceof ErrorNode) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private errorToString(err: ErrorUnderline): string {
+    let errStr: string = err.startLineNumber + ',' + 
+                      err.startColumn + ',' + 
+                      err.endLineNumber + ',' + 
+                      err.endColumn + ',' + 
+                      err.message + ',' + 
+                      err.severity;
+    return errStr;
+  }
+
+  /**
+   * adds a new error to our stored errors
+   * @param err
+   */
+  protected addError(err: ErrorUnderline) {
+    let key: string = this.errorToString(err);
+    if (!this.errorMap.has(key)) {
+      this.errorMap.set(key, err);
+    }
   }
 
   /**
@@ -29,7 +73,7 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
    * @returns 
    */
   public getErrors(): ErrorUnderline[] {
-    return this.errorList;
+    return Array.from(this.errorMap.values());
   }
 
   /**
@@ -37,7 +81,13 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
    * @param errors 
    */
   public addErrorList(errors: ErrorUnderline[]) {
-    this.errorList = this.errorList.concat(errors);
+    // this.errorList = this.errorList.concat(errors);
+    for (let i = 0; i < errors.length; i++) {
+      let key: string = this.errorToString(errors[i]);
+      if (!this.errorMap.has(key)) {
+        this.errorMap.set(key, errors[i]);
+      }
+    }
   }
 
     /**
@@ -89,6 +139,14 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
     return currST;
   }
 
+  /**
+   * for now when we hit an error node just don't look through 
+   * it as it is from a parse error
+   * @param node 
+   */
+  visitErrorNode(node: ErrorNode): void {
+      
+  }
   /**
  * given a node, finds the (startline, startcolumn), (endline, endcolumn).
  * TODO: fix this method!! wrong srcRange for assignements.
@@ -165,7 +223,6 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
     }
   }
 }
-
 
 
 module ErrorVisitor {
