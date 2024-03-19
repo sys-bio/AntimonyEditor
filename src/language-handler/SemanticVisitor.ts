@@ -95,9 +95,7 @@ export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisi
     const idSrcRange: SrcRange = this.getSrcRange(ctx.NAME());
     if (currST) {
       const varInfo = currST.getVar(varName);
-      if (this.currNameAndScope?.scope === 'function') {
-
-      } else if (varInfo && varInfo.initSrcRange === undefined) {
+      if (this.currNameAndScope?.scope !== 'function' && varInfo && varInfo.initSrcRange === undefined) {
         if (varInfo.type === varTypes.Parameter) {
           // error, needs initialized value
           //Parameter 'k' missing value assignment
