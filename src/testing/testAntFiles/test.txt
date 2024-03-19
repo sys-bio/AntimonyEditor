@@ -1,0 +1,12 @@
+
+
+
+NEWLINE : [\r\n]
+
+function : 'function' NAME '(' (init_params)? ')' NEWLINE sum (';')? NEWLINE END;
+
+modular_model : 'model' ('*')? NAME '(' (init_params)? ')' simple_stmt_list END;
+
+function quadratic(x, a, b, c)\r\n a*x^2 + b*x + c\r\nend
+
+model quad(x, a, b, c)\r\n\r\nend
