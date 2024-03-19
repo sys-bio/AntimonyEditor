@@ -488,7 +488,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           }
 
           // set compartment of species in reaction
-          for (let speciesId of reactionSpecies) {
+          for (let speciesId of Array.from(reactionSpecies.values())) {
             let speciesInfo: Variable | undefined = currST.getVar(speciesId);
             if (speciesInfo && speciesInfo.compartment === undefined) {
               speciesInfo.compartment = compartmentId;
