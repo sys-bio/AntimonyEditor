@@ -1,12 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as monaco from 'monaco-editor';
-import { antimonyLanguage } from '../../languages/antlr/AntimonyLanguage';
-import { antimonyTheme } from '../../languages/AntimonyTheme';
+import { antimonyLanguage } from '../../language-handler/antlr/AntimonyLanguage';
+import { antimonyTheme } from '../../language-handler/AntimonyTheme';
 import CustomButton from '../CustomButton';
 import './AntimonyEditor.css';
 import { getBiomodels, getModel } from '../../features/BrowseBiomodels';
 import Loader from '../Loader';
-import ModelParser from '../../languages/ModelParser';
+import ModelParser from '../../language-handler/ModelParser';
+import ModelSemanticsChecker from '../../language-handler/ModelSemanticChecker';
 import handleDownload from '../../features/HandleDownload';
 import { IDBPDatabase, DBSchema } from 'idb';
 
@@ -140,7 +141,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
           ModelParser(editor, true);
-        }, 300);
+          ModelSemanticsChecker(editor, true);
+        }, 600);
       };
 
       // Parse the model whenever the user types

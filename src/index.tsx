@@ -2,8 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-import reportWebVitals from './__tests__/reportWebVitals';
-import { customLanguageWorker } from './languages/antlr/CustomLanguageWorker';
+import reportWebVitals from './testing/reportWebVitals';
+// index.ts
+
+import { customLanguageWorker } from './language-handler/antlr/CustomLanguageWorker';
 
 // Define the getWorker function
 // Dummy web worker function for now, will build more upon when parser and syntax highlighting is created

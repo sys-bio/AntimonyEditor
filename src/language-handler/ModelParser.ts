@@ -271,8 +271,9 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   ParseTreeWalker.DEFAULT.walk(listener, tree)
   parser.addErrorListener(errorListener);
 
-  // If hover exists, dispose of it and create a new one
-  let hoverInfo = parseAntimony(variables, errorListener.getErrors());
+  //If hover exists, dispose of it and create a new one
+  // replaced errorListener.getErrors() with []
+  let hoverInfo = parseAntimony(variables, []);
   if (hoverInfo) {
     editor.onDidDispose(() => {
       hoverInfo.dispose();
@@ -308,6 +309,7 @@ function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
         if (errors.length > 0) {
           errors.forEach((error) => {
             valueOfHover += `Error: ${error} <br/>`; // Include error message in valueOfHover
+            console.log(error);
           });
         }
         // check if word exists in variables map and if it does, add information to valueOfHover
