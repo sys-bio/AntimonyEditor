@@ -96,7 +96,6 @@ export async function searchModels(search: KeyboardEvent) {
         return models;
     } catch (error) {
         // If there is an error, throw it
-        console.log(error);
         throwError("Unable to fetch models from cache.");
     }
 }
@@ -124,11 +123,11 @@ export async function getModel(modelId: string) {
             return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join("")), url];
         } else {
           throwError("Unable to fetch model from GitHub repository.");
-          return [modelId, ""];
+          return [modelId, "Unable to fetch model."];
         }
     } catch (error) {
         throwError("Model not found, please choose another model.");
-        return [modelId, ""];
+        return [modelId, "Model not found."];
     }
 }
 
