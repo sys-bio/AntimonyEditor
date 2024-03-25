@@ -1,87 +1,215 @@
-import {Split} from '@geoffcox/react-splitter';
-import {SolidSplitter} from './CustomSplitters';
-import AntimonyEditor from "./editor/AntimonyEditor";
-import FileList from "./fileexplorer/FileList";
-import EventEmitter from "eventemitter3";
-import './App.css'
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import FileExplorer from './components/file-explorer/FileExplorer';
+import { openDB, DBSchema } from 'idb';
+import { SolidSplitter } from './components/CustomSplitters';
+import { Split } from '@geoffcox/react-splitter';
+import AntimonyEditor from './components/antimony-editor/AntimonyEditor';
+import { IDBPDatabase } from 'idb';
 
-type Props = {
-  emitter: EventEmitter<string | symbol, any>;
+/**
+ * @description MyDB interface
+ * @interface
+ * @property {object[]} files - The files object
+ * @property {string} files[].key - The key of the file
+ * @property {object} files[].value - The value of the file
+ * @property {string} files[].value.name - The name of the file
+ * @property {string} files[].value.content - The content of the file
+ */
+interface MyDB extends DBSchema {
+  files: {
+    key: string;
+    value: { name: string; content: string };
+  };
 }
 
-interface Model {
-  modeldata: string;
-}
+/**
+ * @description App component
+ * @returns - App component
+ */
+const App: React.FC = () => {
+  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; content: string }[]>([]);
+  const [selectedFileContent, setSelectedFileContent] = useState<string>('// Enter Antimony Model Here');
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
+  const [db, setDb] = useState<IDBPDatabase<MyDB> | null>();
+  const [fileExplorerKey, setFileExplorerKey] = useState<number>(0);
+  const [sbmlResultListenerAdded, setSbmlResultListenerAdded] = useState<boolean>(false);
 
-const App: React.FC<Model & Props> = ({modeldata, emitter}) => {
-  const getData = (data: string) =>{
-    modeldata = data;
+  /**
+   * @description Use the openDB function to open the database
+   */
+  useEffect(() => {
+    openDB<MyDB>('antimony_editor_db', 1, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains('files')) {
+          db.createObjectStore('files', { keyPath: 'name' });
+        }
+      },
+    }).then(database => {
+      setDb(database); // Store the database instance in the state
+      database.getAll('files').then(files => {
+        setUploadedFiles(files);
+      });
+    });
+  }, []);
+
+  /**
+   * @description Handle the file upload
+   * @param event - The event
+   */
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && db) {
+      Array.from(files).forEach(async file => {
+        const reader = new FileReader();
+        reader.readAsText(file);
+        reader.onload = async () => {
+          const fileData = { name: file.name, content: reader.result as string };
+          await db.put('files', fileData);
+          setUploadedFiles(prevFiles => {
+            const updatedFiles = [...prevFiles, fileData];
+            // Sort the files alphabetically and numerically based on their names
+            return updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+          });
+          setFileExplorerKey(prevKey => prevKey + 1); // Increment key to trigger re-render
+        };
+      });
+    }
+  };
+
+  /**
+   * @description Handle the file click
+   * @param fileContent - The content of the file
+   * @param fileName - The name of the file
+   */
+  const handleFileClick = (fileContent: string, fileName: string) => {
+    setSelectedFileContent(fileContent);
+    setSelectedFileName(fileName);
+  
+    // Store the selected file's information in IndexedDB
+    if (db) {
+      db.put('files', { name: fileName, content: fileContent });
+    }
+  };
+
+  const handleAntToSBML = async (fileContent: string, fileName: string) => {
+    setSelectedFileContent(fileContent);
+    setSelectedFileName(fileName);
+  
+    // Store the selected file's information in IndexedDB
+    if (db) {
+      setUploadedFiles(prevFiles => {
+        window.removeEventListener('grabbedSBMLResult', sbmlResultHandler);
+        setSbmlResultListenerAdded(false);
+        let updatedFiles = [...prevFiles];
+        const existingFileIndex = prevFiles.findIndex(file => file.name === fileName);
+  
+        if (existingFileIndex !== -1) {
+        } else {
+          // If the file doesn't exist, add it to the array
+          updatedFiles = [...prevFiles, { name: fileName, content: fileContent }];
+          db.put('files', { name: fileName, content: fileContent });
+          console.log('add')
+        }
+  
+        // Sort the files alphabetically and numerically based on their names
+        return updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      });
+    }
+  };
+
+  function sbmlResultHandler() {
+    console.log('sbmlResult event received');
+    let sbml = window.sbmlResult;
+    console.log(selectedFileName)
+    if (selectedFileName !== '' && selectedFileName.includes('.ant')) {
+      console.log('ran')
+      handleAntToSBML(sbml, selectedFileName.replace('ant', 'xml'))
+        .then(() => {
+          window.antimonyActive = false;
+          window.sbmlString = '';
+        })
+        .catch(error => {
+          console.error('Error in handleFileConversion:', error);
+        });
+    }
   }
 
-  const navAnnots = () => {
-    console.log(modeldata);
+  window.addEventListener('grabbedSBMLResult', sbmlResultHandler, { once: true });
+
+  const handleSBMLtoAntConversion = async (fileContent: string, fileName: string) => {
+    setSelectedFileContent(fileContent);
+    setSelectedFileName(fileName);
+  
+    // Store the selected file's information in IndexedDB
+    if (db) {
+      setUploadedFiles(prevFiles => {
+        window.removeEventListener('grabbedAntimonyResult', antimonyResultHandler);
+        setSbmlResultListenerAdded(false);
+        let updatedFiles = [...prevFiles];
+        const existingFileIndex = prevFiles.findIndex(file => file.name === fileName);
+  
+        if (existingFileIndex !== -1) {
+        } else {
+          // If the file doesn't exist, add it to the array
+          updatedFiles = [...prevFiles, { name: fileName, content: fileContent }];
+          db.put('files', { name: fileName, content: fileContent });
+          console.log('add')
+        }
+  
+        // Sort the files alphabetically and numerically based on their names
+        return updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      });
+    }
+  };
+
+  function antimonyResultHandler() {
+    console.log('antimonyResult event received');
+    let antimony = window.antimonyResult;
+    console.log(selectedFileName)
+    if (selectedFileName !== '' && selectedFileName.includes('.xml')) {
+      console.log('ran')
+      handleSBMLtoAntConversion(antimony, selectedFileName.replace('xml', 'ant'))
+        .then(() => {
+          window.antimonyActive = true;
+          window.antimonyString = '';
+        })
+        .catch(error => {
+          console.error('Error in handleFileConversion:', error);
+        });
+    }
   }
+
+  window.addEventListener('grabbedAntimonyResult', antimonyResultHandler, { once: true });
 
   return (
-    <div className='app' style={{height: '100%'}}>
-      <div className="wrapper">
-        <div className="top" style={{"fontSize": "2em", textAlign: 'center'}}>
-          The Official Antimony Web Code Editor
-          <div className="float-end" style={{"fontSize": ".5em"}}>
-            <a href={"https://reproduciblebiomodels.org/"}>
-              {/* <img style={{"width": "48px", "marginRight": "10px"}} src={"GitHub-Mark-Light-64px.png"}/> */}
-              https://reproduciblebiomodels.org/
-            </a>
+    <div className='app'>
+      <div className="middle">
+        <Split
+          renderSplitter={() => <SolidSplitter/>}
+          initialPrimarySize='14%'
+          splitterSize='3px'
+          minPrimarySize='14%'
+        >
+          <section>
+            <input type="file" multiple onChange={handleFileUpload} />
+            <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
+          </section>
+          <div>
+            {db ? ( // Conditionally render the AntimonyEditor component when db is defined
+                <AntimonyEditor content={selectedFileContent} fileName={selectedFileName} database={db} />
+              ) : (
+                // You can provide a loading message or handle the absence of the database as needed
+                <div>Loading...</div>
+              )}         
           </div>
-        </div>
-        <div className="middle App" style={{"backgroundColor": "#1c1c1c", color:'white'}}>
-          <Split
-            renderSplitter={() => <SolidSplitter/>}
-            initialPrimarySize='12%'
-            splitterSize='3px'
-          >
-            <div style={{"height": "100%", "overflowY": "scroll"}}>
-              {/* <ShadowDom>
-                  <div style={{"padding": "10px"}}>
-                      <FiletreeRoot emitter={emitter}/>
-                  </div>
-              </ShadowDom> */}
-              <FileList />
-              <button style={{cursor:'pointer'}}>Upload Files</button> <br/> <br/>
-              <a> File Tree Goes Here </a>
-            </div>        
-            <Split
-              renderSplitter={() => <SolidSplitter />}
-              splitterSize='3px'
-              horizontal
-              initialPrimarySize='80%'
-            >
-              <div style={{"height": "100%"}}>
-                {/* <MultiFileEditor emitter={emitter}/> */}
-                <AntimonyEditor emitter={emitter}/>
-              </div>
-              Logs Here
-              <div style={{"padding": "100px", "width": "100%", "height": "100%"}}>
-                <div style={{"width": "100%", "height": "100%"}}>
-                  <iframe style={{"width": "100%", "height": "100%"}}/>
-                </div>
-              </div>
-            </Split>
-          </Split>
-        </div>
-        <div className="right">
-          <button className='menu-button' style={{cursor:'pointer'}}>Create Annotations</button>
-          <button onClick={navAnnots} className='menu-button' style={{cursor:'pointer'}}>Navigate to Edit Annotations</button>
-          <button className='menu-button' style={{cursor:'pointer'}}>Insert Rate Law</button>
-          <button className='menu-button' style={{cursor:'pointer'}}>Browse Biomodels</button>
-          <button className='menu-button' style={{cursor:'pointer'}}>Convert to SBML</button>
-          <button className='menu-button' style={{cursor:'pointer'}}>Turn Annotated Variable Highlight Off</button>
-        </div>
-        <div className="bottom" style={{backgroundColor: '#1c1c1c', color:'white'}}>Copyright © 2023 Center for Reproducible Biomedical Modeling</div>
+        </Split>
       </div>
+      <footer>
+        Copyright © 2023 Center for Reproducible Biomedical Modeling
+      </footer>
     </div>
   );
-}
+};
 
 export default App;
