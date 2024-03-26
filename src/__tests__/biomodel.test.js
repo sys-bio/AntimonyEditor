@@ -35,7 +35,7 @@ test('searchModels3', async () => {
 // Tests to display the chosen biomodel from the search
 test('getModel1', async () => {
     const model = await getModel('BIOMD0000000693');
-    const modelFile = fs.readFileSync('src\\__tests__\\BIOMD0000000693.xml', 'utf8');
+    const modelFile = fs.readFileSync('src/__tests__/BIOMD0000000693.xml', 'utf8');
     expect(model).toBeDefined();
     expect(model[0]).toBe('BIOMD0000000693');
     expect(model[1]).toBe(modelFile);
