@@ -53,6 +53,9 @@ declare global {
     sbmlResult: string; // Define the sbmlResult variable
     antimonyResult: string; // Define the antimonyResult variable
     antimonyActive: boolean; // Define the antimonyActive variable
+    fileName: string; // Define the fileName variable
+    url: string; // Define the link variable
+    conversion: string; // Define the conversion variable
     processAntimony?: () => void; // Define the processAntimony function
     processSBML?: () => void; // Define the processSBML function
   }
@@ -180,10 +183,16 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       const dropdown = document.getElementById('dropdown');
       dropdown!.style.display = "none";
       setLoading(true);
-      getModel(chosenModel).then((model) => {
+      if (chosenModel === '') {
         setLoading(false);
-        const editor = monaco.editor.getModels()[0];
-        editor.setValue(model);
+        return;
+      }
+      getModel(chosenModel).then((model) => {
+        window.sbmlString = model[1];
+        window.fileName = model[0];
+        window.url = model[2];
+        handleConversionSBML();
+        setLoading(false);
       });
     }
   }, [chosenModel]);

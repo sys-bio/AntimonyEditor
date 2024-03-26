@@ -51,6 +51,8 @@ const App: React.FC = () => {
         setUploadedFiles(files);
       });
     });
+    window.addEventListener('grabbedAntimonyResult', antimonyResultHandler, { once: true });
+    window.addEventListener('grabbedSBMLResult', sbmlResultHandler, { once: true });
   }, []);
 
   /**
@@ -135,8 +137,6 @@ const App: React.FC = () => {
     }
   }
 
-  window.addEventListener('grabbedSBMLResult', sbmlResultHandler, { once: true });
-
   const handleSBMLtoAntConversion = async (fileContent: string, fileName: string) => {
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
@@ -169,7 +169,19 @@ const App: React.FC = () => {
     console.log(selectedFileName)
     if (selectedFileName !== '' && selectedFileName.includes('.xml')) {
       console.log('ran')
+      window.conversion = "standard";
       handleSBMLtoAntConversion(antimony, selectedFileName.replace('xml', 'ant'))
+        .then(() => {
+          window.antimonyActive = true;
+          window.antimonyString = '';
+        })
+        .catch(error => {
+          console.error('Error in handleFileConversion:', error);
+        });
+    } else {
+      console.log('ran empty antimony')
+      window.conversion = "";
+      handleSBMLtoAntConversion(antimony, window.fileName + '.ant')
         .then(() => {
           window.antimonyActive = true;
           window.antimonyString = '';
@@ -179,8 +191,6 @@ const App: React.FC = () => {
         });
     }
   }
-
-  window.addEventListener('grabbedAntimonyResult', antimonyResultHandler, { once: true });
 
   return (
     <div className='app'>
