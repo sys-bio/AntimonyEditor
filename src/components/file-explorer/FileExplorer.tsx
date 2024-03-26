@@ -23,7 +23,7 @@ interface FileExplorerProps {
  * @returns - FileExplorer component
  */
 const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
-  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
+  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(0);
   // const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   /**
@@ -47,7 +47,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
               onClick={() => handleFileButtonClick(index, file.name)}
               className={`button ${selectedFileIndex === index ? 'selected' : ''}`}
             >
-              {file.name}
+              {file.name === "" ? "Example" : file.name}
             </button>
           </li>
         ))}

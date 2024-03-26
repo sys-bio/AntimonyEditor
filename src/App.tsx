@@ -197,7 +197,9 @@ const App: React.FC = () => {
           minPrimarySize='14%'
         >
           <section>
-            <input type="file" multiple onChange={handleFileUpload} />
+            <div>
+              <input type="file" multiple onChange={handleFileUpload} />
+            </div>
             <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
           </section>
           <div>
@@ -211,7 +213,9 @@ const App: React.FC = () => {
         </Split>
       </div>
       <footer>
-        Copyright © 2023 Center for Reproducible Biomedical Modeling
+        <a target="_blank" rel="noopener noreferrer" href="https://reproduciblebiomodels.org/">
+          Copyright © 2023 Center for Reproducible Biomedical Modeling
+        </a>
       </footer>
     </div>
   );

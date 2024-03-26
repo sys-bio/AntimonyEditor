@@ -47,6 +47,7 @@
   font-size: 16px;
   border: none;
   cursor: pointer;
+  background-color: #1c1c1c;
 }
 
 /* Dropdown button on hover & focus */
@@ -64,9 +65,7 @@
 .dropdown-content {
   display: none;
   position: absolute;
-  background-color: #f1f1f1;
   min-width: 160px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
   z-index: 1;
 }
 
@@ -92,9 +91,8 @@
   background-color: #1c1c1c;
   border-radius: 2px;
   border-style: solid;
-  border-width: 1px;
-  border-color: #1c1c1c;
-  cursor: pointer;
+  border-width: 5px;
+  border-color: #5090da;
   display: inline-block;
   font-size: 1em;
   font-weight: normal !important;
@@ -115,6 +113,36 @@
 }
 
 .button:hover {
+  color: white;
+  background-color: #464646;
+}
+
+.convert-button {
+  background-color: #1c1c1c;
+  border-radius: 2px;
+  border-style: solid;
+  border-width: 5px;
+  border-color: #5090da;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 1em;
+  font-weight: normal !important;
+  line-height: 1.2;
+  margin: 0 3px 0 0;
+  padding: 2px 7px;
+  position: relative;
+  text-align: center;
+  text-decoration: none !important;
+  text-overflow: ellipsis;
+  text-shadow: none;
+  white-space: nowrap;
+  color: white;
+  padding: 16px;
+  font-size: 16px;
+  border: none;
+}
+
+.convert-button:hover {
   color: white;
   background-color: #464646;
 }

@@ -257,9 +257,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       <div className='menu'>
         <button className='button' onClick={() => handleDownload(editorInstance, fileName)}>Save File to Downloads Folder</button>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
-        {/* <CustomButton name={'Create Annotations'} /> */}
-        {/* <CustomButton name={'Navigate to Edit Annotations'} /> */}
-        <button className='btn'>Navigate to Edit Annotations</button>
+        {/* <button className='btn'>Navigate to Edit Annotations</button> */}
         {/* <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Annotated Variable Highlight Off'} /> */}
         <div className="dropdown" ref={dropdownRef}>
@@ -267,8 +265,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             Convert Antimony/SBML
           </button>
           <div id="myDropdown" className={`dropdown-content ${isDropdownVisible ? 'show' : ''}`}>
-            <button className='button' onClick={handleConversionAnt}>Convert Antimony to SBML</button>
-            <button className='button' onClick={handleConversionSBML}>Convert SBML to Antimony</button>
+            <button className='convert-button' onClick={handleConversionAnt}>Antimony - SBML</button>
+            <button className='convert-button' onClick={handleConversionSBML}>SBML - Antimony</button>
           </div>
         </div>
         <input id='biomodel-browse' type='text' placeholder='Search for a model' />

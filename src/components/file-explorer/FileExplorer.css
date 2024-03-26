@@ -1,4 +1,9 @@
-div ul {
+.file-explorer {
+  height: 100%; /* Set the desired height */
+  overflow: auto; /* or overflow: scroll; */
+}
+
+.file-explorer ul {
   list-style: none;
   display: flex;
   align-items: flex-start;
