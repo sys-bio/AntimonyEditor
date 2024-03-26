@@ -176,7 +176,19 @@ const App: React.FC = () => {
     console.log(window.selectedFile)
     if (window.selectedFile !== '' && window.selectedFile.includes('.xml')) {
       console.log('ran')
+      window.conversion = "standard";
       handleSBMLtoAntConversion(antimony, window.selectedFile.replace('xml', 'ant'))
+        .then(() => {
+          window.antimonyActive = true;
+          window.antimonyString = '';
+        })
+        .catch(error => {
+          console.error('Error in handleFileConversion:', error);
+        });
+    } else {
+      console.log('ran empty antimony')
+      window.conversion = "";
+      handleSBMLtoAntConversion(antimony, window.fileName + '.ant')
         .then(() => {
           window.antimonyActive = true;
           window.antimonyString = '';

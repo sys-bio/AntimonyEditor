@@ -192,6 +192,7 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
         setLoading(false);
         const a = document.createElement("a");
         a.addEventListener("click", () => {
+          console.log(model.id);
           biomodelBrowse.value = "";
           dropdown!.innerHTML = "";
           chosenModel = model.id;
