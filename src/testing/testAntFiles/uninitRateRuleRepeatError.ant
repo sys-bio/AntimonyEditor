@@ -1,0 +1,10 @@
+// here the same no rate rule error is reported multiple times
+// depending on where you hover, this is NOT the expeccted behavior
+// there should only ever be one report per reaction
+
+// this appears to be caused by a missing semicolon at the end of the reaction line NEED TO FIX parsing for functions!
+model M1(x, y, z)
+    R1: A + 0.24$B -> A
+    A = 1;
+    B = 2;
+end
