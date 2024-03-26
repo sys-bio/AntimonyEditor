@@ -1,7 +1,8 @@
 {
   "name": "antimony-editor",
-  "version": "0.1.0",
+  "version": "0.9.0",
   "private": true,
+  "homepage": "https://sys-bio.github.io/AntimonyEditor/",
   "dependencies": {
     "@babel/core": "^7.16.0",
     "@geoffcox/react-splitter": "^2.1.2",
@@ -69,7 +70,8 @@
     "build": "node scripts/build.js",
     "test": "node scripts/test.js",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "publish": "gh-pages -d src"
   },
   "eslintConfig": {
     "extends": [
