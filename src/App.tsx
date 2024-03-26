@@ -193,7 +193,7 @@ const App: React.FC = () => {
         <Split
           renderSplitter={() => <SolidSplitter/>}
           initialPrimarySize='14%'
-          splitterSize='3px'
+          splitterSize='5px'
           minPrimarySize='14%'
         >
           <section>

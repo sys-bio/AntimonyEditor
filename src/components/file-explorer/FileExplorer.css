@@ -1,5 +1,5 @@
 .file-explorer {
-  height: 100%; /* Set the desired height */
+  height: 90%; /* Set the desired height */
   overflow: auto; /* or overflow: scroll; */
 }
 
