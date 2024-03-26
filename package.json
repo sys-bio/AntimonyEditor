@@ -2,7 +2,6 @@
   "name": "antimony-editor",
   "version": "0.9.0",
   "private": true,
-  "homepage": "https://sys-bio.github.io/AntimonyEditor/",
   "dependencies": {
     "@babel/core": "^7.16.0",
     "@geoffcox/react-splitter": "^2.1.2",

@@ -237,8 +237,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         {/* <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Annotated Variable Highlight Off'} /> */}
         
-        <button className='button' onClick={handleConversionAnt}>Convert Antimony to SBML</button>
-        <button className='button' onClick={handleConversionSBML}>Convert SBML to Antimony</button>
+        {/* <button className='button' onClick={handleConversionAnt}>Convert Antimony to SBML</button> */}
+        {/* <button className='button' onClick={handleConversionSBML}>Convert SBML to Antimony</button> */}
         <input id='biomodel-browse' type='text' placeholder='Search for a model' />
         <ul id='dropdown' />
         <Loader loading={loading} />
