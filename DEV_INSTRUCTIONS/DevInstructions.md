@@ -8,7 +8,8 @@ During deployment, you must ADD
 to package.json. After deployment, REMOVE it from package.json.
 This ensures that libantimonyjs is able to work locally for "npm start"
 while also making sure that the deployment url is correct.
-In addition, dont forget to change these two lines
+
+In addition, dont forget to change these two lines in config/paths.js.
   appPublic: resolveApp(''),
   appHtml: resolveApp('index.html'),
 to 
