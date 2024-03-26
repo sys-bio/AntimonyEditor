@@ -1,6 +1,6 @@
 .file-explorer {
   height: 90%; /* Set the desired height */
-  overflow: auto; /* or overflow: scroll; */
+  overflow: scroll; /* or overflow: scroll; */
 }
 
 .file-explorer ul {
@@ -11,8 +11,33 @@
   flex-direction: column;
 }
 
-.button:hover,
-.button.selected {
+.file-btn:hover,
+.file-btn.selected {
   color: white;
   background-color: #464646;
+}
+
+.file-btn {
+  background-color: #1c1c1c;
+  border-radius: 2px;
+  border-style: solid;
+  border-width: 5px;
+  border-color: #5090da;
+  display: inline-block;
+  font-size: 1em;
+  font-weight: normal !important;
+  line-height: 1.2;
+  margin: 0 3px 0 0;
+  padding: 2px 7px;
+  position: relative;
+  text-align: center;
+  text-decoration: none !important;
+  text-overflow: ellipsis;
+  text-shadow: none;
+  white-space: nowrap;
+  color: white;
+  padding: 5px;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
 }

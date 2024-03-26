@@ -45,7 +45,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick }) => {
           <li key={index}>
             <button
               onClick={() => handleFileButtonClick(index, file.name)}
-              className={`button ${selectedFileIndex === index ? 'selected' : ''}`}
+              className={`file-btn ${selectedFileIndex === index ? 'selected' : ''}`}
             >
               {file.name === "" ? "Example" : file.name}
             </button>
