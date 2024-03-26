@@ -1,0 +1,41 @@
+#dropdown {
+    position: absolute;
+    z-index: 5000;
+    list-style-type: none;
+    top: 36px;
+    /* right: 360px; */
+    padding: 0;
+    margin: 0;
+    display: none;
+    height: 50vh;
+    width: 36vw;
+    overflow-y: auto;
+}
+
+#dropdown a {
+    border: 1px solid #ddd;
+    margin-top: -1px;
+    /* Prevent double borders */
+    background-color: #000000;
+    padding: 15px;
+    font-size: 15px;
+    display: block;
+    color: turquoise;
+    /* set text to bold */
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#dropdown a:hover {
+    background-color: #eee;
+}
+
+#biomodel-browse {
+    position: relative;
+    right: 1.4px;
+}
+
+.code-editor {
+  height: 80vh;
+}
