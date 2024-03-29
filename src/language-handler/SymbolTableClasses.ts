@@ -99,6 +99,37 @@ export class GlobalST extends SymbolTable {
     getModelST(modelName: string) {
         return this.modelMap.get(modelName);
     }
+
+    /**
+     * looks up a var with id that exists at srcRange
+     * @param id 
+     * @param srcRange 
+     * @returns the variable of the info of that variable if it exists
+     *          undefined if a variable does not exist at that location and id
+     */
+    hasVarAtLocation(id: string, srcRange: SrcRange): Variable | undefined {
+        let varInfo: Variable | undefined = this.getVar(id);
+        if (varInfo && varInfo.refLocations.has(srcRange.toString())) {
+            return varInfo;
+        }
+
+        for (const [key, funcST] of this.modelMap) {
+            varInfo = funcST.getVar(id);
+            if (varInfo && varInfo.refLocations.has(srcRange.toString())) {
+                return varInfo;
+            }
+        }
+
+        
+        for (const [key, modelST] of this.modelMap) {
+            varInfo = modelST.getVar(id);
+            if (varInfo && varInfo.refLocations.has(srcRange.toString())) {
+                return varInfo;
+            }
+        }
+
+        return undefined;
+    }
 }
 
 /**

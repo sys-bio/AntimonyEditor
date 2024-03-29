@@ -5,7 +5,7 @@ import { AntimonyGrammarParser, RootContext} from './antlr/AntimonyGrammarParser
 import { GlobalST} from './SymbolTableClasses';
 import { SymbolTableVisitor } from './SymbolTableVisitor';
 import { SemanticVisitor } from './SemanticVisitor';
-import { ErrorUnderline, SrcRange } from './Types';
+import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from './Types';
 import { Variable } from './Variable';
 
 
@@ -41,6 +41,15 @@ const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, hove
   const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue());
 
   const errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
+  const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
+  if (hoverInfo) {
+    editor.onDidDispose(() => {
+      hoverInfo.dispose();
+    });
+    editor.onDidChangeModelContent(() => {
+      hoverInfo.dispose();
+    });
+  }
 
   // this is how to add error squiglies 
   let model: monaco.editor.ITextModel | null = editor.getModel();
@@ -76,11 +85,11 @@ export class AntimonyProgramAnalyzer {
     this.tree = this.parser.root();
 
     this.globalST = new GlobalST();
-    // console.log(globalSymbolTable);
     this.stVisitor = new SymbolTableVisitor(this.globalST);
     this.stVisitor.visit(this.tree);
     this.semanticVisitor = new SemanticVisitor(this.globalST);
     this.semanticVisitor.visit(this.tree);
+    console.log(this.globalST);
   }
 
   getErrors(includeParseErrors: boolean) {
@@ -91,100 +100,126 @@ export class AntimonyProgramAnalyzer {
   }
 
   getGeneralHoverInfo() {
-    // let hoverContents: monaco.IMarkdownString[] = [];
-    // let hoverInfo = monaco.languages.registerHoverProvider('antimony', {
-    //   provideHover: (model, position) => {
-    //     hoverContents = [];
-    //     let valueOfHover: string = '';
-    //     let valueOfAnnotation: string = '';
-    //     const word = model.getWordAtPosition(position);
+    let hoverContents: monaco.IMarkdownString[] = [];
+    let hoverInfo = monaco.languages.registerHoverProvider('antimony', {
+      provideHover: (model, position) => {
+        hoverContents = [];
+        let valueOfHover: string = '';
+        let valueOfAnnotation: string = '';
+        const word = model.getWordAtPosition(position);
   
-    //     // Check if word exists
-    //     if (word) {
-    //       // check if position range is in error and if it is, return error message
-    //       // have to figure out entire position range of error first
-    //       // if (errors.length > 0) {
-    //       //   errors.forEach((error) => {
-    //       //     valueOfHover += `Error: ${error} <br/>`; // Include error message in valueOfHover
-    //       //     console.log(error);
-    //       //   });
-    //       // }
-    //       // check if word exists in variables map and if it does, add information to valueOfHover
-    //       if (variables.has(word.word)) {
-    //         const variableInfo = variables.get(word.word);
-    //         if (variableInfo?.modifiers) {
-    //           switch (variableInfo?.modifiers) {
-    //             case 'var':
-    //               valueOfHover += `<span style="color:#BC96CA;">${variableInfo?.modifiers}</span> <br/> `;
-    //               break;
-    //             case 'const':
-    //               valueOfHover += `<span style="color:#4954F5;">${variableInfo?.modifiers}</span> <br/> `;
-    //               break;
-    //             case 'formula':
-    //               valueOfHover += `<span style="color:#8185C9;">${variableInfo?.modifiers}</span> <br/> `;
-    //               break;
-    //             case 'species':
-    //               valueOfHover += `(<span style="color:#FD7F20;">Species</span>) ${word.word} <br/> `;
-    //               break;
-    //             default:
-    //               break;
-    //           }
-    //         }
-    //         // check if variableInfo exists and if it does, add information to valueOfHover
-    //         if (variableInfo?.display) {
-    //           valueOfHover += `<span style="color:#FD7F20;">${variableInfo?.display}</span> <br/> `;
-    //         }
-    //         // check if variableInfo exists and if it does, add information to valueOfHover
-    //         if (variableInfo?.label) {
-    //           switch (variableInfo?.label) {
-    //             case 'Model':
-    //               valueOfHover += `${word.word} <br/> `;
-    //               break;
-    //             case 'Reaction':
-    //               valueOfHover += `(<span style="color:#4DC5B9;">${variableInfo?.label}</span>) ${word.word} <br/> `;
-    //               break;
-    //             case 'Compartment':
-    //               valueOfHover += `(<span style="color:#BC96CA;">${variableInfo?.label}</span>) ${word.word} <br/> `;
-    //               break;
-    //             case 'Event':
-    //               valueOfHover += `(<span style="color:#4954F5;">${variableInfo?.label}</span>) ${word.word} <br/> `;
-    //               break;
-    //             case 'Unit':
-    //               valueOfHover += `(<span style="color:#4954F5;">${variableInfo?.label}</span>) ${word.word} <br/> `;
-    //               break;
-    //             default:
-    //               break;
-    //           }
-    //         }
-    //         // check if variableInfo exists and if it does, add information to valueOfHover
-    //         if (variableInfo?.initialize) {
-    //           valueOfHover += `Initialized Value: <span style="color:#DEF9CB;">${variableInfo?.initialize}</span> <br/> `;
-    //         }
-    //         // check if variableInfo exists and if it does, add information to valueOfHover
-    //         if (variableInfo?.compartments) {
-    //           valueOfHover += `In <span style="color:#BC96CA;">${'compartment'}</span>: ${variableInfo?.compartments} <br/> `;
-    //         }
-    //         // check if variableInfo exists and if it does, add information to valueOfAnnotation
-    //         if (variableInfo?.annotations) {
-    //           variableInfo?.annotations.forEach((annotation) => {
-    //             valueOfAnnotation += `<span style="color:#f2ab7c;">${annotation.replace(/"/g, "")}</span> <br/> `;
-    //           });
-    //         }
-    //       }
-    //       // add valueOfHover and valueOfAnnotation to hoverContents
-    //       hoverContents.push(
-    //         { supportHtml: true,
-    //           value:  valueOfHover });
-    //       hoverContents.push(
-    //         { supportHtml: true,
-    //           value:  valueOfAnnotation });
-    //       return {
-    //         range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
-    //         contents: hoverContents,
-    //       };
-    //     }
-    //   },
-    // });
+        // Check if word exists
+        if (word) {
+          // check if position range is in error and if it is, return error message
+          // have to figure out entire position range of error first
+          // if (errors.length > 0) {
+          //   errors.forEach((error) => {
+          //     valueOfHover += `Error: ${error} <br/>`; // Include error message in valueOfHover
+          //     console.log(error);
+          //   });
+          // }
+          // check if word exists in variables map and if it does, add information to valueOfHover
+          // position.lineNumber, word.startColumn, position.lineNumber, word.endColumn
+          let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
+          let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
+          let srcRange: SrcRange = new SrcRange(start, end);
+          let varInfo: Variable | undefined = this.globalST.hasVarAtLocation(word.word, srcRange);
+          if (varInfo) {
+            if (varInfo.isConst) {
+              valueOfHover += `<span style="color:#4954F5;">const</span> <br/> `;
+            } else if (isSubtTypeOf(varInfo.type, varTypes.Variable)) {
+              valueOfHover += `<span style="color:#BC96CA;">var</span> <br/> `;
+            }
+
+            if (varInfo.displayName) {
+              valueOfHover += `<span style="color:#FD7F20;">${varInfo.displayName}</span> <br/> `;
+            }
+
+            valueOfHover += `(<span style="color:#FD7F20;">${varInfo.type}</span>) ${word.word} <br/> `;
+
+            if (varInfo.value) {
+              valueOfHover += `Initialized Value: <span style="color:#DEF9CB;">${varInfo.value}</span> <br/> `;
+            }
+
+            if (varInfo.compartment) {
+              valueOfHover += `In <span style="color:#BC96CA;">${'compartment'}</span>: ${varInfo.compartment} <br/> `;
+            }
+
+          //   if (variableInfo?.modifiers) {
+          //     switch (variableInfo?.modifiers) {
+          //       case 'var':
+          //         valueOfHover += `<span style="color:#BC96CA;">${variableInfo?.modifiers}</span> <br/> `;
+          //         break;
+          //       case 'const':
+          //         valueOfHover += `<span style="color:#4954F5;">${variableInfo?.modifiers}</span> <br/> `;
+          //         break;
+          //       case 'formula':
+          //         valueOfHover += `<span style="color:#8185C9;">${variableInfo?.modifiers}</span> <br/> `;
+          //         break;
+          //       case 'species':
+          //         valueOfHover += `(<span style="color:#FD7F20;">Species</span>) ${word.word} <br/> `;
+          //         break;
+          //       default:
+          //         break;
+          //     }
+          //   }
+          //   // check if variableInfo exists and if it does, add information to valueOfHover
+          //   if (variableInfo?.display) {
+          //     valueOfHover += `<span style="color:#FD7F20;">${variableInfo?.display}</span> <br/> `;
+          //   }
+          //   // check if variableInfo exists and if it does, add information to valueOfHover
+          //   if (variableInfo?.label) {
+          //     switch (variableInfo?.label) {
+          //       case 'Model':
+          //         valueOfHover += `${word.word} <br/> `;
+          //         break;
+          //       case 'Reaction':
+          //         valueOfHover += `(<span style="color:#4DC5B9;">${variableInfo?.label}</span>) ${word.word} <br/> `;
+          //         break;
+          //       case 'Compartment':
+          //         valueOfHover += `(<span style="color:#BC96CA;">${variableInfo?.label}</span>) ${word.word} <br/> `;
+          //         break;
+          //       case 'Event':
+          //         valueOfHover += `(<span style="color:#4954F5;">${variableInfo?.label}</span>) ${word.word} <br/> `;
+          //         break;
+          //       case 'Unit':
+          //         valueOfHover += `(<span style="color:#4954F5;">${variableInfo?.label}</span>) ${word.word} <br/> `;
+          //         break;
+          //       default:
+          //         break;
+          //     }
+          //   }
+          //   // check if variableInfo exists and if it does, add information to valueOfHover
+          //   if (variableInfo?.initialize) {
+          //     valueOfHover += `Initialized Value: <span style="color:#DEF9CB;">${variableInfo?.initialize}</span> <br/> `;
+          //   }
+          //   // check if variableInfo exists and if it does, add information to valueOfHover
+          //   if (variableInfo?.compartments) {
+          //     valueOfHover += `In <span style="color:#BC96CA;">${'compartment'}</span>: ${variableInfo?.compartments} <br/> `;
+          //   }
+          //   // check if variableInfo exists and if it does, add information to valueOfAnnotation
+          //   if (variableInfo?.annotations) {
+          //     variableInfo?.annotations.forEach((annotation) => {
+          //       valueOfAnnotation += `<span style="color:#f2ab7c;">${annotation.replace(/"/g, "")}</span> <br/> `;
+          //     });
+          //   }
+          // }
+          }
+          // add valueOfHover and valueOfAnnotation to hoverContents
+          hoverContents.push(
+            { supportHtml: true,
+              value:  valueOfHover });
+          // hoverContents.push(
+          //   { supportHtml: true,
+          //     value:  valueOfAnnotation });
+          return {
+            range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
+            contents: hoverContents,
+          };
+        }
+      },
+    });
+    return hoverInfo;
   }
 
   private getVarInfoByIDsrcRange(id: string, srcRange: SrcRange) {

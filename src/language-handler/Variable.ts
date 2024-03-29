@@ -24,6 +24,7 @@ export class Variable {
     public value: string | undefined; // for numerical values
     public displayName: string | undefined;
     public annotations: string[];
+    public refLocations: Set<string>;
 
     constructor(type: varTypes,
                 isConst: boolean, 
@@ -41,6 +42,8 @@ export class Variable {
         this.value = undefined;
         this.displayName = undefined;
         this.annotations = [];
+        this.refLocations = new Set();
+        this.refLocations.add(idSrcRange.toString());
     }
 
     /**

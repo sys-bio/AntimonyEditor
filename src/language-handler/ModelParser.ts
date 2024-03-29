@@ -248,7 +248,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
     enterAnnotation(ctx: AnnotationContext) {
       const varName = ctx.var_name().text; // Get the species name
       const annotationlink = ctx.ESCAPED_STRING().text; // Get the annotation
-      debugger;
+      // debugger;
       // if (annotatedVar.includes(varName)) {
       //   return;
       // } else {
@@ -293,7 +293,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
 
   //If hover exists, dispose of it and create a new one
   // replaced errorListener.getErrors() with []
-  let hoverInfo: monaco.IDisposable = parseAntimony(variables, []);
+  // let hoverInfo: monaco.IDisposable = parseAntimony(variables, []);
   // if (hoverInfo) {
   //   editor.onDidDispose(() => {
   //     hoverInfo.dispose();
@@ -324,6 +324,7 @@ function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
 
       // Check if word exists
       if (word) {
+        console.log(word.word);
         // check if position range is in error and if it is, return error message
         // have to figure out entire position range of error first
         if (errors.length > 0) {
