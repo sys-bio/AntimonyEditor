@@ -1,7 +1,7 @@
 import * as monaco from 'monaco-editor';
 import { ANTLRErrorListener, ANTLRInputStream, CommonTokenStream, RecognitionException, Recognizer } from 'antlr4ts';
 import { AntimonyGrammarLexer } from './antlr/AntimonyGrammarLexer';
-import { AnnotationContext, AntimonyGrammarParser, AssignmentContext, DeclarationContext, EventContext, Is_assignmentContext, NamemaybeinContext, ReactionContext, SpeciesContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
+import { Annot_listContext, AnnotationContext, AntimonyGrammarParser, AssignmentContext, DeclarationContext, EventContext, Is_assignmentContext, NamemaybeinContext, New_annotContext, ReactionContext, SpeciesContext, Unit_declarationContext } from './antlr/AntimonyGrammarParser';
 import { AntimonyGrammarListener } from './antlr/AntimonyGrammarListener'
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker'
@@ -67,6 +67,7 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
   parser.addErrorListener(errorListener);
 
   let tree = parser.root();
+  console.log(tree)
 
   var variables: Map<string, VariableInfo> = new Map<string, VariableInfo>();
 
@@ -247,20 +248,39 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
     enterAnnotation(ctx: AnnotationContext) {
       const varName = ctx.var_name().text; // Get the species name
       const annotationlink = ctx.ESCAPED_STRING().text; // Get the annotation
-
-      if (annotatedVar.includes(varName)) {
-        return;
-      } else {
-        annotatedVar.push(varName);
-      }
+      debugger;
+      // if (annotatedVar.includes(varName)) {
+      //   return;
+      // } else {
+      //   annotatedVar.push(varName);
+      // }
 
       let variable = variables.get(varName);
       if (variable) {
-        variable.annotations?.push(annotationlink);
+        if (!variable.annotations?.includes(annotationlink)) {
+          variable.annotations?.push(annotationlink);
+        }
       } else {
         const annotationInfo = new VariableInfo();
         annotationInfo.annotations?.push(annotationlink);
         variables.set(varName, annotationInfo);
+      }
+
+      // go through possible list
+      let annotList: Annot_listContext | undefined = ctx.annot_list();
+      if (annotList) {
+        if (annotList.children) {
+          for (let i = 0; i < annotList.children.length; i++) {
+            let singleAnnot = annotList.children[i] as New_annotContext;
+            const currAnnotLink = singleAnnot.ESCAPED_STRING().text;
+
+            if (variable) {
+              if (!variable.annotations?.includes(currAnnotLink)) {
+                variable.annotations?.push(currAnnotLink);
+              }
+            }
+          }
+        }
       }
     };
   }
@@ -273,15 +293,15 @@ const ModelParser = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: b
 
   //If hover exists, dispose of it and create a new one
   // replaced errorListener.getErrors() with []
-  let hoverInfo = parseAntimony(variables, []);
-  if (hoverInfo) {
-    editor.onDidDispose(() => {
-      hoverInfo.dispose();
-    });
-    editor.onDidChangeModelContent(() => {
-      hoverInfo.dispose();
-    });
-  }
+  let hoverInfo: monaco.IDisposable = parseAntimony(variables, []);
+  // if (hoverInfo) {
+  //   editor.onDidDispose(() => {
+  //     hoverInfo.dispose();
+  //   });
+  //   editor.onDidChangeModelContent(() => {
+  //     hoverInfo.dispose();
+  //   });
+  // }
 }
 
 /**
@@ -386,7 +406,6 @@ function parseAntimony(variables: Map<string, VariableInfo>, errors: string[]) {
           contents: hoverContents,
         };
       }
-  
     },
   });
   return hoverInfo;

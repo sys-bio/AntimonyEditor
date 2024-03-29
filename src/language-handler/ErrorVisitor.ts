@@ -13,6 +13,8 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
   // we use a map so that if we have a duplicate error report
   // somehow it will only be outputed once when getErrors is called.
   private errorMap: Map<string, ErrorUnderline>;
+  private annotationMap: Map<string, string>;
+  private generalHoverInfoMap: Map<string, string>;
   
   // these keep track of scoping when traversing 
   // so we know to which ST to add a variable: 
@@ -23,6 +25,8 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
     this.globalST = globalST;
     this.currNameAndScope = undefined;
     this.errorMap = new Map();
+    this.annotationMap = new Map();
+    this.generalHoverInfoMap = new Map();
   }
 
   protected defaultResult(): void {
@@ -127,7 +131,7 @@ export class ErrorVisitor extends AbstractParseTreeVisitor<void> implements Anti
       if (this.currNameAndScope.scope === "model") {
         // make sure that this the symbol table this var is in exists
         currST = this.globalST.getModelST(this.currNameAndScope.name);
-      } else  if (this.currNameAndScope.scope === "mmodel")  {
+      } else if (this.currNameAndScope.scope === "mmodel")  {
         // TODO: take care of mmodels
       } else {
         // function

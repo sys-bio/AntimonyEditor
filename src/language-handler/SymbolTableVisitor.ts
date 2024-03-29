@@ -1,4 +1,4 @@
-import {AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
+import {AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Is_assignmentContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { SymbolTable, ParamAndNameTable} from './SymbolTableClasses';
 import { Variable } from './Variable';
@@ -290,10 +290,12 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           if (varInfo.initSrcRange !== undefined) {
             // warning case! reinitalization!
             if (varInfo.initSrcRange) {
+              // adds warning to current id location
               const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
               const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
               this.addError(errorUnderline1);
 
+              // adds warning to previous id initialization location
               const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
               const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
               this.addError(errorUnderline2);
@@ -301,6 +303,9 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           }
           varInfo.initSrcRange = currSrcRange;
           varInfo.type = varTypes.Parameter;
+
+          // for hovers
+          varInfo.value = ctx.sum().text;
         }
       }
     }

@@ -21,7 +21,9 @@ export class Variable {
     public idSrcRange: SrcRange;
     public initSrcRange: SrcRange | undefined;
     public substanceOnly: boolean;
-    
+    public value: string | undefined; // for numerical values
+    public displayName: string | undefined;
+    public annotations: string[];
 
     constructor(type: varTypes,
                 isConst: boolean, 
@@ -36,6 +38,9 @@ export class Variable {
         this.idSrcRange = idSrcRange;
         this.initSrcRange = initSrcRange;
         this.substanceOnly = substanceOnly;
+        this.value = undefined;
+        this.displayName = undefined;
+        this.annotations = [];
     }
 
     /**

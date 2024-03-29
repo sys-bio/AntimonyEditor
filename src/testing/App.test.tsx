@@ -3,7 +3,7 @@ import * as monaco from 'monaco-editor';
 import * as fs from 'fs';
 import { join } from 'path';
 import { isSubtTypeOf, varTypes } from '../language-handler/Types';
-import { getErrors, removeCarriageReturn } from '../language-handler/ModelSemanticChecker';
+import { AntimonyProgramAnalyzer, getErrors, removeCarriageReturn } from '../language-handler/ModelSemanticChecker';
 
 // test('renders learn react link', () => {
 //   render(<App />);
@@ -63,13 +63,15 @@ describe('Type Tests', function() {
 // note that these tests only test for errors found by symbol tables, and not by the semantic visitor.
 describe('SymbolTableVisitor Error Tests', function() {
   it('Event errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'eventBasic.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [])
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'eventBasic.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
   })
   
   it('Math expression errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'mathExprBasic.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'mathExprBasic.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
       {
         startLineNumber: 5,
         startColumn: 10,
@@ -90,8 +92,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('func redeclaration errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatFuncDecl.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatFuncDecl.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 5,
             startColumn: 10,
@@ -120,8 +123,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('model redeclaration errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatModelDecl.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatModelDecl.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 6,
             startColumn: 1,
@@ -150,8 +154,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('assignment override warnings', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'assignmentOverride.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'assignmentOverride.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 1,
             startColumn: 1,
@@ -221,8 +226,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('type override errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'typeOverride.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'typeOverride.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 3,
             startColumn: 9,
@@ -267,8 +273,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('reaction statement errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionCompartment.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionCompartment.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 2,
             startColumn: 22,
@@ -321,8 +328,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('reaction no rate rule warning', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionNoRateRule.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionNoRateRule.ant'), 'utf-8');
+    const antAnalyzer1 = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer1.getErrors(false), [
         {
             startLineNumber: 1,
             startColumn: 1,
@@ -357,7 +365,8 @@ describe('SymbolTableVisitor Error Tests', function() {
         },
     ])
 
-    const file2: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'uninitRateRuleRepeatError.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file2, false), [])
+    const file2: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'uninitRateRuleRepeatError.ant'), 'utf-8');
+    const antAnalyzer2 = new AntimonyProgramAnalyzer(file2);
+    assert.deepStrictEqual(antAnalyzer2.getErrors(false), [])
   })
 })

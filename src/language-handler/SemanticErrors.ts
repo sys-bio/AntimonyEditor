@@ -64,6 +64,17 @@ export function overridingValueWarning(name: string, srcRange: SrcRange): string
 }
 
 /**
+ * Overriding, except for display names. 
+ * TODO: add overriden warning later, this would also
+ * include adding a display name srcRange in Variable.
+ * @param name 
+ * @returns 
+ */
+export function overridingDisplayNameWarning(name: string) {
+  return "overriding previous display name of '" + name + "'";
+}
+
+/**
  * Warning over a reaction that has no rate law
  * @returns warning message
  */
@@ -97,4 +108,13 @@ export function defaultValueWarning(id: string, type: varTypes): string {
  */
 export function duplicateParameterError(id: string): string {
   return "Duplicate param '" + id + "'";
+}
+
+/**
+ * eg: a is "wow", where a has never been declared anywhere else.
+ * @param id 
+ * @returns 
+ */
+export function varNotFound(id: string): string {
+  return "Variable '" + id + "' not found";
 }
