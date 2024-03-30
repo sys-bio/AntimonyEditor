@@ -13,17 +13,17 @@
 }
 
 #dropdown a {
-    border: 1px solid #ddd;
+    border: 1.5px solid #ddd;
     margin-top: -1px;
     /* Prevent double borders */
     background-color: #000000;
-    padding: 15px;
-    font-size: 15px;
+    padding: 7.5px 7.5px 0 7.5px;
+    font-size: 18px;
     display: block;
     color: turquoise;
     /* set text to bold */
     font-weight: 700;
-    overflow: hidden;
+    overflow: ghidden;
     text-overflow: ellipsis;
 }
 
