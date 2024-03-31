@@ -110,7 +110,7 @@ export async function getModel(modelId: string) {
         // Fetch the model from the GitHub repository using the model ID and the GitHub API
         const octokit = new Octokit();
         const response = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
-          owner: "konankisa",
+          owner: "sys-bio",
           repo: "BiomodelsStore",
           path: "biomodels/" + modelId,
           headers: {
@@ -121,7 +121,7 @@ export async function getModel(modelId: string) {
         // If the model is found, decode the content and return it
         if (Array.isArray(response.data)) {
           const fileResponse = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
-            owner: "konankisa",
+            owner: "sys-bio",
             repo: "BiomodelsStore",
             path: "biomodels/" + modelId + "/" + response.data[0].name,
             headers: {
