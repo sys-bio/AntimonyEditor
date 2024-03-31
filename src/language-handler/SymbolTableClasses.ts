@@ -113,7 +113,7 @@ export class GlobalST extends SymbolTable {
             return varInfo;
         }
 
-        for (const [key, funcST] of this.modelMap) {
+        for (const [key, funcST] of this.funcMap) {
             varInfo = funcST.getVar(id);
             if (varInfo && varInfo.refLocations.has(srcRange.toString())) {
                 return varInfo;

@@ -1,4 +1,4 @@
-import {AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Is_assignmentContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
+import {Annot_listContext, AnnotationContext, AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, New_annotContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { SymbolTable, ParamAndNameTable} from './SymbolTableClasses';
 import { Variable } from './Variable';
@@ -269,8 +269,8 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
               }
             }
             varInfo.initSrcRange = currSrcRange;
-            varInfo.refLocations.add(currSrcRange.toString());
           }
+          varInfo.refLocations.add(this.getSrcRange(declItem.namemaybein().var_name()).toString());
         }
       }
     }
@@ -317,6 +317,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
 
           // for hovers
           varInfo.value = ctx.sum().text;
+          varInfo.refLocations.add(this.getSrcRange(nmbi.var_name().NAME()).toString());
         }
       }
     }
@@ -621,8 +622,6 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       let existingVarInfo: Variable | undefined = currST.getVar(varName);
 
       if (existingVarInfo) {        
-        // already exists
-
         // update hover
         existingVarInfo.refLocations.add(idSrcRange.toString());
 
@@ -662,6 +661,48 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       if (ctx.children) {
         for (let i = 0; i < ctx.children.length; i++) {
           this.visit(ctx.children[i]);
+        }
+      }
+    }
+  }
+
+  visitAnnotation(ctx: AnnotationContext) {
+    if (this.hasParseError(ctx)) {
+      return;
+    }
+
+    const varName: string = ctx.var_name().text; // Get the species name
+    const annotationlink: string = ctx.ESCAPED_STRING().text; // Get the annotation
+    const idSrcRange: SrcRange = this.getSrcRange(ctx.var_name().NAME());
+    
+    const currST: SymbolTable | undefined = this.getCurrST();
+    let varInfo = currST?.getVar(varName);
+    if (varInfo) {
+      if (!varInfo.annotations.includes(annotationlink)) {
+        varInfo.annotations.push(annotationlink);
+      }
+      // update ref locations for hover
+      varInfo.refLocations.add(idSrcRange.toString());
+    } else {
+      // var does not exist, so create one
+      const varInfo = new Variable(varTypes.Unknown, false, undefined, idSrcRange, undefined, false);
+      varInfo.annotations.push(annotationlink);
+      currST?.setVar(varName, varInfo);
+    }
+
+    // go through possible list
+    let annotList: Annot_listContext | undefined = ctx.annot_list();
+    if (annotList) {
+      if (annotList.children) {
+        for (let i = 0; i < annotList.children.length; i++) {
+          let singleAnnot = annotList.children[i] as New_annotContext;
+          const currAnnotLink = singleAnnot.ESCAPED_STRING().text;
+
+          if (varInfo) {
+            if (!varInfo.annotations.includes(currAnnotLink)) {
+              varInfo.annotations.push(currAnnotLink);
+            }
+          }
         }
       }
     }

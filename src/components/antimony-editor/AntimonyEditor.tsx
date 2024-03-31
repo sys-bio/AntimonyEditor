@@ -6,7 +6,6 @@ import CustomButton from '../CustomButton';
 import './AntimonyEditor.css';
 import { getBiomodels, getModel } from '../../features/BrowseBiomodels';
 import Loader from '../Loader';
-import ModelParser from '../../language-handler/ModelParser';
 import ModelSemanticsChecker from '../../language-handler/ModelSemanticChecker';
 import handleDownload from '../../features/HandleDownload';
 import { IDBPDatabase, DBSchema } from 'idb';
@@ -137,7 +136,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
-          ModelParser(editor, true);
+          // ModelParser(editor, true);
           ModelSemanticsChecker(editor, true);
         }, 600);
       };
