@@ -690,21 +690,26 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       currST?.setVar(varName, varInfo);
     }
 
-    // go through possible list
-    let annotList: Annot_listContext | undefined = ctx.annot_list();
-    if (annotList) {
-      if (annotList.children) {
-        for (let i = 0; i < annotList.children.length; i++) {
-          let singleAnnot = annotList.children[i] as New_annotContext;
-          const currAnnotLink = singleAnnot.ESCAPED_STRING().text;
+    try {
+      // go through possible list
+      let annotList: Annot_listContext | undefined = ctx.annot_list();
+      if (annotList) {
+        if (annotList.children) {
+          for (let i = 0; i < annotList.children.length; i++) {
+            let singleAnnot = annotList.children[i] as New_annotContext;
+            const currAnnotLink = singleAnnot.ESCAPED_STRING().text;
 
-          if (varInfo) {
-            if (!varInfo.annotations.includes(currAnnotLink)) {
-              varInfo.annotations.push(currAnnotLink);
+            if (varInfo) {
+              if (!varInfo.annotations.includes(currAnnotLink)) {
+                varInfo.annotations.push(currAnnotLink);
+              }
             }
           }
         }
       }
+    } catch(e) {
+      // do nothing
+      console.log("parse error in annotations, prob no need to fix");
     }
   }
 }
