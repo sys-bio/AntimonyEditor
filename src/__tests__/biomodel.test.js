@@ -43,7 +43,7 @@ test('getModel1', async () => {
 test('getModel2', async () => {
     const model = await getModel('BIOMD1');
     expect(model).toBeDefined();
-    expect(model[0]).toBe('BIOMD1');
+    expect(model[0]).toBe('');
     expect(model[1]).toBe('Model not found.');
 });
 

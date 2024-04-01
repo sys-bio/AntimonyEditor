@@ -110,24 +110,38 @@ export async function getModel(modelId: string) {
         // Fetch the model from the GitHub repository using the model ID and the GitHub API
         const octokit = new Octokit();
         const response = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
-          owner: "konankisa",
+          owner: "sys-bio",
           repo: "BiomodelsStore",
-          path: "biomodels/" + modelId + ".xml",
+          path: "biomodels/" + modelId,
           headers: {
             "Accept": "application/vnd.github+json"
           }
         });
+        
         // If the model is found, decode the content and return it
-        if ("content" in response.data) {
-          return [modelId, decodeURIComponent(Array.prototype.map.call(atob(response.data.content), (c: string) => {
-            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join("")), url];
+        if (Array.isArray(response.data)) {
+          const fileResponse = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
+            owner: "sys-bio",
+            repo: "BiomodelsStore",
+            path: "biomodels/" + modelId + "/" + response.data[0].name,
+            headers: {
+              "Accept": "application/vnd.github+json"
+            }
+          });
+          if ("content" in fileResponse.data) {
+            return [modelId, decodeURIComponent(Array.prototype.map.call(atob(fileResponse.data.content), (c: string) => {
+              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join("")), url];
+          } else {
+            throwError("Unable to fetch model from GitHub repository.");
+            return ["", "Unable to fetch model."];
+          }
         } else {
           throwError("Unable to fetch model from GitHub repository.");
-          return [modelId, "Unable to fetch model."];
+          return ["", "Unable to fetch model."];
         }
     } catch (error) {
         throwError("Model not found, please choose another model.");
-        return [modelId, "Model not found."];
+        return ["", "Model not found."];
     }
 }
 
@@ -199,12 +213,14 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
           url = model.url;
           setChosenModel(chosenModel);
         });
-        if (model.title.length > 60) {
-          model.title = model.title.slice(0, 61) + "...";
+        if (model.title.length > a.offsetWidth) {
+          a.style.whiteSpace = "nowrap";
+          a.style.overflow = "hidden";
+          a.style.textOverflow = "ellipsis";
         }
         // if author exists, display author, else display "No authors found"
         const author = model.authors.length > 0 ? model.authors[0] : "No authors found";
-        a.innerHTML = `${model.id}: ${model.title} <br /><br /> <span style="font-size: 12px; color: orange;">${author}</span>`;
+        a.innerHTML = `${model.id}: ${model.title} <br /> <div style="font-size: 15px; color: #FD7F20; padding: 12px 0 5px 0">${author}</div>`;
         dropdown!.appendChild(a);
       });
     }, 300);
