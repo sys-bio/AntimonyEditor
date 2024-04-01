@@ -23,7 +23,7 @@
     color: turquoise;
     /* set text to bold */
     font-weight: 700;
-    overflow: ghidden;
+    overflow: hidden;
     text-overflow: ellipsis;
 }
 
