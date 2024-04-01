@@ -20,7 +20,7 @@
     padding: 7.5px 7.5px 0 7.5px;
     font-size: 18px;
     display: block;
-    color: turquoise;
+    color: rgb(17, 100, 224);
     /* set text to bold */
     font-weight: 700;
     overflow: hidden;
@@ -28,7 +28,7 @@
 }
 
 #dropdown a:hover {
-    background-color: #eee;
+    background-color: #eeeeee60;
 }
 
 #biomodel-browse {

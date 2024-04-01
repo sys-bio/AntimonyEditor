@@ -220,7 +220,7 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
         }
         // if author exists, display author, else display "No authors found"
         const author = model.authors.length > 0 ? model.authors[0] : "No authors found";
-        a.innerHTML = `${model.id}: ${model.title} <br /> <div style="font-size: 15px; color: orange; padding: 12px 0 5px 0">${author}</div>`;
+        a.innerHTML = `${model.id}: ${model.title} <br /> <div style="font-size: 15px; color: #FD7F20; padding: 12px 0 5px 0">${author}</div>`;
         dropdown!.appendChild(a);
       });
     }, 300);
