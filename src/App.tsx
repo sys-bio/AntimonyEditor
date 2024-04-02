@@ -6,7 +6,6 @@ import { SolidSplitter } from './components/CustomSplitters';
 import { Split } from '@geoffcox/react-splitter';
 import AntimonyEditor from './components/antimony-editor/AntimonyEditor';
 import { IDBPDatabase } from 'idb';
-//import { upload } from '@testing-library/user-event/dist/upload';
 
 interface MyDB extends DBSchema {
   files: {
@@ -125,7 +124,6 @@ const App: React.FC = () => {
           window.localStorage.setItem('current_file', '// Enter Antimony Model Here');
         }
       }
-      console.log("delete has gone through");
       const files = await db.getAll('files');
       const fileNames = files.map(file => file.name);
       
