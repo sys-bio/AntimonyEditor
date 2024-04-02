@@ -209,14 +209,12 @@ const App: React.FC = () => {
           minPrimarySize='14%'
         >
           <section>
-            <div>
-              <input type="file" multiple onChange={handleFileUpload} />
-            </div>
+            <div className='title'>File Explorer</div>
             <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
           </section>
           <div>
             {db ? ( // Conditionally render the AntimonyEditor component when db is defined
-                <AntimonyEditor content={selectedFileContent} fileName={selectedFileName} database={db} />
+                <AntimonyEditor content={selectedFileContent} fileName={selectedFileName} database={db} handleFileUpload={handleFileUpload} />
               ) : (
                 // You can provide a loading message or handle the absence of the database as needed
                 <div>Loading...</div>
