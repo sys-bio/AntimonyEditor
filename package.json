@@ -1,6 +1,6 @@
 {
   "name": "antimony-editor",
-  "version": "0.9.0",
+  "version": "1.0",
   "private": true,
   "homepage": "https://sys-bio.github.io/AntimonyEditor/",
   "dependencies": {
