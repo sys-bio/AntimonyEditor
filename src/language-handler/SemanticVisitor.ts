@@ -23,6 +23,7 @@ export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisi
     if (currST) {
       const varInfo: Variable | undefined = currST.getVar(varName);
       const idSrcRange: SrcRange = this.getSrcRange(ctx.NAME());
+      varInfo?.refLocations.set(idSrcRange.toString(), idSrcRange);
       if (varInfo !== undefined) {
         // check if there was already a display name assigned
         if (varInfo.displayName === undefined) {

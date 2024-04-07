@@ -72,7 +72,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
-  const [selectedFile, setSelectedFile] = useState<string>('')
+  const [selectedFile, setSelectedFile] = useState<string>('');
+  // const [annotHighlight, setAnnotHighlight] = useState<boolean>(true);
 
   /**
    * @description Loads the editor and sets the language, theme, and content
@@ -137,7 +138,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
           // ModelParser(editor, true);
-          ModelSemanticsChecker(editor, true);
+          ModelSemanticsChecker(editor, false);
         }, 600);
       };
 

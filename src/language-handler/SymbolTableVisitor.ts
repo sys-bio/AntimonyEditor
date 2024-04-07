@@ -52,7 +52,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
                 seenParams.set(paramId, paramInfo);
 
                 // keep track of all locations this param is referenced for hovers
-                paramInfo.refLocations.add(idSrcRange.toString());
+                paramInfo.refLocations.set(idSrcRange.toString(), idSrcRange);
 
                 // we need to know what the params are if we want to
                 // initialize this model as a variable somewhere.
@@ -173,7 +173,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           existingVarInfo.type = varTypes.Species;
           existingVarInfo.idSrcRange = varIdSrcRange;
           // for hover info
-          existingVarInfo.refLocations.add(varIdSrcRange.toString());
+          existingVarInfo.refLocations.set(varIdSrcRange.toString(), varIdSrcRange);
         } else {
           const errorMessage = incompatibleTypesError(varTypes.Species, existingVarInfo);
           const errorUnderline: ErrorUnderline = this.getErrorUnderline(varInfo.idSrcRange, errorMessage, true);
@@ -210,7 +210,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       for (let i = 1; i < ctx.children.length; i+=2) {
         const declItem: Decl_itemContext = ctx.children[i] as Decl_itemContext;
         const varName: string = this.getVarName(declItem.namemaybein().var_name().text);
-        const currSrcRange: SrcRange = this.getSrcRange(declItem);
+        const currSrcRange: SrcRange = this.getSrcRange(declItem.namemaybein().var_name().NAME());
         const currST: SymbolTable | undefined = this.getCurrST();
 
         // check if we are using $ to apply const
@@ -227,7 +227,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         // gauranteed to pass this check as children visited first.
         if (varInfo) {
           // for hover
-          varInfo.refLocations.add(currSrcRange.toString());
+          varInfo.refLocations.set(currSrcRange.toString(), currSrcRange);
           // type overried takes precedence over value reassignement.
           // should this continue being the case, or should both cases be reported?
           // for now keep it as report both.
@@ -270,7 +270,8 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
             }
             varInfo.initSrcRange = currSrcRange;
           }
-          varInfo.refLocations.add(this.getSrcRange(declItem.namemaybein().var_name()).toString());
+          const refSrcRange: SrcRange = this.getSrcRange(declItem.namemaybein().var_name())
+          varInfo.refLocations.set(refSrcRange.toString(), refSrcRange);
         }
       }
     }
@@ -317,7 +318,8 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
 
           // for hovers
           varInfo.value = ctx.sum().text;
-          varInfo.refLocations.add(this.getSrcRange(nmbi.var_name().NAME()).toString());
+          const refSrcRange: SrcRange = this.getSrcRange(nmbi.var_name().NAME())
+          varInfo.refLocations.set(refSrcRange.toString(), refSrcRange);
         }
       }
     }
@@ -368,7 +370,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         // check if the compartment is already defined.
         let id2VarInfo: Variable | undefined = currST.getVar(id2)
         if (id2VarInfo) {
-          id2VarInfo.refLocations.add(id2SrcRange.toString());
+          id2VarInfo.refLocations.set(id2SrcRange.toString(), id2SrcRange);
 
           // exists, check if it is a compartment
           if (id2VarInfo.canSetType(varTypes.Compartment)) {
@@ -485,7 +487,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         let validCompartment: boolean = true;
         if (compartmentInfo !== undefined) {
           // add location for hover
-          compartmentInfo.refLocations.add(compartmentIDsrcRange.toString());
+          compartmentInfo.refLocations.set(compartmentIDsrcRange.toString(), compartmentIDsrcRange);
 
           // back to type checking
           if (compartmentInfo.canSetType(varTypes.Compartment)) {
@@ -589,7 +591,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       const varInfo: Variable | undefined = currST.getVar(id);
 
       if (varInfo) {
-        varInfo.refLocations.add(idSrcRange.toString());
+        varInfo.refLocations.set(idSrcRange.toString(), idSrcRange);
 
         if (isSubtTypeOf(type, varInfo.type)) {
           varInfo.type = type;
@@ -623,7 +625,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
 
       if (existingVarInfo) {        
         // update hover
-        existingVarInfo.refLocations.add(idSrcRange.toString());
+        existingVarInfo.refLocations.set(idSrcRange.toString(), idSrcRange);
 
         // error check
         if (existingVarInfo.canSetType(varTypes.Parameter)) {
@@ -682,7 +684,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         varInfo.annotations.push(annotationlink);
       }
       // update ref locations for hover
-      varInfo.refLocations.add(idSrcRange.toString());
+      varInfo.refLocations.set(idSrcRange.toString(), idSrcRange);
     } else {
       // var does not exist, so create one
       const varInfo = new Variable(varTypes.Unknown, false, undefined, idSrcRange, undefined, false);

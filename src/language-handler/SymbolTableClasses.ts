@@ -16,6 +16,14 @@ export class SymbolTable {
     }
 
     /**
+     * 
+     * @returns the variable map in the current scope
+     */
+    getVarMap(): Map<string, Variable> {
+        return this.varMap;
+    }
+
+    /**
      * Adds variable with varName and info varInfo to the ST 
      * @param varName name of variable
      * @param varInfo a Variable that contains information about the variable
@@ -44,12 +52,20 @@ export class SymbolTable {
  */
 export class GlobalST extends SymbolTable {
     private funcMap: Map<string, ParamAndNameTable>;
-    private modelMap: Map<string, ParamAndNameTable>
+    private modelMap: Map<string, ParamAndNameTable>;
 
     constructor() {
         super();
         this.funcMap = new Map();
         this.modelMap = new Map();
+    }
+
+    getFuncMap(): Map<string, ParamAndNameTable> {
+        return this.funcMap;
+    }
+
+    getModelMap(): Map<string, ParamAndNameTable> {
+        return this.modelMap;
     }
 
     /**

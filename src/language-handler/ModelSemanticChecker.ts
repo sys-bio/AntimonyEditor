@@ -7,6 +7,7 @@ import { SymbolTableVisitor } from './SymbolTableVisitor';
 import { SemanticVisitor } from './SemanticVisitor';
 import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from './Types';
 import { Variable } from './Variable';
+import './MCS.css';
 
 
 type parseErrors = {
@@ -36,10 +37,29 @@ class ErrorListener implements ANTLRErrorListener<any> {
   }
 }
 
-const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, hoverExists: boolean) => {
+const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, annotHighlightOn: boolean) => {
   // const errors: ErrorUnderline[] = getErrors(removeCarriageReturn(editor.getValue()), true);
   const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue());
 
+  if (annotHighlightOn) {
+    const highlightVars: Variable[] = antAnalyzer.getAnnotatedVars();
+    for (let i = 0; i < highlightVars.length; i++) {
+      const varInfo: Variable = highlightVars[i];
+      for (const [key, range] of varInfo.refLocations) {
+        console.log("a");
+        let mRange = new monaco.Range(range.start.line, range.start.column, range.end.line, range.end.column);
+        editor.createDecorationsCollection([
+          {
+            range: mRange,
+            options: {
+              isWholeLine: false,
+              inlineClassName: 'highlight',
+            }
+          }
+        ])
+      }
+    }
+  }
   const errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
   const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
   if (hoverInfo) {
@@ -50,6 +70,7 @@ const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, hove
       hoverInfo.dispose();
     });
   }
+
 
   // this is how to add error squiglies 
   let model: monaco.editor.ITextModel | null = editor.getModel();
@@ -217,7 +238,36 @@ export class AntimonyProgramAnalyzer {
     return hover;
   }
 
+  /**
+   * Use this for adding annot highlighting, not
+   * adding it here to avoid using monaco.
+   * @returns all locations of annotated variables
+   */
+  getAnnotatedVars(): Variable[] {
+    const vars: Variable[] = []
+    for (const [key, varInfo] of this.globalST.getVarMap()) {
+      if (varInfo.annotations.length > 0) {
+        vars.push(varInfo);
+      }
+    }
 
+    for (const [key1, modelMap] of this.globalST.getModelMap()) {
+      for (const [key2, varInfo] of modelMap.getVarMap()) {
+        if (varInfo.annotations.length > 0) {
+          vars.push(varInfo);
+        }
+      }
+    }
+
+    for (const [key1, funcMap] of this.globalST.getFuncMap()) {
+      for (const [key2, varInfo] of funcMap.getVarMap()) {
+        if (varInfo.annotations.length > 0) {
+          vars.push(varInfo);
+        }
+      }
+    }
+    return vars;
+  }
 
   getAnnotations() {
     // do stuff
