@@ -1,7 +1,8 @@
 {
   "name": "antimony-editor",
-  "version": "0.9.0",
+  "version": "1.0",
   "private": true,
+  "homepage": "https://sys-bio.github.io/AntimonyEditor/",
   "dependencies": {
     "@babel/core": "^7.16.0",
     "@geoffcox/react-splitter": "^2.1.2",
@@ -10,7 +11,7 @@
     "@testing-library/jest-dom": "^5.17.0",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.71",
-    "@types/react": "^18.2.48",
+    "@types/react": "^18.2.74",
     "@types/react-dom": "^18.2.18",
     "antlr4ts": "^0.5.0-alpha.4",
     "assert": "^2.1.0",
