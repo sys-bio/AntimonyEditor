@@ -256,7 +256,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   }, []);
 
   return (
-    <div>
+    <>
       <div className='menu'>
         <input id="file-upload" type="file" multiple onChange={handleFileUpload} />
         <label htmlFor="file-upload" className='file-upload-label'>Load File(s)</label>
@@ -265,9 +265,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         {/* <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Annotated Variable Highlight Off'} /> */}
         <div className='menu-middle'>
-          <input id='biomodel-browse' type='text' placeholder='Search biomodels' />
-          <ul id='dropdown' />
-          <Loader loading={loading} />
+          <div>
+            <input id='biomodel-browse' type='text' placeholder='Search biomodels' />
+            <ul id='dropdown' />
+            <Loader loading={loading} />
+          </div>
           <div className="dropdown" ref={dropdownRef}>
             <button onClick={handleButtonClick} className="dropbtn">
               Convert Antimony/SBML
@@ -281,7 +283,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         <button className='download-button' onClick={() => handleDownload(editorInstance, fileName)}>Save File to Downloads Folder</button>
       </div>
       <div className="code-editor" ref={editorRef}></div>
-    </div>
+    </>
   );
 };
 
