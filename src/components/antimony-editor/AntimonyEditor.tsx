@@ -258,7 +258,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   return (
     <>
       <div className='menu'>
-        <input id="file-upload" type="file" multiple onChange={handleFileUpload} />
+        <input id="file-upload" type="file" multiple onChange={handleFileUpload} accept=".ant,.xml,.txt" />
         <label htmlFor="file-upload" className='file-upload-label'>Load File(s)</label>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
         {/* <button className='btn'>Navigate to Edit Annotations</button> */}
