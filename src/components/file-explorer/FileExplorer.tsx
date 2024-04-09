@@ -144,7 +144,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
             <button
               onClick={() => handleFileButtonClick(index, file.name)}
               onContextMenu={(e) => handleFileRightClick(e, index, file.name)}
-              className={`button ${selectedFileIndex === index ? 'selected' : ''}`}
+              className={`file-btn ${selectedFileIndex === index ? 'selected' : ''}`}
             >
               {file.name}
             </button>
