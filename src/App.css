@@ -1,98 +1,73 @@
 .app {
   display: grid;
-  grid-template-columns: 1fr; /* Two columns: one for the middle app, one for the new split component */
+  grid-template-columns: 1fr;
   grid-template-rows: auto 1fr auto;
-  gap: 0px 0px;
-  grid-auto-flow: row;
   grid-template-areas:
-      "top"
-      "middle" /* The new split component will go on the right */
-      "bottom";
+      "header header"
+      "sidebar main"
+      "footer footer";
+  gap: 0px;
   width: 100%;
-  height: 100%;
+  height: 100vh;
 }
 
 header { 
-  grid-area: top; 
-  padding: 1px;
-  border-bottom: 3px solid #474757;
+  grid-area: header; 
   text-align: center;
-  position: fixed;
-  width: 100%;
-  z-index: 1000; /* Ensure header stays on top */
+  border-bottom: 3px solid #474757;
   background-color: #1c1c1c;
   color: white;
+  width: 100%;
 }
 
-header h1 {
+.title {
   font-family: 'Georgia', Times, serif, Helvetica, sans-serif;
   font-weight: normal;
   font-size: 1.5em;
 }
 
-header a {
-  font-size: 1em;
-}
-
 .middle {
+  box-sizing: border-box;
+  outline: none;
+  min-height: 0;
   background-color: #1c1c1c;
   color: white;
-  position: relative;
-  box-sizing: border-box;
+  height: 100%;
   width: 100%;
-  height: calc(100% - 60px); /* Adjusted height for the middle div, considering the header's height */
-  outline: none;
-  overflow: hidden;
-  margin-top: 60px; /* Adjusted margin to make space for the fixed header */
 }
 
-div div section { 
-  grid-area: middle;
+.subtitle {
+  padding: 8px;
+  font-weight: bold;
+  height: 6%;
+}
+
+.sidebar { 
+  grid-area: sidebar;
   height: 100%;
-  overflow: scroll;
+}
+
+.editor {
+  grid-area: main;
+  height: 100%;
+  overflow: clip;
 }
 
 footer { 
-  grid-area: bottom;
-  padding: 12.5px;
+  grid-area: footer;
+  padding: 15px;
   border-top: 3px solid #474757;
   background-color: #1c1c1c;
   color: white;
-  position: fixed;
-  bottom: 0;
   width: 100%;
-}
-
-input[type="file"]::file-selector-button,
-#xml-download-wrapper button,
-#xml-import-wrapper button {
-  background-color: #1c1c1c;
-  border-radius: 2px;
-  border-style: solid;
-  border-width: 1px;
-  border-color: #1c1c1c;
-  color: #B7B7B7;
-  cursor: pointer;
-  display: inline-block;
-  font-size: 1em;
-  font-weight: normal !important;
-  line-height: 1.2;
-  margin: 0 3px 0 0;
-  padding: 7px 7px;
-  position: relative;
-  text-align: center;
-  text-decoration: none !important;
-  text-overflow: ellipsis;
-  text-shadow: none;
-  white-space: nowrap;
-}
-
-input[type="file"]::file-selector-button:hover,
-#xml-download-wrapper button,
-#xml-import-wrapper button {
-  background-color: #464646;
 }
 
 footer a {
   color: white;
+}
+
+@media (max-width: 780px) {
+  .subtitle {
+    height: 12%;
+  }
 }
