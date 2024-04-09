@@ -24,11 +24,11 @@
     /* set text to bold */
     font-weight: 700;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 #dropdown a:hover {
-    background-color: #eeeeee34;
+    filter: hue-rotate(10deg) brightness(120%) invert(10%);
+    cursor: pointer;
 }
 
 #biomodel-browse {

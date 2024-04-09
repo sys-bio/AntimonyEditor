@@ -1,5 +1,6 @@
 import cache from "./testCache.json";
 import { Octokit, App } from "octokit";
+// import biomodels api to use the search function
 
 /**
 * Interface for storing a model
@@ -129,19 +130,44 @@ export async function getModel(modelId: string) {
             }
           });
           if ("content" in fileResponse.data) {
-            return [modelId, decodeURIComponent(Array.prototype.map.call(atob(fileResponse.data.content), (c: string) => {
-              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join("")), url];
+            const sbmlData = decodeURIComponent(Array.prototype.map.call(atob(fileResponse.data.content), (c: string) => {
+              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join(""));
+            return {
+              modelId: modelId,
+              sbmlData: sbmlData,
+              url: url,
+              title: cachedData[modelId].title,
+              authors: cachedData[modelId].authors
+            };
           } else {
             throwError("Unable to fetch model from GitHub repository.");
-            return ["", "Unable to fetch model."];
+            return {
+              modelId: "",
+              sbmlData: "",
+              url: "",
+              title: "",
+              authors: []
+            }
           }
         } else {
           throwError("Unable to fetch model from GitHub repository.");
-          return ["", "Unable to fetch model."];
+          return {
+            modelId: "",
+            sbmlData: "",
+            url: "",
+            title: "",
+            authors: []
+          }
         }
     } catch (error) {
         throwError("Model not found, please choose another model.");
-        return ["", "Model not found."];
+        return {
+          modelId: "",
+          sbmlData: "",
+          url: "",
+          title: "",
+          authors: []
+        }
     }
 }
 
@@ -213,14 +239,9 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
           url = model.url;
           setChosenModel(chosenModel);
         });
-        if (model.title.length > a.offsetWidth) {
-          a.style.whiteSpace = "nowrap";
-          a.style.overflow = "hidden";
-          a.style.textOverflow = "ellipsis";
-        }
         // if author exists, display author, else display "No authors found"
         const author = model.authors.length > 0 ? model.authors[0] : "No authors found";
-        a.innerHTML = `${model.id}: ${model.title} <br /> <div style="font-size: 15px; color: #FD7F20; padding: 12px 0 5px 0">${author}</div>`;
+        a.innerHTML = `${model.title}<div style="color: #FD7F20;">${author}</div>`;
         dropdown!.appendChild(a);
       });
     }, 300);

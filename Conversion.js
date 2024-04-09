@@ -98,7 +98,8 @@ function processSBML() {
       if (load_int > 0) {
         antResult = getAntimonyString();
         if (window.conversion != "standard") {
-          antResult = "// Link to the model: " + window.url + "\n" + antResult
+          antResult = "// Link to the model: " + window.url + "\n" + 
+            "// Title: " + window.title + "\n" + "// Authors: " + window.authors + "\n" + antResult
         }
         window.antimonyResult = antResult;
         console.log(window.antimonyResult);

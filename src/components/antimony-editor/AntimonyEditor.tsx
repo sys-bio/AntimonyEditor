@@ -55,6 +55,8 @@ declare global {
     antimonyActive: boolean; // Define the antimonyActive variable
     fileName: string; // Define the fileName variable
     url: string; // Define the link variable
+    title: string; // Define the title variable
+    authors: string[]; // Define the authors variable
     conversion: string; // Define the conversion variable
     processAntimony?: () => void; // Define the processAntimony function
     processSBML?: () => void; // Define the processSBML function
@@ -190,9 +192,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         return;
       }
       getModel(chosenModel).then((model) => {
-        window.sbmlString = model[1];
-        window.fileName = model[0];
-        window.url = model[2];
+        window.title = model.title;
+        window.authors = model.authors;
+        window.url = model.url;
+        window.fileName = model.modelId;
+        window.sbmlString = model.sbmlData;
         handleConversionSBML();
         setLoading(false);
       });
