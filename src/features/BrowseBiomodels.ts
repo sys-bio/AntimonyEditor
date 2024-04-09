@@ -1,65 +1,188 @@
+import cache from "./testCache.json";
+import { Octokit, App } from "octokit";
+
+/**
+* Interface for storing a model
+* @interface Model
+* @property {string} name - The name of the model
+* @property {string} url - The URL of the model
+* @property {string} id - The ID of the model
+* @property {string} title - The title of the model
+*/
 interface Model {
     name: string;
     url: string;
     id: string;
+    title: string;
+    authors: string[];
 }
 
+/**
+ * Interface for the cached data stored in the JSON file
+ * @interface CachedData
+ * @property {string} name - The name of the model
+ * @property {string[]} authors - The authors of the model
+ * @property {string} url - The URL of the model
+ * @property {string} model_id - The ID of the model
+ * @property {string} title - The title of the model
+ * @property {string} synopsis - The synopsis of the model
+ */
+interface CachedData {
+  [key: string]: {
+      name: string;
+      authors: string[];
+      url: string;
+      model_id: string;
+      title: string;
+      synopsis: string;
+  };
+}
+
+/**
+ * Interface for the models returned by the cache search
+ * @interface Models
+ * @property {Map<String, Model>} models - The models returned by the cache search
+ */
 interface Models {
     models: Map<String, Model>;
 }
 
-const corsProxyUrl = "https://api.allorigins.win/raw?url=";
+// The cache of models retrieved from a JSON file
+const cachedData: CachedData = cache;
 
+// URL for the chosen model
+let url: string;
+
+/**
+ * Function to search for models using the cached data
+ * @param {KeyboardEvent} search - The search event
+ * @returns {Promise<Models>} - A promise containing the models returned by the search
+ */
 export async function searchModels(search: KeyboardEvent) {
     try {
+        // Get the search query
         const queryText = (search.target as HTMLInputElement).value.trim();
-        const response = await fetch(corsProxyUrl + `https://www.ebi.ac.uk/biomodels/search?query=${queryText}%26numResults=25%26format=json`)
-        if (response.ok) {
-            const results = await response.json();
-            const models: Models = { models: new Map() };
-            results.models.forEach((model: any) => {
-                if (model.id in models.models) return;
-                models.models.set(model.id, {
-                    name: model.name,
-                    url: model.url,
-                    id: model.id
-                });
+        const models: Models = { models: new Map() };
+
+        for (const id in cachedData) {
+          // if the query has multiple words, split them and check if all words are in a model
+          const modelData = cachedData[id];
+          if (queryText.includes(" ")) {
+            const queryWords = queryText.split(" ");
+            // the model should contain all the words in the query standalone, not as part of a word
+            if (queryWords.every(word => Object.values(modelData).some(value => 
+              typeof value === "string" && (value as string).toLowerCase().includes(word.toLowerCase())))) {
+              models.models.set(id, {
+                name: modelData.name,
+                url: modelData.url,
+                id: modelData.model_id,
+                title: modelData.title,
+                authors: modelData.authors
+              });
+            }
+          }
+          // if the query has only one word, check if the word is in a model
+          else if (Object.values(modelData).some(value => 
+            typeof value === "string" && value.toLowerCase().includes(queryText.toLowerCase()))) {
+            models.models.set(id, {
+              name: modelData.name,
+              url: modelData.url,
+              id: modelData.model_id,
+              title: modelData.title,
+              authors: modelData.authors
             });
-            return models;
-        } else {
-            throw new Error('Error when fetching search results');
+          }
         }
+        return models;
     } catch (error) {
-        console.log(error);
-        throw error;
+        // If there is an error, throw it
+        throwError("Unable to fetch models from cache.");
     }
 }
 
+/**
+ * Function to get a model from a GitHub repository
+ * @param {string} modelId - The ID of the model to get
+ * @returns {Promise<string>} - A promise containing the model
+ */
 export async function getModel(modelId: string) {
     try {
-        const response = await fetch(corsProxyUrl + `https://www.ebi.ac.uk/biomodels/model/download/${modelId}?filename=${modelId}_url.xml`);
-        if (response.ok) {
-            const model = await response.text();
-            console.log(model);
-            return model;
+        // Fetch the model from the GitHub repository using the model ID and the GitHub API
+        const octokit = new Octokit();
+        const response = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
+          owner: "sys-bio",
+          repo: "BiomodelsStore",
+          path: "biomodels/" + modelId,
+          headers: {
+            "Accept": "application/vnd.github+json"
+          }
+        });
+        
+        // If the model is found, decode the content and return it
+        if (Array.isArray(response.data)) {
+          const fileResponse = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
+            owner: "sys-bio",
+            repo: "BiomodelsStore",
+            path: "biomodels/" + modelId + "/" + response.data[0].name,
+            headers: {
+              "Accept": "application/vnd.github+json"
+            }
+          });
+          if ("content" in fileResponse.data) {
+            return [modelId, decodeURIComponent(Array.prototype.map.call(atob(fileResponse.data.content), (c: string) => {
+              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join("")), url];
+          } else {
+            throwError("Unable to fetch model from GitHub repository.");
+            return ["", "Unable to fetch model."];
+          }
         } else {
-            throw new Error('Error when fetching biomodel');
+          throwError("Unable to fetch model from GitHub repository.");
+          return ["", "Unable to fetch model."];
         }
     } catch (error) {
-        console.log(error);
-        throw error;
+        throwError("Model not found, please choose another model.");
+        return ["", "Model not found."];
     }
 }
 
+/**
+ * Function to display an error message
+ * @param {String} error - The error message to display
+ * @returns {void}
+ */
+async function throwError(error: String) {
+  const popup = document.createElement("div");
+  popup.innerHTML = error.toString();
+  popup.style.position = "fixed";
+  popup.style.top = "50%";
+  popup.style.left = "50%";
+  popup.style.transform = "translate(-50%, -50%)";
+  popup.style.backgroundColor = "white";
+  popup.style.padding = "20px";
+  popup.style.border = "1px solid black";
+  popup.style.borderRadius = "10px";
+  popup.style.zIndex = "100";
+  document.body.appendChild(popup);
+  setTimeout(() => {
+    document.body.removeChild(popup);
+  }, 2500);
+}
+
+/**
+ * Function to display the models in the dropdown
+ * @param {React.Dispatch<React.SetStateAction<boolean>>} setLoading - The setLoading function from the parent component
+ * @param {React.Dispatch<React.SetStateAction<string | null>>} setChosenModel - The setChosenModel function from the parent component
+ * @returns {void}
+ */
 export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boolean>>, setChosenModel: React.Dispatch<React.SetStateAction<string | null>>) {
-  const biomodelBrowse = document.getElementById('biomodel-browse') as HTMLInputElement;
-  const dropdown = document.getElementById('dropdown');
+  const biomodelBrowse = document.getElementById("biomodel-browse") as HTMLInputElement;
+  const dropdown = document.getElementById("dropdown");
   var biomodels: any;
   var chosenModel: any;
 
-  biomodelBrowse.addEventListener('keyup', async (val) => {
+  biomodelBrowse.addEventListener("keyup", async (val) => {
     const biomodel = val;
-    if ((val.target as HTMLInputElement).value.length < 3) {
+    if ((val.target as HTMLInputElement).value.length < 2) {
       dropdown!.innerHTML = "";
       return;
     }
@@ -71,7 +194,7 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
       if (biomodels.models.size === 0) {
         setLoading(false);
         biomodels = null;
-        const li = document.createElement('li');
+        const li = document.createElement("li");
         li.innerHTML = "No models found";
         dropdown!.innerHTML = "";
         dropdown!.appendChild(li);
@@ -81,16 +204,30 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
       dropdown!.style.display = "block";
       biomodels.models.forEach(function (model: any) {
         setLoading(false);
-        const a = document.createElement('a');
-        a.addEventListener('click', () => {
+        const a = document.createElement("a");
+        a.addEventListener("click", () => {
+          console.log(model.id);
           biomodelBrowse.value = "";
           dropdown!.innerHTML = "";
           chosenModel = model.id;
+          url = model.url;
           setChosenModel(chosenModel);
         });
-        a.innerHTML = model.name + ": " + model.id + "\n";
+        if (model.title.length > a.offsetWidth) {
+          a.style.whiteSpace = "nowrap";
+          a.style.overflow = "hidden";
+          a.style.textOverflow = "ellipsis";
+        }
+        // if author exists, display author, else display "No authors found"
+        const author = model.authors.length > 0 ? model.authors[0] : "No authors found";
+        a.innerHTML = `${model.id}: ${model.title} <br /> <div style="font-size: 15px; color: #FD7F20; padding: 12px 0 5px 0">${author}</div>`;
         dropdown!.appendChild(a);
       });
     }, 300);
+    document.addEventListener("click", (e) => {
+      if ((e.target as HTMLInputElement).id !== "biomodel-browse") {
+        dropdown!.style.display = "none";
+      }
+    });
   });
 }

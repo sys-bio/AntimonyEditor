@@ -52,8 +52,12 @@ declare global {
     sbmlResult: string; // Define the sbmlResult variable
     antimonyResult: string; // Define the antimonyResult variable
     antimonyActive: boolean; // Define the antimonyActive variable
+    fileName: string; // Define the fileName variable
+    url: string; // Define the link variable
+    conversion: string; // Define the conversion variable
     processAntimony?: () => void; // Define the processAntimony function
     processSBML?: () => void; // Define the processSBML function
+    selectedFile: string; // Define the selectedFile variable
   }
 }
 
@@ -94,7 +98,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         if (data) {
           // setOriginalContent(data.content);
           setNewContent(data.content);
-          setSelectedFile(data.name);
+          // setSelectedFile(data.name);
+          window.selectedFile = data.name;
           editor.setValue(data.content);
         }
       });
@@ -180,10 +185,16 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       const dropdown = document.getElementById('dropdown');
       dropdown!.style.display = "none";
       setLoading(true);
-      getModel(chosenModel).then((model) => {
+      if (chosenModel === '') {
         setLoading(false);
-        const editor = monaco.editor.getModels()[0];
-        editor.setValue(model);
+        return;
+      }
+      getModel(chosenModel).then((model) => {
+        window.sbmlString = model[1];
+        window.fileName = model[0];
+        window.url = model[2];
+        handleConversionSBML();
+        setLoading(false);
       });
     }
   }, [chosenModel]);
@@ -206,30 +217,58 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   /**
    * @description Handles conversion from SBML to Antimony
    */
-    const handleConversionSBML = () => {
-      try {
-        if (window.processSBML) {
-          window.processSBML();
-        } else {
-          console.error('processSBML function not found in the global scope.');
-        }
-      } catch (err) {
-        console.log('Conversion error:', err);
+  const handleConversionSBML = () => {
+    try {
+      if (window.processSBML) {
+        window.processSBML();
+      } else {
+        console.error('processSBML function not found in the global scope.');
       }
+    } catch (err) {
+      console.log('Conversion error:', err);
+    }
+  };
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isDropdownVisible, setDropdownVisible] = useState(false);
+
+  const handleButtonClick = () => {
+    if (dropdownRef.current) {
+      setDropdownVisible(!isDropdownVisible);
+    }
+  };
+
+  const handleOutsideClick = (event: MouseEvent) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      setDropdownVisible(false);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('click', handleOutsideClick);
+
+    return () => {
+      window.removeEventListener('click', handleOutsideClick);
     };
+  }, []);
 
   return (
     <div>
       <div className='menu'>
         <button className='button' onClick={() => handleDownload(editorInstance, fileName)}>Save File to Downloads Folder</button>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
-        {/* <CustomButton name={'Create Annotations'} /> */}
-        <CustomButton name={'Navigate to Edit Annotations'} />
+        {/* <button className='btn'>Navigate to Edit Annotations</button> */}
         {/* <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Annotated Variable Highlight Off'} /> */}
-        
-        <button className='button' onClick={handleConversionAnt}>Convert Antimony to SBML</button>
-        <button className='button' onClick={handleConversionSBML}>Convert SBML to Antimony</button>
+        <div className="dropdown" ref={dropdownRef}>
+          <button onClick={handleButtonClick} className="dropbtn">
+            Convert Antimony/SBML
+          </button>
+          <div id="myDropdown" className={`dropdown-content ${isDropdownVisible ? 'show' : ''}`}>
+            <button className='convert-button' onClick={handleConversionAnt}>Antimony - SBML</button>
+            <button className='convert-button' onClick={handleConversionSBML}>SBML - Antimony</button>
+          </div>
+        </div>
         <input id='biomodel-browse' type='text' placeholder='Search for a model' />
         <ul id='dropdown' />
         <Loader loading={loading} />

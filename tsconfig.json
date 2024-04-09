@@ -21,6 +21,10 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "src"
+    "src", 
+    "src/setupTests.ts", 
+    "src/__tests__", 
+    "src/App.test.tsx", 
+    "src/AntimonyEditor.test.tsx"
   ]
 }
