@@ -1,4 +1,4 @@
-import cache from "./testCache.json";
+import cache from "./BiomodelCache.json";
 import { Octokit, App } from "octokit";
 // import biomodels api to use the search function
 
