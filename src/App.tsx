@@ -201,27 +201,28 @@ const App: React.FC = () => {
 
   return (
     <div className='app'>
+      <header>
+        <h1 className="title">The Antimony Web Editor</h1>
+      </header>
       <div className="middle">
         <Split
           renderSplitter={() => <SolidSplitter/>}
           initialPrimarySize='14%'
-          splitterSize='5px'
           minPrimarySize='14%'
+          splitterSize='5px'
         >
-          <section>
-            <div>
-              <input type="file" multiple onChange={handleFileUpload} />
-            </div>
+          <section className='sidebar'>
+            <div className='subtitle'>File Explorer</div>
             <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} />
           </section>
-          <div>
+          <section className='editor'>
             {db ? ( // Conditionally render the AntimonyEditor component when db is defined
-                <AntimonyEditor content={selectedFileContent} fileName={selectedFileName} database={db} />
+                <AntimonyEditor content={selectedFileContent} fileName={selectedFileName} database={db} handleFileUpload={handleFileUpload} />
               ) : (
                 // You can provide a loading message or handle the absence of the database as needed
                 <div>Loading...</div>
               )}         
-          </div>
+          </section>
         </Split>
       </div>
       <footer>
