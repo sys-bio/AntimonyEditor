@@ -2,7 +2,7 @@
     position: absolute;
     z-index: 5000;
     list-style-type: none;
-    top: 36px;
+    top: 42px;
     /* right: 360px; */
     padding: 0;
     margin: 0;
@@ -20,9 +20,7 @@
     padding: 7.5px 7.5px 0 7.5px;
     font-size: 18px;
     display: block;
-    color: rgb(41, 125, 250);
-    /* set text to bold */
-    font-weight: 700;
+    color: rgb(20, 148, 69);
     overflow: hidden;
 }
 

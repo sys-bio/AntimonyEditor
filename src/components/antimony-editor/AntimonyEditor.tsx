@@ -57,6 +57,9 @@ declare global {
     url: string; // Define the link variable
     title: string; // Define the title variable
     authors: string[]; // Define the authors variable
+    citation: string | null; // Define the citation variable
+    date: string; // Define the date variable
+    journal: string; // Define the journal variable
     conversion: string; // Define the conversion variable
     processAntimony?: () => void; // Define the processAntimony function
     processSBML?: () => void; // Define the processSBML function
@@ -195,6 +198,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         window.title = model.title;
         window.authors = model.authors;
         window.url = model.url;
+        window.citation = model.citation;
+        window.date = model.date;
+        window.journal = model.journal;
         window.fileName = model.modelId;
         window.sbmlString = model.sbmlData;
         handleConversionSBML();

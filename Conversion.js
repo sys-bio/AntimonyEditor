@@ -98,8 +98,10 @@ function processSBML() {
       if (load_int > 0) {
         antResult = getAntimonyString();
         if (window.conversion != "standard") {
+          citation = (window.citation == null) ? "// No citation provided by PubMed" : "// Citation: " + window.citation;
           antResult = "// Link to the model: " + window.url + "\n" + 
-            "// Title: " + window.title + "\n" + "// Authors: " + window.authors + "\n" + antResult
+            "// Title: " + window.title + "\n" + "// Authors: " + window.authors + "\n" + 
+            "// Journal: " + window.journal + "\n" + citation + "\n" + "// Date: " + window.date + "\n" + antResult
         }
         window.antimonyResult = antResult;
         console.log(window.antimonyResult);

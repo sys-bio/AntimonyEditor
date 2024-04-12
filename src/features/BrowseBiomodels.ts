@@ -16,6 +16,9 @@ interface Model {
     id: string;
     title: string;
     authors: string[];
+    citation: string | null;
+    date: string;
+    journal: string;
 }
 
 /**
@@ -36,6 +39,9 @@ interface CachedData {
       model_id: string;
       title: string;
       synopsis: string;
+      citation: string | null;
+      date: string;
+      journal: string;
   };
 }
 
@@ -78,7 +84,10 @@ export async function searchModels(search: KeyboardEvent) {
                 url: modelData.url,
                 id: modelData.model_id,
                 title: modelData.title,
-                authors: modelData.authors
+                authors: modelData.authors,
+                citation: modelData.citation,
+                date: modelData.date,
+                journal: modelData.journal
               });
             }
           }
@@ -90,7 +99,10 @@ export async function searchModels(search: KeyboardEvent) {
               url: modelData.url,
               id: modelData.model_id,
               title: modelData.title,
-              authors: modelData.authors
+              authors: modelData.authors,
+              citation: modelData.citation,
+              date: modelData.date,
+              journal: modelData.journal
             });
           }
         }
@@ -137,7 +149,10 @@ export async function getModel(modelId: string) {
               sbmlData: sbmlData,
               url: url,
               title: cachedData[modelId].title,
-              authors: cachedData[modelId].authors
+              authors: cachedData[modelId].authors,
+              citation: cachedData[modelId].citation,
+              date: cachedData[modelId].date,
+              journal: cachedData[modelId].journal
             };
           } else {
             throwError("Unable to fetch model from GitHub repository.");
@@ -146,7 +161,10 @@ export async function getModel(modelId: string) {
               sbmlData: "",
               url: "",
               title: "",
-              authors: []
+              authors: [],
+              citation: "",
+              date: "",
+              journal: ""
             }
           }
         } else {
@@ -156,7 +174,10 @@ export async function getModel(modelId: string) {
             sbmlData: "",
             url: "",
             title: "",
-            authors: []
+            authors: [],
+            citation: "",
+            date: "",
+            journal: ""
           }
         }
     } catch (error) {
@@ -166,7 +187,10 @@ export async function getModel(modelId: string) {
           sbmlData: "",
           url: "",
           title: "",
-          authors: []
+          authors: [],
+          citation: "",
+          date: "",
+          journal: ""
         }
     }
 }
@@ -240,8 +264,8 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
           setChosenModel(chosenModel);
         });
         // if author exists, display author, else display "No authors found"
-        const author = model.authors.length > 0 ? model.authors[0] : "No authors found";
-        a.innerHTML = `${model.title}<div style="color: #FD7F20;">${author}</div>`;
+        const authors = model.authors.length > 0 ? model.authors : "No authors found";
+        a.innerHTML = `${model.title}<div style="color: #FD7F20;">${model.journal} - ${authors}</div>`;
         dropdown!.appendChild(a);
       });
     }, 300);
