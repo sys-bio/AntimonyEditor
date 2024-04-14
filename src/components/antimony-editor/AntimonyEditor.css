@@ -1,9 +1,7 @@
-#dropdown {
+#biomddropdown {
     position: absolute;
-    z-index: 5000;
+    z-index: 2;
     list-style-type: none;
-    top: 42px;
-    /* right: 360px; */
     padding: 0;
     margin: 0;
     display: none;
@@ -12,7 +10,7 @@
     overflow-y: auto;
 }
 
-#dropdown a {
+#biomddropdown a {
     border: 1.5px solid #ddd;
     margin-top: -1px;
     /* Prevent double borders */
@@ -23,7 +21,7 @@
     overflow: hidden;
 }
 
-#dropdown a:hover {
+#biomddropdown a:hover {
     filter: hue-rotate(10deg) brightness(120%) invert(10%);
     cursor: pointer;
 }

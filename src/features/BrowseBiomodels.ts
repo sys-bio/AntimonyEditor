@@ -226,7 +226,7 @@ async function throwError(error: String) {
  */
 export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boolean>>, setChosenModel: React.Dispatch<React.SetStateAction<string | null>>) {
   const biomodelBrowse = document.getElementById("biomodel-browse") as HTMLInputElement;
-  const dropdown = document.getElementById("dropdown");
+  const dropdown = document.getElementById("biomddropdown");
   var biomodels: any;
   var chosenModel: any;
 
@@ -272,6 +272,11 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
     document.addEventListener("click", (e) => {
       if ((e.target as HTMLInputElement).id !== "biomodel-browse") {
         dropdown!.style.display = "none";
+      }
+    });
+    document.addEventListener("click", (e) => {
+      if ((e.target as HTMLInputElement).id === "biomodel-browse") {
+        dropdown!.style.display = "block";
       }
     });
   });

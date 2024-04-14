@@ -190,7 +190,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    */
   useEffect(() => {
     if (chosenModel) {
-      const dropdown = document.getElementById('dropdown');
+      const dropdown = document.getElementById('biomddropdown');
       dropdown!.style.display = "none";
       setLoading(true);
       if (chosenModel === '') {
@@ -277,7 +277,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         <div className='menu-middle'>
           <div>
             <input id='biomodel-browse' type='text' placeholder='Search biomodels' />
-            <ul id='dropdown' />
+            <div id='biomddropdown'>
+              <ul />
+            </div>
             <Loader loading={loading} />
           </div>
           <div className="dropdown" ref={dropdownRef}>
