@@ -57,6 +57,11 @@ declare global {
     antimonyActive: boolean; // Define the antimonyActive variable
     fileName: string; // Define the fileName variable
     url: string; // Define the link variable
+    title: string; // Define the title variable
+    authors: string[]; // Define the authors variable
+    citation: string | null; // Define the citation variable
+    date: string; // Define the date variable
+    journal: string; // Define the journal variable
     conversion: string; // Define the conversion variable
     processAntimony?: () => void; // Define the processAntimony function
     processSBML?: () => void; // Define the processSBML function
@@ -185,7 +190,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    */
   useEffect(() => {
     if (chosenModel) {
-      const dropdown = document.getElementById('dropdown');
+      const dropdown = document.getElementById('biomddropdown');
       dropdown!.style.display = "none";
       setLoading(true);
       if (chosenModel === '') {
@@ -193,9 +198,14 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         return;
       }
       getModel(chosenModel).then((model) => {
-        window.sbmlString = model[1];
-        window.fileName = model[0];
-        window.url = model[2];
+        window.title = model.title;
+        window.authors = model.authors;
+        window.url = model.url;
+        window.citation = model.citation;
+        window.date = model.date;
+        window.journal = model.journal;
+        window.fileName = model.modelId;
+        window.sbmlString = model.sbmlData;
         handleConversionSBML();
         setLoading(false);
       });
@@ -265,10 +275,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         {/* <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Annotated Variable Highlight Off'} /> */}
         <div className='menu-middle'>
+          <Loader loading={loading} />
           <div>
             <input id='biomodel-browse' type='text' placeholder='Search biomodels' />
-            <ul id='dropdown' />
-            <Loader loading={loading} />
+            <div id='biomddropdown'>
+              <ul />
+            </div>
           </div>
           <div className="dropdown" ref={dropdownRef}>
             <button onClick={handleButtonClick} className="dropbtn">

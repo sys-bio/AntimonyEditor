@@ -1,32 +1,29 @@
-#dropdown {
-  position: absolute;
-  z-index: 5000;
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  display: none;
-  height: 50vh;
-  width: 36vw;
-  overflow-y: auto;
+#biomddropdown {
+    position: absolute;
+    z-index: 2;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: none;
+    height: 50vh;
+    width: 36vw;
+    overflow-y: auto;
 }
 
-#dropdown a {
-  border: 1.5px solid #ddd;
-  margin-top: -1px;
-  /* Prevent double borders */
-  background-color: #000000;
-  padding: 7.5px 7.5px 0 7.5px;
-  font-size: 16px;
-  display: block;
-  color: rgb(41, 125, 250);
-  /* set text to bold */
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
+#biomddropdown a {
+    border: 1.5px solid #ddd;
+    margin-top: -1px;
+    /* Prevent double borders */
+    background-color: #000000;
+    padding: 7.5px 7.5px 0 7.5px;
+    font-size: 18px;
+    display: block;
+    overflow: hidden;
 }
 
-#dropdown a:hover {
-  background-color: #eeeeee34;
+#biomddropdown a:hover {
+    filter: hue-rotate(10deg) brightness(120%) invert(10%);
+    cursor: pointer;
 }
 
 #biomodel-browse {

@@ -1,5 +1,6 @@
-import cache from "./testCache.json";
+import cache from "./BiomodelCache.json";
 import { Octokit, App } from "octokit";
+// import biomodels api to use the search function
 
 /**
 * Interface for storing a model
@@ -15,6 +16,9 @@ interface Model {
     id: string;
     title: string;
     authors: string[];
+    citation: string | null;
+    date: string;
+    journal: string;
 }
 
 /**
@@ -35,6 +39,9 @@ interface CachedData {
       model_id: string;
       title: string;
       synopsis: string;
+      citation: string | null;
+      date: string;
+      journal: string;
   };
 }
 
@@ -77,7 +84,10 @@ export async function searchModels(search: KeyboardEvent) {
                 url: modelData.url,
                 id: modelData.model_id,
                 title: modelData.title,
-                authors: modelData.authors
+                authors: modelData.authors,
+                citation: modelData.citation,
+                date: modelData.date,
+                journal: modelData.journal
               });
             }
           }
@@ -89,7 +99,10 @@ export async function searchModels(search: KeyboardEvent) {
               url: modelData.url,
               id: modelData.model_id,
               title: modelData.title,
-              authors: modelData.authors
+              authors: modelData.authors,
+              citation: modelData.citation,
+              date: modelData.date,
+              journal: modelData.journal
             });
           }
         }
@@ -129,19 +142,56 @@ export async function getModel(modelId: string) {
             }
           });
           if ("content" in fileResponse.data) {
-            return [modelId, decodeURIComponent(Array.prototype.map.call(atob(fileResponse.data.content), (c: string) => {
-              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join("")), url];
+            const sbmlData = decodeURIComponent(Array.prototype.map.call(atob(fileResponse.data.content), (c: string) => {
+              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join(""));
+            return {
+              modelId: modelId,
+              sbmlData: sbmlData,
+              url: url,
+              title: cachedData[modelId].title,
+              authors: cachedData[modelId].authors,
+              citation: cachedData[modelId].citation,
+              date: cachedData[modelId].date,
+              journal: cachedData[modelId].journal
+            };
           } else {
             throwError("Unable to fetch model from GitHub repository.");
-            return ["", "Unable to fetch model."];
+            return {
+              modelId: "",
+              sbmlData: "",
+              url: "",
+              title: "",
+              authors: [],
+              citation: "",
+              date: "",
+              journal: ""
+            }
           }
         } else {
           throwError("Unable to fetch model from GitHub repository.");
-          return ["", "Unable to fetch model."];
+          return {
+            modelId: "",
+            sbmlData: "",
+            url: "",
+            title: "",
+            authors: [],
+            citation: "",
+            date: "",
+            journal: ""
+          }
         }
     } catch (error) {
         throwError("Model not found, please choose another model.");
-        return ["", "Model not found."];
+        return {
+          modelId: "",
+          sbmlData: "",
+          url: "",
+          title: "",
+          authors: [],
+          citation: "",
+          date: "",
+          journal: ""
+        }
     }
 }
 
@@ -176,7 +226,7 @@ async function throwError(error: String) {
  */
 export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boolean>>, setChosenModel: React.Dispatch<React.SetStateAction<string | null>>) {
   const biomodelBrowse = document.getElementById("biomodel-browse") as HTMLInputElement;
-  const dropdown = document.getElementById("dropdown");
+  const dropdown = document.getElementById("biomddropdown");
   var biomodels: any;
   var chosenModel: any;
 
@@ -213,20 +263,20 @@ export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boo
           url = model.url;
           setChosenModel(chosenModel);
         });
-        if (model.title.length > a.offsetWidth) {
-          a.style.whiteSpace = "nowrap";
-          a.style.overflow = "hidden";
-          a.style.textOverflow = "ellipsis";
-        }
         // if author exists, display author, else display "No authors found"
-        const author = model.authors.length > 0 ? model.authors[0] : "No authors found";
-        a.innerHTML = `${model.id}: ${model.title} <br /> <div style="font-size: 15px; color: #FD7F20; padding: 12px 0 5px 0">${author}</div>`;
+        const authors = model.authors.length > 0 ? model.authors : "No authors found";
+        a.innerHTML = `${model.title}<div style="color: #FD7F20;">${model.journal}, ${model.date} - ${authors}</div>`;
         dropdown!.appendChild(a);
       });
     }, 300);
     document.addEventListener("click", (e) => {
       if ((e.target as HTMLInputElement).id !== "biomodel-browse") {
         dropdown!.style.display = "none";
+      }
+    });
+    document.addEventListener("click", (e) => {
+      if ((e.target as HTMLInputElement).id === "biomodel-browse") {
+        dropdown!.style.display = "block";
       }
     });
   });
