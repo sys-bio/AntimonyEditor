@@ -275,12 +275,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         {/* <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Annotated Variable Highlight Off'} /> */}
         <div className='menu-middle'>
+          <Loader loading={loading} />
           <div>
             <input id='biomodel-browse' type='text' placeholder='Search biomodels' />
             <div id='biomddropdown'>
               <ul />
             </div>
-            <Loader loading={loading} />
           </div>
           <div className="dropdown" ref={dropdownRef}>
             <button onClick={handleButtonClick} className="dropbtn">
