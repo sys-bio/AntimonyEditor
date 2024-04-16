@@ -9,6 +9,8 @@ import Loader from '../Loader';
 import ModelSemanticsChecker from '../../language-handler/ModelSemanticChecker';
 import handleDownload from '../../features/HandleDownload';
 import { IDBPDatabase, DBSchema } from 'idb';
+import { SrcPosition, SrcRange } from '../../language-handler/Types';
+import { Variable } from '../../language-handler/Variable';
 
 /**
  * @description AntimonyEditorProps interface
@@ -77,7 +79,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
   const [selectedFile, setSelectedFile] = useState<string>('');
-  // const [annotHighlight, setAnnotHighlight] = useState<boolean>(true);
+  const [annotHighlighted, setAnnotHighlightTurnedOn] = useState<boolean>(true);
+  const [editorDecorations, setEditorDecorations] = useState<monaco.editor.IEditorDecorationsCollection | null>(null);
 
   /**
    * @description Loads the editor and sets the language, theme, and content
@@ -126,6 +129,94 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         window.antimonyString = editor.getValue();
       }
 
+      // this actually doesn't work lol
+      setEditorDecorations(editor.createDecorationsCollection())
+
+      editor.addAction({
+        id: "run-code",
+        label: "Toggle Annotation Highlight",
+        contextMenuOrder: 2,
+        contextMenuGroupId: "1_modification",
+        keybindings: [
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10,
+        ],
+        run: (ed: monaco.editor.IStandaloneCodeEditor) => {
+          setAnnotHighlightTurnedOn(!annotHighlighted);
+        },
+      });
+
+      // addes the create annotations option to 
+      // the context menu, checks if the cursor is on
+      // an actual variable or not. 
+      editor.addAction({
+        // An unique identifier of the contributed action.
+        id: "my-unique-id",
+      
+        // A label of the action that will be presented to the user.
+        label: "Create Annotations",
+      
+        // An optional array of keybindings for the action.
+        keybindings: [
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10,
+          // chord
+          monaco.KeyMod.chord(
+            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
+            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM
+          ),
+        ],
+      
+        // A precondition for this action.
+        precondition: null,
+      
+        // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
+        keybindingContext: null,
+      
+        contextMenuGroupId: "navigation",
+      
+        contextMenuOrder: 1.5,
+      
+        // Method that will be executed when the action is triggered.
+        // @param editor The editor instance is passed in as a convenience
+        run: function (ed: monaco.editor.IStandaloneCodeEditor) {
+          // debugger;
+          // alert("i'm running => " + ed.getPosition());
+          const position = ed.getPosition();
+          console.log("wow");
+          if (position) {
+            const word = ed.getModel()?.getWordAtPosition(position);
+            console.log("wee");
+
+            if (word) {
+              // check if variable with id word.word exists at the given position range.
+              // if it does use the stored variable info to create a hover.
+              let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
+              let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
+              let srcRange: SrcRange = new SrcRange(start, end);
+
+              let varInfo: Variable | undefined;
+              console.log("waa")
+
+              // check that user cursor is over an actual variable.
+              let ST = ModelSemanticsChecker(ed, false);
+              console.log(ST);
+              if ((varInfo = ST.hasVarAtLocation(word.word, srcRange))) {
+                // alert(word.word + ", " + varInfo.idSrcRange.toString());
+                let options = ['Option 1', 'Option 2', 'Option 3'];
+                let userInput = prompt('Enter your input:');
+                // var options = ['Option 1', 'Option 2', 'Option 3']; // Add your options here
+              } else {
+                console.log("asad")
+                alert("Please select a variable to annotate.");
+              }
+            } else {
+              console.log("asad")
+              alert("Please select a variable to annotate.");
+            }
+          }
+        },
+      });
+      
+
       // Set language configuration for bracket pair colorization
       monaco.languages.setLanguageConfiguration('antimony', {
         brackets: [
@@ -143,7 +234,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
           // ModelParser(editor, true);
-          ModelSemanticsChecker(editor, false);
+          ModelSemanticsChecker(editor, annotHighlighted, editorDecorations);
         }, 600);
       };
 
@@ -162,6 +253,13 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       return () => editor.dispose();
     }
   }, [content, database, fileName]);
+
+  useEffect(() => {
+    console.log("wapa")
+    if (editorInstance) {
+      ModelSemanticsChecker(editorInstance, annotHighlighted, editorDecorations);
+    }
+  }, [annotHighlighted, editorInstance])
 
   /**
    * @description Saves the name and content of the file selected to IndexedDB

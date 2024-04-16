@@ -37,27 +37,34 @@ class ErrorListener implements ANTLRErrorListener<any> {
   }
 }
 
-const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, annotHighlightOn: boolean) => {
+export const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, annotHighlightOn: boolean, decorations?: monaco.editor.IEditorDecorationsCollection | null) => {
+  console.log(annotHighlightOn);
+  console.log(decorations);
   // const errors: ErrorUnderline[] = getErrors(removeCarriageReturn(editor.getValue()), true);
   const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue());
 
-  if (annotHighlightOn) {
-    const highlightVars: Variable[] = antAnalyzer.getAnnotatedVars();
-    for (let i = 0; i < highlightVars.length; i++) {
-      const varInfo: Variable = highlightVars[i];
-      for (const [key, range] of varInfo.refLocations) {
-        console.log("a");
-        let mRange = new monaco.Range(range.start.line, range.start.column, range.end.line, range.end.column);
-        editor.createDecorationsCollection([
-          {
-            range: mRange,
-            options: {
-              isWholeLine: false,
-              inlineClassName: 'highlight',
+  if (decorations) {
+    if (annotHighlightOn) {
+      var deco = editor.createDecorationsCollection();
+      const highlightVars: Variable[] = antAnalyzer.getAnnotatedVars();
+      for (let i = 0; i < highlightVars.length; i++) {
+        const varInfo: Variable = highlightVars[i];
+        for (const [key, range] of varInfo.refLocations) {
+          console.log("a");
+          let mRange = new monaco.Range(range.start.line, range.start.column, range.end.line, range.end.column);
+          editor.createDecorationsCollection([
+            {
+              range: mRange,
+              options: {
+                isWholeLine: false,
+                inlineClassName: 'highlight',
+              }
             }
-          }
-        ])
+          ])
+        }
       }
+    } else {
+      decorations.clear();
     }
   }
   const errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
@@ -75,8 +82,11 @@ const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, anno
   // this is how to add error squiglies 
   let model: monaco.editor.ITextModel | null = editor.getModel();
   if (model !== null) {
+    monaco.editor.removeAllMarkers("owner");
     monaco.editor.setModelMarkers(model, "owner", errors);
   }
+
+  return antAnalyzer.getProgramST();
 }
 
 
@@ -272,6 +282,10 @@ export class AntimonyProgramAnalyzer {
   getAnnotations() {
     // do stuff
     
+  }
+
+  getProgramST(): GlobalST {
+    return this.globalST;
   }
 
   /**

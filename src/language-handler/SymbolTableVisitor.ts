@@ -210,13 +210,15 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       for (let i = 1; i < ctx.children.length; i+=2) {
         const declItem: Decl_itemContext = ctx.children[i] as Decl_itemContext;
         const varName: string = this.getVarName(declItem.namemaybein().var_name().text);
-        const currSrcRange: SrcRange = this.getSrcRange(declItem.namemaybein().var_name().NAME());
+        const currIdSrcRange: SrcRange = this.getSrcRange(declItem.namemaybein().var_name().NAME());
+        const currAssignSrcRange: SrcRange = this.getSrcRange(declItem);//(declItem.namemaybein().var_name().NAME());
         const currST: SymbolTable | undefined = this.getCurrST();
 
         // check if we are using $ to apply const
         let varIsConst: boolean = (varName.charAt(0) === '$');
         if (varIsConst) {
-          currSrcRange.start.column += 1;
+          currAssignSrcRange.start.column += 1;
+          currIdSrcRange.start.column += 1;
         }
 
         let varInfo: Variable | undefined;
@@ -227,7 +229,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         // gauranteed to pass this check as children visited first.
         if (varInfo) {
           // for hover
-          varInfo.refLocations.set(currSrcRange.toString(), currSrcRange);
+          varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
           // type overried takes precedence over value reassignement.
           // should this continue being the case, or should both cases be reported?
           // for now keep it as report both.
@@ -243,11 +245,11 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
             
             if (varInfo.canSetType(type)) {
               varInfo.type = type;
-              varInfo.idSrcRange = currSrcRange;
+              varInfo.idSrcRange = currIdSrcRange;
             } else {
               // error! trying to overried previous type decl
               const errorMessage = incompatibleTypesError(type, varInfo);
-              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage, true);
+              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currIdSrcRange, errorMessage, true);
               this.addError(errorUnderline);
             }
           }
@@ -259,19 +261,18 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
             if (varInfo.initSrcRange !== undefined) {
               // warning case! reinitalization!
               if (varInfo.initSrcRange) {
-                const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
+                const errorMessage1: string = overriddenValueWarning(varName, currAssignSrcRange);
                 const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
                 this.addError(errorUnderline1);
 
                 const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
-                const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
+                const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currAssignSrcRange, errorMessage2, false);
                 this.addError(errorUnderline2);
               }
             }
-            varInfo.initSrcRange = currSrcRange;
+            varInfo.initSrcRange = currIdSrcRange;
           }
-          const refSrcRange: SrcRange = this.getSrcRange(declItem.namemaybein().var_name())
-          varInfo.refLocations.set(refSrcRange.toString(), refSrcRange);
+          varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
         }
       }
     }
