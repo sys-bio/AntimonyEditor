@@ -1,5 +1,5 @@
 # Antimony Web Editor: A Web Editor Designed to Support Modeling in the Antimony Modeling Language
-# Try it Out: [Antimony Web Editor](https://sys-bio.github.io/AntimonyEditor/)
+# Try it Out: [Antimony Web Editor](https://sys-bio.github.io/AntimonyEditor/){:target="_blank"}
 
 [![MIT License](https://img.shields.io/github/license/sys-bio/vscode-antimony)](https://github.com/evaxliu/evaxliu.github.io/blob/master/LICENSE)
 
