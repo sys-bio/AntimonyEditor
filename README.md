@@ -20,7 +20,7 @@ The extension provides many convenient features for developing biological models
 ### 1. Syntax Recognition and Color Coding
 
 <p align=center>
-<img width="900" alt="image" src="https://github.com/sys-bio/AntimonyEditor/assets/69877857/a3087eb6-ddc8-4012-ba96-a88e0e6f65fd">
+<img width="1100" alt="image" src="https://github.com/sys-bio/AntimonyEditor/assets/69877857/a3087eb6-ddc8-4012-ba96-a88e0e6f65fd">
 <br/>
 <em>(Syntax Coloring)</em>
 </p>
@@ -28,7 +28,7 @@ The extension provides many convenient features for developing biological models
 ### 2. Hover Messages
 
 <p align=center>
-<img width="900" alt="image" src="https://github.com/sys-bio/AntimonyEditor/assets/69877857/994851ec-0c97-4c7e-bcb8-d8ba629ef2df">
+<img width="1100" alt="image" src="https://github.com/sys-bio/AntimonyEditor/assets/69877857/994851ec-0c97-4c7e-bcb8-d8ba629ef2df">
 <br/>
 <em>(Hovering over species to look up information)</em>
 </p>
@@ -37,7 +37,7 @@ The extension provides many convenient features for developing biological models
 The editor supports various warning and error detections to help modelers debug their model during development. Our design principle for whether an issue should be a warning or an error entirely depends on the logic of tellurium. Our extension will mark the subject as an error if tellurium throws an error while rendering the model, with a red underline. An example would be calling a function that does not exist (usually due to a typo, which is extremely common during development. Read more in Steve Ma's [thesis)](https://drive.google.com/file/d/1FutuOYgq9Jd_AHqp_z4f2joDavVIURuz/view).
 
 <p align=center>
-<img width="900" alt="image" src="https://github.com/sys-bio/AntimonyEditor/assets/69877857/5d91938a-8c46-4d93-b7d1-785546e3148f">
+<img width="1100" alt="image" src="https://github.com/sys-bio/AntimonyEditor/assets/69877857/5d91938a-8c46-4d93-b7d1-785546e3148f">
 <br/>
 <em>(Typos are extremely common in software development)</em>
 </p>
@@ -46,7 +46,7 @@ The extension supports a wide range of errors and warnings, and we plan to suppo
 
 ### 4. Support for Annotations
 <p align=center>
-<img width="900" alt="image" src="https://github.com/sys-bio/AntimonyEditor/assets/69877857/f1ee785e-8f7e-48c4-8042-028fa331a93e">
+<img width="1100" alt="image" src="https://github.com/sys-bio/AntimonyEditor/assets/69877857/f1ee785e-8f7e-48c4-8042-028fa331a93e">
 <br/>
 <em>(Annotations near the end of the model with annotation link included in the hover message)</em>
 </p>
