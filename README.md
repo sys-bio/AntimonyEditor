@@ -12,5 +12,5 @@ The currently available version is a public beta version developed by Sai Anish 
 Please note that the current release does not support the complete Antimony grammar as it is a very early public beta. More will be included in future releases. As of this moment, syntax coloring, Antimony grammar, browse biomodels and uploading/editing multiple files is supported. Flux balance constraints and submodeling are not supported yet.
 
 #### HARMONY 2024 Presentation
+[Video Link](https://drive.google.com/file/d/1xLGDqEDlmKoTLwq6wk05reqBkIwBp5LQ/view?usp=sharing)
 <img width="500" alt="image" src="https://github.com/sys-bio/AntimonyEditor/assets/69877857/3200293f-3c82-4693-bfa2-4ccbcf5ac630">
-https://drive.google.com/file/d/1xLGDqEDlmKoTLwq6wk05reqBkIwBp5LQ/view?usp=sharing
