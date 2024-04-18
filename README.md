@@ -10,3 +10,6 @@ The Antimony Web Editor adds language support for Antimony to the web for buildi
 The currently available version is a public beta version developed by Sai Anish Konanki, Eva Liu, Dr. Joseph Hellerstein, and Dr. Herbert Sauro at the University of Washington. Dr. Joseph Hellerstein is responsible for future releases, please feel free to contact him if you have any questions.
 
 Please note that the current release does not support the complete Antimony grammar as it is a very early public beta. More will be included in future releases. As of this moment, syntax coloring, Antimony grammar, browse biomodels and uploading/editing multiple files is supported. Flux balance constraints and submodeling are not supported yet.
+
+#### HARMONY 2024 Presentation
+https://drive.google.com/file/d/1xLGDqEDlmKoTLwq6wk05reqBkIwBp5LQ/view?usp=sharing
