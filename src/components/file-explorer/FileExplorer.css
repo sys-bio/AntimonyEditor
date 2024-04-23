@@ -1,6 +1,6 @@
 .file-explorer {
-  height: 90%; /* Set the desired height */
-  overflow: scroll; /* or overflow: scroll; */
+  height: 94%;
+  overflow: auto;
 }
 
 .file-explorer ul {
@@ -9,6 +9,8 @@
   align-items: flex-start;
   flex-wrap: wrap;
   flex-direction: column;
+  font-size: 0;
+  padding: 10px;
 }
 
 .file-btn:hover,
@@ -40,4 +42,10 @@
   font-size: 16px;
   border: none;
   cursor: pointer;
+}
+
+@media (max-width: 780px) {
+  .file-explorer {
+    height: 88%;
+  }
 }

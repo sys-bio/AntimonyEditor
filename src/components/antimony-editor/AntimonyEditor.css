@@ -1,9 +1,7 @@
-#dropdown {
+#biomddropdown {
     position: absolute;
-    z-index: 5000;
+    z-index: 2;
     list-style-type: none;
-    top: 36px;
-    /* right: 360px; */
     padding: 0;
     margin: 0;
     display: none;
@@ -12,7 +10,7 @@
     overflow-y: auto;
 }
 
-#dropdown a {
+#biomddropdown a {
     border: 1.5px solid #ddd;
     margin-top: -1px;
     /* Prevent double borders */
@@ -20,30 +18,46 @@
     padding: 7.5px 7.5px 0 7.5px;
     font-size: 18px;
     display: block;
-    color: rgb(41, 125, 250);
-    /* set text to bold */
-    font-weight: 700;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-#dropdown a:hover {
-    background-color: #eeeeee34;
+#biomddropdown a:hover {
+    filter: hue-rotate(10deg) brightness(120%) invert(10%);
+    cursor: pointer;
 }
 
 #biomodel-browse {
-    position: relative;
-    right: 1.4px;
+  position: relative;
+  background-color: #1c1c1c;
+  border: 1.5px solid #ddd;
+  border-radius: 2px;
+  color: white;
+  font-size: 16px;
+  padding: 4px;
+  width: 34vw;
+  margin-right: 3px;
+}
+
+#biomodel-browse::placeholder {
+  color: #B7B7B7;
+}
+
+#biomodel-browse:hover {
+  background-color: #464646;
+}
+
+#biomodel-browse:focus {
+  outline: none;
 }
 
 .code-editor {
-  height: 80vh;
+  height: 90%;
 }
 
 /* Dropdown Button */
 .dropbtn {
   color: white;
-  padding: 16px;
+  padding: 16px 8px;
   font-size: 16px;
   border: none;
   cursor: pointer;
@@ -87,7 +101,7 @@
   display: block;
 }
 
-.button {
+.download-button {
   background-color: #1c1c1c;
   border-radius: 2px;
   border-style: solid;
@@ -106,13 +120,13 @@
   text-shadow: none;
   white-space: nowrap;
   color: white;
-  padding: 16px;
+  padding: 16px 8px;
   font-size: 16px;
   border: none;
   cursor: pointer;
 }
 
-.button:hover {
+.download-button:hover {
   color: white;
   background-color: #464646;
 }
@@ -137,7 +151,7 @@
   text-shadow: none;
   white-space: nowrap;
   color: white;
-  padding: 16px;
+  padding: 16px 8px;
   font-size: 16px;
   border: none;
 }
@@ -153,4 +167,44 @@
   justify-content: center;
   padding: 4px;
   flex-wrap: wrap;
+  min-height: 10%;
+}
+
+#file-upload {
+  display: none;
+}
+
+.file-upload-label {
+  background-color: #1c1c1c;
+  border-radius: 2px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #1c1c1c;
+  color: white;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 16px;
+  font-weight: normal !important;
+  line-height: 1.2;
+  margin: 0 0 0 3px;
+  padding: 16px 8px;
+  position: relative;
+  text-align: center;
+  text-decoration: none !important;
+  text-overflow: ellipsis;
+  text-shadow: none;
+  white-space: nowrap;
+  justify-content: flex-start;
+}
+
+.file-upload-label:hover {
+  background-color: #464646;
+}
+
+.menu-middle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: auto;
 }

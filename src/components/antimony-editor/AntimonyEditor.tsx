@@ -17,10 +17,12 @@ import { Variable } from '../../language-handler/Variable';
  * @interface
  * @property {string} content - The content of the editor
  * @property {string} fileName - The name of the file
+ * @property {string} handleFileUpload - Handle the file upload
  */
 interface AntimonyEditorProps {
   content: string;
   fileName: string;
+  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
 }
 
 /**
@@ -56,6 +58,11 @@ declare global {
     antimonyActive: boolean; // Define the antimonyActive variable
     fileName: string; // Define the fileName variable
     url: string; // Define the link variable
+    title: string; // Define the title variable
+    authors: string[]; // Define the authors variable
+    citation: string | null; // Define the citation variable
+    date: string; // Define the date variable
+    journal: string; // Define the journal variable
     conversion: string; // Define the conversion variable
     processAntimony?: () => void; // Define the processAntimony function
     processSBML?: () => void; // Define the processSBML function
@@ -68,10 +75,11 @@ declare global {
  * @param content - AntimonyEditorProp
  * @param fileName - AntimonyEditorProp
  * @param database - IDBPDatabase<MyDB>
+ * @param handleFileUpload - AntimonyEditorProp
  * @example - <AntimonyEditor content={content} fileName={fileName} database={database} />
  * @returns - AntimonyEditor component
  */
-const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({ content, fileName, database }) => {
+const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({ content, fileName, database, handleFileUpload }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [chosenModel, setChosenModel] = useState<string | null>(null);
@@ -280,7 +288,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    */
   useEffect(() => {
     if (chosenModel) {
-      const dropdown = document.getElementById('dropdown');
+      const dropdown = document.getElementById('biomddropdown');
       dropdown!.style.display = "none";
       setLoading(true);
       if (chosenModel === '') {
@@ -288,9 +296,14 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         return;
       }
       getModel(chosenModel).then((model) => {
-        window.sbmlString = model[1];
-        window.fileName = model[0];
-        window.url = model[2];
+        window.title = model.title;
+        window.authors = model.authors;
+        window.url = model.url;
+        window.citation = model.citation;
+        window.date = model.date;
+        window.journal = model.journal;
+        window.fileName = model.modelId;
+        window.sbmlString = model.sbmlData;
         handleConversionSBML();
         setLoading(false);
       });
@@ -351,28 +364,36 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   }, []);
 
   return (
-    <div>
+    <>
       <div className='menu'>
-        <button className='button' onClick={() => handleDownload(editorInstance, fileName)}>Save File to Downloads Folder</button>
+        <input id="file-upload" type="file" multiple onChange={handleFileUpload} accept=".ant,.xml,.txt" />
+        <label htmlFor="file-upload" className='file-upload-label'>Load File(s)</label>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
         {/* <button className='btn'>Navigate to Edit Annotations</button> */}
         {/* <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Annotated Variable Highlight Off'} /> */}
-        <div className="dropdown" ref={dropdownRef}>
-          <button onClick={handleButtonClick} className="dropbtn">
-            Convert Antimony/SBML
-          </button>
-          <div id="myDropdown" className={`dropdown-content ${isDropdownVisible ? 'show' : ''}`}>
-            <button className='convert-button' onClick={handleConversionAnt}>Antimony - SBML</button>
-            <button className='convert-button' onClick={handleConversionSBML}>SBML - Antimony</button>
+        <div className='menu-middle'>
+          <Loader loading={loading} />
+          <div>
+            <input id='biomodel-browse' type='text' placeholder='Search biomodels' />
+            <div id='biomddropdown'>
+              <ul />
+            </div>
+          </div>
+          <div className="dropdown" ref={dropdownRef}>
+            <button onClick={handleButtonClick} className="dropbtn">
+              Convert Antimony/SBML
+            </button>
+            <div id="myDropdown" className={`dropdown-content ${isDropdownVisible ? 'show' : ''}`}>
+              <button className='convert-button' onClick={handleConversionAnt}>Antimony → SBML</button>
+              <button className='convert-button' onClick={handleConversionSBML}>SBML → Antimony</button>
+            </div>
           </div>
         </div>
-        <input id='biomodel-browse' type='text' placeholder='Search for a model' />
-        <ul id='dropdown' />
-        <Loader loading={loading} />
+        <button className='download-button' onClick={() => handleDownload(editorInstance, fileName)}>Save File to Downloads Folder</button>
       </div>
       <div className="code-editor" ref={editorRef}></div>
-    </div>
+    </>
   );
 };
 
