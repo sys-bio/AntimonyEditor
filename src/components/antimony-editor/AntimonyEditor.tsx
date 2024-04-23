@@ -2,10 +2,11 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as monaco from 'monaco-editor';
 import { antimonyLanguage } from '../../language-handler/antlr/AntimonyLanguage';
 import { antimonyTheme } from '../../language-handler/AntimonyTheme';
-import CustomButton from '../CustomButton';
+// import CustomButton from '../CustomButton';
 import './AntimonyEditor.css';
 import { getBiomodels, getModel } from '../../features/BrowseBiomodels';
 import Loader from '../Loader';
+import CreateAnnotationModal from '../create-annotation/CreateAnnotationModal';
 import ModelSemanticsChecker from '../../language-handler/ModelSemanticChecker';
 import handleDownload from '../../features/HandleDownload';
 import { IDBPDatabase, DBSchema } from 'idb';
@@ -81,7 +82,11 @@ declare global {
  */
 const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({ content, fileName, database, handleFileUpload }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [isDropdownVisible, setDropdownVisible] = useState(false);
+  const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const [chosenModel, setChosenModel] = useState<string | null>(null);
   const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
@@ -158,7 +163,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       // an actual variable or not. 
       editor.addAction({
         // An unique identifier of the contributed action.
-        id: "my-unique-id",
+        id: "create-annotation",
       
         // A label of the action that will be presented to the user.
         label: "Create Annotations",
@@ -209,9 +214,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               console.log(ST);
               if ((varInfo = ST.hasVarAtLocation(word.word, srcRange))) {
                 // alert(word.word + ", " + varInfo.idSrcRange.toString());
-                let options = ['Option 1', 'Option 2', 'Option 3'];
-                let userInput = prompt('Enter your input:');
-                // var options = ['Option 1', 'Option 2', 'Option 3']; // Add your options here
+                setModalVisible(true);
               } else {
                 console.log("asad")
                 alert("Please select a variable to annotate.");
@@ -223,7 +226,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           }
         },
       });
-      
 
       // Set language configuration for bracket pair colorization
       monaco.languages.setLanguageConfiguration('antimony', {
@@ -340,9 +342,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     }
   };
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [isDropdownVisible, setDropdownVisible] = useState(false);
-
   const handleButtonClick = () => {
     if (dropdownRef.current) {
       setDropdownVisible(!isDropdownVisible);
@@ -352,6 +351,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const handleOutsideClick = (event: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
       setDropdownVisible(false);
+    }
+    if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      setModalVisible(false);
     }
   };
 
@@ -393,6 +395,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         <button className='download-button' onClick={() => handleDownload(editorInstance, fileName)}>Save File to Downloads Folder</button>
       </div>
       <div className="code-editor" ref={editorRef}></div>
+      {isModalVisible && <div ref={modalRef}><CreateAnnotationModal onClose={() => setModalVisible(false)} /></div>}
     </>
   );
 };
