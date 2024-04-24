@@ -126,6 +126,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
           value: content,
           language: 'xml',
+          automaticLayout: true,
         });
         console.log('SBML Editor');
         // Set the antimonyString variable to the editor content
@@ -135,6 +136,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
           value: content,
           language: 'antimony',
+          automaticLayout: true,
         });
         window.antimonyActive = true;
         console.log('Antimony Editor');
