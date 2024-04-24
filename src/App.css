@@ -37,9 +37,10 @@ header {
 }
 
 .subtitle {
-  padding: 8px;
   font-weight: bold;
-  height: 6%;
+  color: white;
+  line-height: 1.2;
+  padding: 22px 14px;
 }
 
 .sidebar { 
@@ -64,10 +65,4 @@ footer {
 
 footer a {
   color: white;
-}
-
-@media (max-width: 780px) {
-  .subtitle {
-    height: 12%;
-  }
 }
