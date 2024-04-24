@@ -15,23 +15,24 @@ interface CreateAnnotationModalProps {
  * @interface
  * @property {string} label - The label of the database item
  * @property {string} id - The id of the database item
+ * @property {string} detail - The detail of what the database item is commonly used for
  */
 interface Database {
   label: string;
   id: string;
+  detail: string;
 }
 
 const databases: Database[] = [
-  { label: 'ChEBI', id: 'chebi'},
-  { label: 'UniProt', id: 'uniprot'},
-  { label: 'RHEA', id: 'rhea'},
-  { label: 'Gene Ontology', id: 'gontology'},
-  { label: 'Cell Type Ontology', id: 'contology'},
-  { label: 'Protein Ontology', id: 'pontology'},
-  { label: 'Ontology for Biomedical Investigations', id: 'bontology'},
-  { label: 'Foundational Model of Anatomy', id: 'fontology'},
-  { label: 'Mouse Adult Gross Anatomy', id: 'montology'},
-];
+  { label: 'ChEBI', id: 'chebi', detail: 'Species'},
+  { label: 'UniProt', id: 'uniprot', detail: 'Species'},
+  { label: 'RHEA', id: 'rhea', detail: 'Reactions'},
+  { label: 'Gene Ontology', id: 'gontology', detail: 'Compartments, Reactions'},
+  { label: 'Cell Type Ontology', id: 'contology', detail: 'Compartments'},
+  { label: 'Protein Ontology', id: 'pontology', detail: 'Species'},
+  { label: 'Ontology for Biomedical Investigations', id: 'bontology', detail: 'Compartments'},
+  { label: 'Foundational Model of Anatomy', id: 'fontology', detail: 'Compartments'},
+  { label: 'Mouse Adult Gross Anatomy', id: 'montology', detail: ' Compartments'}];
 
 /**
  * @description CreateAnnotationModal component
@@ -133,6 +134,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose }
           {filteredDatabases.map((database) => (
             <li key={database.id} onClick={() => handleSelectDatabase(database)}>
               {database.label}
+              <div className='database-detail'>{database.detail}</div>
             </li>
           ))}
         </ul>

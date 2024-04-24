@@ -78,3 +78,7 @@
 .button:hover {
   background-color: #333;
 }
+
+.database-detail {
+  color: #777;
+}
