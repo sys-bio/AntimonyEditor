@@ -181,22 +181,3 @@ export class ParamAndNameTable extends SymbolTable {
         this.paramSet.add(name);
     }
 }
-
-// these may be needed in the future if more info specific to 
-// models are needed
-// /**
-//  * Symbol table for a function
-//  */
-// export class FuncST extends ParamAndNameTable {
-// }
-
-// /**
-//  * Symbol table for a model
-//  * Note: treat model and mmodels as the same thing?
-//  * only thing that matters is params being non zero length
-//  * for mmodel
-//  * 
-//  * TODO: make a decision, make fields private or public???
-//  */
-// export class ModelST extends ParamAndNameTable {
-// }

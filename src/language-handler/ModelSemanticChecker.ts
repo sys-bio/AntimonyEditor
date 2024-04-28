@@ -7,9 +7,12 @@ import { SymbolTableVisitor } from './SymbolTableVisitor';
 import { SemanticVisitor } from './SemanticVisitor';
 import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from './Types';
 import { Variable } from './Variable';
-import './MCS.css';
+// import './MCS.css';
 
 
+/**
+ * Defines a parse error, which includes a position (line, column) as well as the error message.
+ */
 type parseErrors = {
   line: number,
   column: number,
@@ -37,12 +40,21 @@ class ErrorListener implements ANTLRErrorListener<any> {
   }
 }
 
-export const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, annotHighlightOn: boolean, decorations?: monaco.editor.IEditorDecorationsCollection | null) => {
+/**
+ * @description Analyzes an antimony file, does error checking, and adds general hover information. 
+ * @param editor the monaco editor whose contents are to be semantic checked
+ * @param annotHighlightOn boolean for if annotation highlighting should be on
+ * @param setGeneralHoverInfo boolean that determines if variable hover info should be added.
+ * @param decorations 
+ * @returns {GlobalST} the complete symbol table representing the program in the monaco editor.
+ */
+export const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, annotHighlightOn: boolean, setGeneralHoverInfo: boolean, decorations?: monaco.editor.IEditorDecorationsCollection | null): GlobalST => {
   console.log(annotHighlightOn);
   console.log(decorations);
   // const errors: ErrorUnderline[] = getErrors(removeCarriageReturn(editor.getValue()), true);
   const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue());
 
+  // TODO: this deco stuff does not work rn
   if (decorations) {
     if (annotHighlightOn) {
       var deco = editor.createDecorationsCollection();
@@ -68,14 +80,16 @@ export const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEdito
     }
   }
   const errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
-  const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
-  if (hoverInfo) {
-    editor.onDidDispose(() => {
-      hoverInfo.dispose();
-    });
-    editor.onDidChangeModelContent(() => {
-      hoverInfo.dispose();
-    });
+  if (setGeneralHoverInfo) {
+    const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
+    if (hoverInfo) {
+      editor.onDidDispose(() => {
+        hoverInfo.dispose();
+      });
+      editor.onDidChangeModelContent(() => {
+        hoverInfo.dispose();
+      });
+    }
   }
 
 
@@ -90,6 +104,9 @@ export const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEdito
 }
 
 
+/**
+ * 
+ */
 export class AntimonyProgramAnalyzer {
   private errorListener: ErrorListener;
   private parser: AntimonyGrammarParser;
@@ -141,13 +158,23 @@ export class AntimonyProgramAnalyzer {
     this.hoverKeyWordColor.set(varTypes.Unknown, "");
   }
 
-  getErrors(includeParseErrors: boolean) {
+  /**
+   * Retrieves an array of both semantic and parse errors caught when analyzing the program
+   * @param includeParseErrors boolean determining whether to include parse errors or not 
+   *                           (mainly used for isolated testing of semantic error checking).
+   * @returns {ErrorUnderline[]}
+   */
+  getErrors(includeParseErrors: boolean): ErrorUnderline[] {
     if (includeParseErrors) {
       this.stVisitor.addErrorList(this.addParseErrors(this.errorListener.getErrors()));
     }
     return this.stVisitor.getErrors().concat(this.semanticVisitor.getErrors());
   }
 
+  /**
+   * Adds variable information to hovers.
+   * @returns 
+   */
   getGeneralHoverInfo() {
     let hoverContents: monaco.IMarkdownString[] = [];
     let hoverInfo = monaco.languages.registerHoverProvider('antimony', {
@@ -213,7 +240,12 @@ export class AntimonyProgramAnalyzer {
     return hoverInfo;
   }
 
-  private getModelHover(modelId: string) {
+  /**
+   * Gets string of what should appear when hovering over a model's id
+   * @param modelId 
+   * @returns {string}
+   */
+  private getModelHover(modelId: string): string {
     let hover: string = `${modelId}(`;
     const modelST: ParamAndNameTable | undefined = this.globalST.getModelST(modelId);
     if (modelST) {
@@ -232,7 +264,12 @@ export class AntimonyProgramAnalyzer {
     return hover;
   }
 
-  private getFuncHover(funcId: string) {
+  /**
+   * Gets a string of what should appear when hovering over a function's id
+   * @param funcId 
+   * @returns {string}
+   */
+  private getFuncHover(funcId: string): string {
     let hover: string =  `${funcId}(`
     const funcST: ParamAndNameTable | undefined = this.globalST.getFunctionST(funcId);
     if (funcST) {
@@ -284,6 +321,10 @@ export class AntimonyProgramAnalyzer {
     
   }
 
+  /**
+   * Gets the symbol table representing the entire analyzed file
+   * @returns {GLbitfield}
+   */
   getProgramST(): GlobalST {
     return this.globalST;
   }
@@ -315,6 +356,12 @@ export class AntimonyProgramAnalyzer {
     return parseErrors;
   }
 
+  /**
+   * TODO: probably change the grammar later, for now we remove carriage returns
+   * as the grammar is not configured to account for it (only occurs on Windows machines I think?)
+   * @param input 
+   * @returns 
+   */
   private removeCarriageReturn(input: string): string {
     return input.replaceAll('\r','');
   }

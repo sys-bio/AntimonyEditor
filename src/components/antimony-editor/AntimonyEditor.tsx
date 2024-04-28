@@ -210,7 +210,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               console.log("waa")
 
               // check that user cursor is over an actual variable.
-              let ST = ModelSemanticsChecker(ed, false);
+              let ST = ModelSemanticsChecker(ed, false, false);
               console.log(ST);
               if ((varInfo = ST.hasVarAtLocation(word.word, srcRange))) {
                 // alert(word.word + ", " + varInfo.idSrcRange.toString());
@@ -244,7 +244,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
           // ModelParser(editor, true);
-          ModelSemanticsChecker(editor, annotHighlighted, editorDecorations);
+          ModelSemanticsChecker(editor, annotHighlighted, true, editorDecorations);
         }, 600);
       };
 
@@ -267,7 +267,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   useEffect(() => {
     console.log("wapa")
     if (editorInstance) {
-      ModelSemanticsChecker(editorInstance, annotHighlighted, editorDecorations);
+      ModelSemanticsChecker(editorInstance, annotHighlighted, false, editorDecorations);
     }
   }, [annotHighlighted, editorInstance])
 
