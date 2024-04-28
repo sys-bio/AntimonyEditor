@@ -229,6 +229,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
       // Set language configuration for bracket pair colorization
       monaco.languages.setLanguageConfiguration('antimony', {
+        comments: {
+          lineComment: "//"
+        },
         brackets: [
           ['{', '}'],
           ['[', ']'],
