@@ -56,6 +56,7 @@ declare global {
     antimonyResult: string; // Define the antimonyResult variable
     antimonyActive: boolean; // Define the antimonyActive variable
     fileName: string; // Define the fileName variable
+    modelId: string; // Define the modelId variable
     url: string; // Define the link variable
     title: string; // Define the title variable
     authors: string[]; // Define the authors variable
@@ -198,6 +199,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         return;
       }
       getModel(chosenModel).then((model) => {
+        window.modelId = model.modelId;
         window.title = model.title;
         window.authors = model.authors;
         window.url = model.url;
