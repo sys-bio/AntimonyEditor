@@ -18,7 +18,11 @@ export class Variable {
     public compartment: string | undefined;
     // // do we even need an initialized field if we have initSrcRange?
     // public initialized: boolean;
+
+    // This is the range of JUST the id of a variable
     public idSrcRange: SrcRange;
+    // This is typically the range of the whole assignment statement, so eg: "a = 1" would be the range
+    // NOTE: this is not the case for reactions as a choice.
     public initSrcRange: SrcRange | undefined;
     public substanceOnly: boolean;
     public value: string | undefined; // for numerical values
@@ -51,7 +55,6 @@ export class Variable {
      * newType, false otherwise. Only checks if the type
      * can be set, does not actually set the type.
      * 
-     * TODO: fix this, is currently the reverse of what it should be.
      * @param newType 
      * @returns true or false
      */

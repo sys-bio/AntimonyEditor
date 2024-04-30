@@ -186,6 +186,65 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     }
   }
 
+  // should be very similar to vsiit_assignment
+  // adding this so that the values of vars assigned in a decl_itm
+  // can be recorded as well.
+  visitDecl_item(ctx: Decl_itemContext) {
+    if (this.hasParseError(ctx)) {
+      return;
+    }
+
+    if (ctx.children) {
+      for (let i = 0; i < ctx.children.length; i++) {
+        this.visit(ctx.children[i]);
+      }
+
+     // now record the assigned variable as assigned.
+     const nmbi: NamemaybeinContext = ctx.children[0] as NamemaybeinContext;
+     const varName: string = nmbi.var_name().text;
+     const currSrcRange: SrcRange = this.getSrcRange(ctx);
+
+     const currST: SymbolTable | undefined = this.getCurrST();
+
+     // almost identical to visit_assignment
+     // the key difference is that here we NEED to 
+     // check if the assignment portion of the decl_item node 
+     // actually exists, since otherwise we cannot say that 
+     // this variable has been assigned to.
+     if (currST && ctx.decl_assignment()) {
+       let varInfo: Variable | undefined;
+       // because we visit the children first, it is
+       // gauranteed that the var is in the currST.
+       if ((varInfo = currST.getVar(varName)) !== undefined) {
+         if (varInfo.initSrcRange !== undefined) {
+           // warning case! reinitalization!
+           if (varInfo.initSrcRange) {
+             // adds warning to current id location
+             const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
+             const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
+             this.addError(errorUnderline1);
+
+             // adds warning to previous id initialization location
+             const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
+             const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
+             this.addError(errorUnderline2);
+           }
+         }
+         varInfo.initSrcRange = currSrcRange;
+         // TODO: might make sense to initialize every var to a overarrching type?
+         // just straight up setting to a Paramter type here feels unelegant.
+         
+         
+        varInfo.type = varTypes.Parameter;
+        // for hovers
+        varInfo.value = ctx.decl_assignment()?.sum().text;
+        const refSrcRange: SrcRange = this.getSrcRange(nmbi.var_name().NAME())
+        varInfo.refLocations.set(refSrcRange.toString(), refSrcRange);
+       }
+     }
+   }
+  }
+
   /**
    * 
    * @param ctx 
@@ -260,7 +319,8 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
             // as the children are visited first.
             if (varInfo.initSrcRange !== undefined) {
               // warning case! reinitalization!
-              if (varInfo.initSrcRange) {
+              if (varInfo.initSrcRange && varInfo.initSrcRange.toString() !== currAssignSrcRange.toString()) {
+                console.log("washfa")
                 const errorMessage1: string = overriddenValueWarning(varName, currAssignSrcRange);
                 const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
                 this.addError(errorUnderline1);
@@ -270,7 +330,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
                 this.addError(errorUnderline2);
               }
             }
-            varInfo.initSrcRange = currIdSrcRange;
+            varInfo.initSrcRange = currAssignSrcRange;
           }
           varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
         }
@@ -315,6 +375,8 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
             }
           }
           varInfo.initSrcRange = currSrcRange;
+          // TODO: might make sense to initialize every var to a overarrching type?
+          // just straight up setting to a Paramter type here feels unelegant.
           varInfo.type = varTypes.Parameter;
 
           // for hovers
@@ -451,6 +513,10 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       if (reactionName && currST) {
         let varInfo: Variable | undefined = currST.getVar(id);
         if (varInfo) {
+          // here since this is a REACTION
+          // I am choosing to have the initSrcRange
+          // be just the id range, as opposed to the whole 
+          // assignment statement in regular assignment
           varInfo.initSrcRange = varInfo.idSrcRange;
         }
       }
