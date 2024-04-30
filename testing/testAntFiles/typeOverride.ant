@@ -1,9 +1,0 @@
-
-compartment A, B;
-species A;
-A + B + C -> A + B; k1*A*B
-
-A = 1;
-B = 2;
-C = 3;
-k1 = 0.5;
