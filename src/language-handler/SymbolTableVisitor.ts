@@ -254,87 +254,91 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       return;
     }
 
-    // grammar def: declaration : decl_modifiers decl_item (',' decl_item)*;
-    if (ctx.children) {
-      // we visit the children first
-      // something like this is valid: "species B = 1, C = 2, D = 3;"
+    try {
+      // grammar def: declaration : decl_modifiers decl_item (',' decl_item)*;
+      if (ctx.children) {
+        // we visit the children first
+        // something like this is valid: "species B = 1, C = 2, D = 3;"
 
-      // visit children first for convenience, as we then have
-      // them inside the ST's for the following steps
-      for (let i = 0; i < ctx.children.length; i++) {
-        this.visit(ctx.children[i]);
-      }
-
-      // we are looping this way to only hit the Decl_itemContext nodes.
-      for (let i = 1; i < ctx.children.length; i+=2) {
-        const declItem: Decl_itemContext = ctx.children[i] as Decl_itemContext;
-        const varName: string = this.getVarName(declItem.namemaybein().var_name().text);
-        const currIdSrcRange: SrcRange = this.getSrcRange(declItem.namemaybein().var_name().NAME());
-        const currAssignSrcRange: SrcRange = this.getSrcRange(declItem);//(declItem.namemaybein().var_name().NAME());
-        const currST: SymbolTable | undefined = this.getCurrST();
-
-        // check if we are using $ to apply const
-        let varIsConst: boolean = (varName.charAt(0) === '$');
-        if (varIsConst) {
-          currAssignSrcRange.start.column += 1;
-          currIdSrcRange.start.column += 1;
+        // visit children first for convenience, as we then have
+        // them inside the ST's for the following steps
+        for (let i = 0; i < ctx.children.length; i++) {
+          this.visit(ctx.children[i]);
         }
 
-        let varInfo: Variable | undefined;
-        if (currST) {
-          varInfo = currST.getVar(varName);
-        }
+        // we are looping this way to only hit the Decl_itemContext nodes.
+        for (let i = 1; i < ctx.children.length; i+=2) {
+          const declItem: Decl_itemContext = ctx.children[i] as Decl_itemContext;
+          const varName: string = this.getVarName(declItem.namemaybein().var_name().text);
+          const currIdSrcRange: SrcRange = this.getSrcRange(declItem.namemaybein().var_name().NAME());
+          const currAssignSrcRange: SrcRange = this.getSrcRange(declItem);//(declItem.namemaybein().var_name().NAME());
+          const currST: SymbolTable | undefined = this.getCurrST();
 
-        // gauranteed to pass this check as children visited first.
-        if (varInfo) {
-          // for hover
-          varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
-          // type overried takes precedence over value reassignement.
-          // should this continue being the case, or should both cases be reported?
-          // for now keep it as report both.
-
-          // take care of modifiers
-          let declModifiers: Decl_modifiersContext = ctx.decl_modifiers();
-          varInfo.substanceOnly = (declModifiers.SUB_MODIFIER() !== undefined) || varInfo.substanceOnly;
-          varInfo.isConst = (declModifiers.VAR_MODIFIER()?.text === varTypes.Const) || varInfo.isConst;
-          let typeString: string | undefined = declModifiers.TYPE_MODIFIER()?.text;
-          
-          if (typeString) {
-            const type: varTypes = getTypeFromString(typeString);
-            
-            if (varInfo.canSetType(type)) {
-              varInfo.type = type;
-              varInfo.idSrcRange = currIdSrcRange;
-            } else {
-              // error! trying to overried previous type decl
-              const errorMessage = incompatibleTypesError(type, varInfo);
-              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currIdSrcRange, errorMessage, true);
-              this.addError(errorUnderline);
-            }
+          // check if we are using $ to apply const
+          let varIsConst: boolean = (varName.charAt(0) === '$');
+          if (varIsConst) {
+            currAssignSrcRange.start.column += 1;
+            currIdSrcRange.start.column += 1;
           }
 
-          // check if initialize node exists
-          if (declItem.decl_assignment()) {
-            // check if it is initialized.
-            // as the children are visited first.
-            if (varInfo.initSrcRange !== undefined) {
-              // warning case! reinitalization!
-              if (varInfo.initSrcRange && varInfo.initSrcRange.toString() !== currAssignSrcRange.toString()) {
-                console.log("washfa")
-                const errorMessage1: string = overriddenValueWarning(varName, currAssignSrcRange);
-                const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
-                this.addError(errorUnderline1);
+          let varInfo: Variable | undefined;
+          if (currST) {
+            varInfo = currST.getVar(varName);
+          }
 
-                const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
-                const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currAssignSrcRange, errorMessage2, false);
-                this.addError(errorUnderline2);
+          // gauranteed to pass this check as children visited first.
+          if (varInfo) {
+            // for hover
+            varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
+            // type overried takes precedence over value reassignement.
+            // should this continue being the case, or should both cases be reported?
+            // for now keep it as report both.
+
+            // take care of modifiers
+            let declModifiers: Decl_modifiersContext = ctx.decl_modifiers();
+            varInfo.substanceOnly = (declModifiers.SUB_MODIFIER() !== undefined) || varInfo.substanceOnly;
+            varInfo.isConst = (declModifiers.VAR_MODIFIER()?.text === varTypes.Const) || varInfo.isConst;
+            let typeString: string | undefined = declModifiers.TYPE_MODIFIER()?.text;
+            
+            if (typeString) {
+              const type: varTypes = getTypeFromString(typeString);
+              
+              if (varInfo.canSetType(type)) {
+                varInfo.type = type;
+                varInfo.idSrcRange = currIdSrcRange;
+              } else {
+                // error! trying to overried previous type decl
+                const errorMessage = incompatibleTypesError(type, varInfo);
+                const errorUnderline: ErrorUnderline = this.getErrorUnderline(currIdSrcRange, errorMessage, true);
+                this.addError(errorUnderline);
               }
             }
-            varInfo.initSrcRange = currAssignSrcRange;
+
+            // check if initialize node exists
+            if (declItem.decl_assignment()) {
+              // check if it is initialized.
+              // as the children are visited first.
+              if (varInfo.initSrcRange !== undefined) {
+                // warning case! reinitalization!
+                if (varInfo.initSrcRange && varInfo.initSrcRange.toString() !== currAssignSrcRange.toString()) {
+                  console.log("washfa")
+                  const errorMessage1: string = overriddenValueWarning(varName, currAssignSrcRange);
+                  const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
+                  this.addError(errorUnderline1);
+
+                  const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
+                  const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currAssignSrcRange, errorMessage2, false);
+                  this.addError(errorUnderline2);
+                }
+              }
+              varInfo.initSrcRange = currAssignSrcRange;
+            }
+            varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
           }
-          varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
         }
       }
+    } catch (e) {
+      return;
     }
   }
 
