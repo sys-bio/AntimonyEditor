@@ -219,7 +219,8 @@ export class AntimonyProgramAnalyzer {
               }
 
               varInfo.annotations.forEach((annotation) => {
-                valueOfAnnotation += `<span style="color:#f2ab7c;">${annotation.replace(/"/g, "")}</span> <br/> `;
+                let keyword = varInfo?.annotationKeywordMap.get(annotation);
+                valueOfAnnotation += `<span style="color:#d33682;">${keyword} ${annotation.replace(/"/g, "")}</span> <br/> `;
               });
             } 
           }

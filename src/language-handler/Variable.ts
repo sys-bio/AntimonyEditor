@@ -1,7 +1,5 @@
 import { SrcRange, isSubtTypeOf, varTypes } from "./Types"
 
-
-
 export class Variable {
     /**
      * id: the id of the variable, ie A = 1 has id A
@@ -28,6 +26,7 @@ export class Variable {
     public value: string | undefined; // for numerical values
     public displayName: string | undefined;
     public annotations: string[];
+    public annotationKeywordMap: Map<string, string>;
     public refLocations: Map<string, SrcRange>;
 
     constructor(type: varTypes,
@@ -46,6 +45,7 @@ export class Variable {
         this.value = undefined;
         this.displayName = undefined;
         this.annotations = [];
+        this.annotationKeywordMap = new Map();
         this.refLocations = new Map();
         this.refLocations.set(idSrcRange.toString(), idSrcRange);
     }

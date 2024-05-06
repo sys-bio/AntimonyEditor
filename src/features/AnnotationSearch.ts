@@ -123,8 +123,6 @@ export async function searchOntology(search: KeyboardEvent, ontologyId: string, 
             }
           }
         })
-        console.log("no")
-        console.log(info);
         return info;
       });
       return result;
@@ -210,7 +208,12 @@ export async function searchChebi(search: KeyboardEvent, size: number): Promise<
           })
           
           let results = JSON.parse(jsonStr);
-          let chebiList = results["S:Envelope"]["S:Body"]["getLiteEntityResponse"]["return"]["ListElement"];
+          // let chebiList = results["S:Envelope"]["S:Body"]["getLiteEntityResponse"]["return"]["ListElement"];
+          let chebiList = results["S:Envelope"]["S:Body"]?.getLiteEntityResponse?.return?.ListElement;
+          if (chebiList === undefined) {
+            console.log(results);
+            return;
+          }
           for (let i = 0; i < chebiList.length; i++) {
             let curr: annotationInfo = {
               id: chebiList[i].chebiId._text,
