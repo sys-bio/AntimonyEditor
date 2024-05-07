@@ -1,17 +1,17 @@
-import React, { useRef, useEffect, useState } from 'react';
-import * as monaco from 'monaco-editor';
-import { antimonyLanguage } from '../../language-handler/antlr/AntimonyLanguage';
-import { antimonyTheme } from '../../language-handler/AntimonyTheme';
+import React, { useRef, useEffect, useState } from "react";
+import * as monaco from "monaco-editor";
+import { antimonyLanguage } from "../../language-handler/antlr/AntimonyLanguage";
+import { antimonyTheme } from "../../language-handler/AntimonyTheme";
 // import CustomButton from '../CustomButton';
-import './AntimonyEditor.css';
-import { getBiomodels, getModel } from '../../features/BrowseBiomodels';
-import Loader from '../Loader';
-import CreateAnnotationModal from '../create-annotation/CreateAnnotationModal';
-import ModelSemanticsChecker from '../../language-handler/ModelSemanticChecker';
-import handleDownload from '../../features/HandleDownload';
-import { IDBPDatabase, DBSchema } from 'idb';
-import { SrcPosition, SrcRange } from '../../language-handler/Types';
-import { Variable } from '../../language-handler/Variable';
+import "./AntimonyEditor.css";
+import { getBiomodels, getModel } from "../../features/BrowseBiomodels";
+import Loader from "../Loader";
+import CreateAnnotationModal from "../create-annotation/CreateAnnotationModal";
+import ModelSemanticsChecker from "../../language-handler/ModelSemanticChecker";
+import handleDownload from "../../features/HandleDownload";
+import { IDBPDatabase, DBSchema } from "idb";
+import { SrcPosition, SrcRange } from "../../language-handler/Types";
+import { Variable } from "../../language-handler/Variable";
 
 /**
  * @description AntimonyEditorProps interface
@@ -80,7 +80,12 @@ declare global {
  * @example - <AntimonyEditor content={content} fileName={fileName} database={database} />
  * @returns - AntimonyEditor component
  */
-const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({ content, fileName, database, handleFileUpload }) => {
+const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({
+  content,
+  fileName,
+  database,
+  handleFileUpload,
+}) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -88,12 +93,15 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const [isDropdownVisible, setDropdownVisible] = useState(false);
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const [chosenModel, setChosenModel] = useState<string | null>(null);
-  const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(
+    null
+  );
   // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
-  const [selectedFile, setSelectedFile] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<string>("");
   const [annotHighlighted, setAnnotHighlightTurnedOn] = useState<boolean>(true);
-  const [editorDecorations, setEditorDecorations] = useState<monaco.editor.IEditorDecorationsCollection | null>(null);
+  const [editorDecorations, setEditorDecorations] =
+    useState<monaco.editor.IEditorDecorationsCollection | null>(null);
 
   /**
    * @description Loads the editor and sets the language, theme, and content
@@ -102,74 +110,76 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     if (editorRef.current) {
       let editor: any;
       // Load the custom language
-      monaco.languages.register({ id: 'antimony' });
-      monaco.languages.setMonarchTokensProvider('antimony', antimonyLanguage);
+      monaco.languages.register({ id: "antimony" });
+      monaco.languages.setMonarchTokensProvider("antimony", antimonyLanguage);
 
       // Load the custom theme
-      monaco.editor.defineTheme('antimonyTheme', antimonyTheme);
-      monaco.editor.setTheme('antimonyTheme');
+      monaco.editor.defineTheme("antimonyTheme", antimonyTheme);
+      monaco.editor.setTheme("antimonyTheme");
 
       // Retrieve content and file name from IndexedDB
-      database.transaction('files').objectStore('files').get(fileName).then((data) => {
-        if (data) {
-          // setOriginalContent(data.content);
-          setNewContent(data.content);
-          // setSelectedFile(data.name);
-          window.selectedFile = data.name;
-          editor.setValue(data.content);
-        }
-      });
+      database
+        .transaction("files")
+        .objectStore("files")
+        .get(fileName)
+        .then((data) => {
+          if (data) {
+            // setOriginalContent(data.content);
+            setNewContent(data.content);
+            // setSelectedFile(data.name);
+            window.selectedFile = data.name;
+            editor.setValue(data.content);
+          }
+        });
 
-      if (fileName.includes('.xml')) {
+      if (fileName.includes(".xml")) {
         // Create the editor
         editor = monaco.editor.create(editorRef.current, {
           bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
           value: content,
-          language: 'xml',
+          language: "xml",
           automaticLayout: true,
         });
-        console.log('SBML Editor');
+        console.log("SBML Editor");
         // Set the antimonyString variable to the editor content
         window.sbmlString = editor.getValue();
       } else {
         editor = monaco.editor.create(editorRef.current, {
           bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
           value: content,
-          language: 'antimony',
+          language: "antimony",
           automaticLayout: true,
         });
         window.antimonyActive = true;
-        console.log('Antimony Editor');
+        console.log("Antimony Editor");
         // Set the antimonyString variable to the editor content
         window.antimonyString = editor.getValue();
       }
 
       // this actually doesn't work lol
-      setEditorDecorations(editor.createDecorationsCollection())
+      setEditorDecorations(editor.createDecorationsCollection());
 
       editor.addAction({
         id: "run-code",
         label: "Toggle Annotation Highlight",
         contextMenuOrder: 2,
         contextMenuGroupId: "1_modification",
-        keybindings: [
-          monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10,
-        ],
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
         run: (ed: monaco.editor.IStandaloneCodeEditor) => {
           setAnnotHighlightTurnedOn(!annotHighlighted);
         },
       });
 
-      // addes the create annotations option to 
+      // addes the create annotations option to
       // the context menu, checks if the cursor is on
-      // an actual variable or not. 
+      // an actual variable or not.
       editor.addAction({
         // An unique identifier of the contributed action.
         id: "create-annotation",
-      
+
         // A label of the action that will be presented to the user.
         label: "Create Annotations",
-      
+
         // An optional array of keybindings for the action.
         keybindings: [
           monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10,
@@ -179,17 +189,17 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM
           ),
         ],
-      
+
         // A precondition for this action.
         precondition: null,
-      
+
         // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
         keybindingContext: null,
-      
+
         contextMenuGroupId: "navigation",
-      
+
         contextMenuOrder: 1.5,
-      
+
         // Method that will be executed when the action is triggered.
         // @param editor The editor instance is passed in as a convenience
         run: function (ed: monaco.editor.IStandaloneCodeEditor) {
@@ -209,7 +219,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               let srcRange: SrcRange = new SrcRange(start, end);
 
               let varInfo: Variable | undefined;
-              console.log("waa")
+              console.log("waa");
 
               // check that user cursor is over an actual variable.
               let ST = ModelSemanticsChecker(ed, false, false);
@@ -218,11 +228,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
                 // alert(word.word + ", " + varInfo.idSrcRange.toString());
                 setModalVisible(true);
               } else {
-                console.log("asad")
                 alert("Please select a variable to annotate.");
               }
             } else {
-              console.log("asad")
               alert("Please select a variable to annotate.");
             }
           }
@@ -230,14 +238,14 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       });
 
       // Set language configuration for bracket pair colorization
-      monaco.languages.setLanguageConfiguration('antimony', {
+      monaco.languages.setLanguageConfiguration("antimony", {
         comments: {
-          lineComment: "//"
+          lineComment: "//",
         },
         brackets: [
-          ['{', '}'],
-          ['[', ']'],
-          ['(', ')'],
+          ["{", "}"],
+          ["[", "]"],
+          ["(", ")"],
         ],
       });
 
@@ -270,11 +278,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   }, [content, database, fileName]);
 
   useEffect(() => {
-    console.log("wapa")
+    console.log("wapa");
     if (editorInstance) {
       ModelSemanticsChecker(editorInstance, annotHighlighted, false, editorDecorations);
     }
-  }, [annotHighlighted, editorInstance])
+  }, [annotHighlighted, editorInstance]);
 
   /**
    * @description Saves the name and content of the file selected to IndexedDB
@@ -282,8 +290,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   useEffect(() => {
     if (database && editorInstance) {
       setNewContent(editorInstance.getValue());
-      const transaction = database.transaction('files', 'readwrite');
-      transaction.objectStore('files').put({
+      const transaction = database.transaction("files", "readwrite");
+      transaction.objectStore("files").put({
         name: selectedFile,
         content: newContent,
       });
@@ -295,10 +303,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    */
   useEffect(() => {
     if (chosenModel) {
-      const dropdown = document.getElementById('biomddropdown');
+      const dropdown = document.getElementById("biomddropdown");
       dropdown!.style.display = "none";
       setLoading(true);
-      if (chosenModel === '') {
+      if (chosenModel === "") {
         setLoading(false);
         return;
       }
@@ -325,10 +333,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       if (window.processAntimony) {
         window.processAntimony();
       } else {
-        console.error('processAntimony function not found in the global scope.');
+        console.error("processAntimony function not found in the global scope.");
       }
     } catch (err) {
-      console.log('Conversion error:', err);
+      console.log("Conversion error:", err);
     }
   };
 
@@ -340,10 +348,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       if (window.processSBML) {
         window.processSBML();
       } else {
-        console.error('processSBML function not found in the global scope.');
+        console.error("processSBML function not found in the global scope.");
       }
     } catch (err) {
-      console.log('Conversion error:', err);
+      console.log("Conversion error:", err);
     }
   };
 
@@ -363,44 +371,65 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   };
 
   useEffect(() => {
-    window.addEventListener('click', handleOutsideClick);
+    window.addEventListener("click", handleOutsideClick);
 
     return () => {
-      window.removeEventListener('click', handleOutsideClick);
+      window.removeEventListener("click", handleOutsideClick);
     };
   }, []);
 
   return (
     <>
-      <div className='menu'>
-        <input id="file-upload" type="file" multiple onChange={handleFileUpload} accept=".ant,.xml,.txt" />
-        <label htmlFor="file-upload" className='file-upload-label'>Load File(s)</label>
+      <div className="menu">
+        <input
+          id="file-upload"
+          type="file"
+          multiple
+          onChange={handleFileUpload}
+          accept=".ant,.xml,.txt"
+        />
+        <label htmlFor="file-upload" className="file-upload-label">
+          Load File(s)
+        </label>
         {/* <button className='button' onClick={save}> Save Changes </button> */}
         {/* <button className='btn'>Navigate to Edit Annotations</button> */}
         {/* <CustomButton name={'Insert Rate Law'} />
         <CustomButton name={'Annotated Variable Highlight Off'} /> */}
-        <div className='menu-middle'>
+        <div className="menu-middle">
           <Loader loading={loading} />
           <div>
-            <input id='biomodel-browse' type='text' placeholder='Search biomodels' />
-            <div id='biomddropdown'>
+            <input id="biomodel-browse" type="text" placeholder="Search biomodels" />
+            <div id="biomddropdown">
               <ul />
             </div>
           </div>
           <div className="dropdown" ref={dropdownRef}>
             <button onClick={handleButtonClick} className="dropbtn">
-              Convert Antimony/SBML
+              Antimony ↔ SBML
             </button>
-            <div id="myDropdown" className={`dropdown-content ${isDropdownVisible ? 'show' : ''}`}>
-              <button className='convert-button' onClick={handleConversionAnt}>Antimony → SBML</button>
-              <button className='convert-button' onClick={handleConversionSBML}>SBML → Antimony</button>
+            <div id="myDropdown" className={`dropdown-content ${isDropdownVisible ? "show" : ""}`}>
+              <button className="convert-button" onClick={handleConversionAnt}>
+                Antimony → SBML
+              </button>
+              <button className="convert-button" onClick={handleConversionSBML}>
+                SBML → Antimony
+              </button>
             </div>
           </div>
         </div>
-        <button className='download-button' onClick={() => handleDownload(editorInstance, fileName)}>Save File to Downloads Folder</button>
+        <button
+          className="download-button"
+          onClick={() => handleDownload(editorInstance, fileName)}
+        >
+          Save File to Downloads Folder
+        </button>
       </div>
       <div className="code-editor" ref={editorRef}></div>
-      {isModalVisible && <div ref={modalRef}><CreateAnnotationModal onClose={() => setModalVisible(false)} /></div>}
+      {isModalVisible && (
+        <div ref={modalRef}>
+          <CreateAnnotationModal onClose={() => setModalVisible(false)} />
+        </div>
+      )}
     </>
   );
 };
