@@ -212,35 +212,36 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
      // actually exists, since otherwise we cannot say that 
      // this variable has been assigned to.
      if (currST && ctx.decl_assignment()) {
-       let varInfo: Variable | undefined;
-       // because we visit the children first, it is
-       // gauranteed that the var is in the currST.
-       if ((varInfo = currST.getVar(varName)) !== undefined) {
-         if (varInfo.initSrcRange !== undefined) {
-           // warning case! reinitalization!
-           if (varInfo.initSrcRange) {
-             // adds warning to current id location
-             const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
-             const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
-             this.addError(errorUnderline1);
+        let varInfo: Variable | undefined;
+        // because we visit the children first, it is
+        // gauranteed that the var is in the currST.
+        if ((varInfo = currST.getVar(varName)) !== undefined) {
+          if (varInfo.initSrcRange !== undefined) {
+            // warning case! reinitalization!
+            if (varInfo.initSrcRange) {
+              // adds warning to current id location
+              const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
+              const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
+              this.addError(errorUnderline1);
 
-             // adds warning to previous id initialization location
-             const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
-             const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
-             this.addError(errorUnderline2);
-           }
-         }
-         varInfo.initSrcRange = currSrcRange;
-         // TODO: might make sense to initialize every var to a overarrching type?
-         // just straight up setting to a Paramter type here feels unelegant.
-         
-         
-        varInfo.type = varTypes.Parameter;
-        // for hovers
-        varInfo.value = ctx.decl_assignment()?.sum().text;
-        const refSrcRange: SrcRange = this.getSrcRange(nmbi.var_name().NAME())
-        varInfo.refLocations.set(refSrcRange.toString(), refSrcRange);
-       }
+              // adds warning to previous id initialization location
+              const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
+              const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
+              this.addError(errorUnderline2);
+            }
+          }
+          varInfo.initSrcRange = currSrcRange;
+          // TODO: might make sense to initialize every var to a overarrching type?
+          // just straight up setting to a Paramter type here feels unelegant.
+          
+          if (!isSubtTypeOf(varInfo.type, varTypes.Parameter) && isSubtTypeOf(varTypes.Parameter, varInfo.type)) {
+            varInfo.type = varTypes.Parameter;
+          }
+          // for hovers
+          varInfo.value = ctx.decl_assignment()?.sum().text;
+          const refSrcRange: SrcRange = this.getSrcRange(nmbi.var_name().NAME())
+          varInfo.refLocations.set(refSrcRange.toString(), refSrcRange);
+        }
      }
    }
   }
@@ -254,87 +255,92 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       return;
     }
 
-    // grammar def: declaration : decl_modifiers decl_item (',' decl_item)*;
-    if (ctx.children) {
-      // we visit the children first
-      // something like this is valid: "species B = 1, C = 2, D = 3;"
+    try {
+      // grammar def: declaration : decl_modifiers decl_item (',' decl_item)*;
+      if (ctx.children) {
+        // we visit the children first
+        // something like this is valid: "species B = 1, C = 2, D = 3;"
 
-      // visit children first for convenience, as we then have
-      // them inside the ST's for the following steps
-      for (let i = 0; i < ctx.children.length; i++) {
-        this.visit(ctx.children[i]);
-      }
-
-      // we are looping this way to only hit the Decl_itemContext nodes.
-      for (let i = 1; i < ctx.children.length; i+=2) {
-        const declItem: Decl_itemContext = ctx.children[i] as Decl_itemContext;
-        const varName: string = this.getVarName(declItem.namemaybein().var_name().text);
-        const currIdSrcRange: SrcRange = this.getSrcRange(declItem.namemaybein().var_name().NAME());
-        const currAssignSrcRange: SrcRange = this.getSrcRange(declItem);//(declItem.namemaybein().var_name().NAME());
-        const currST: SymbolTable | undefined = this.getCurrST();
-
-        // check if we are using $ to apply const
-        let varIsConst: boolean = (varName.charAt(0) === '$');
-        if (varIsConst) {
-          currAssignSrcRange.start.column += 1;
-          currIdSrcRange.start.column += 1;
+        // visit children first for convenience, as we then have
+        // them inside the ST's for the following steps
+        for (let i = 0; i < ctx.children.length; i++) {
+          this.visit(ctx.children[i]);
         }
 
-        let varInfo: Variable | undefined;
-        if (currST) {
-          varInfo = currST.getVar(varName);
-        }
+        // we are looping this way to only hit the Decl_itemContext nodes.
+        for (let i = 1; i < ctx.children.length; i+=2) {
+          const declItem: Decl_itemContext = ctx.children[i] as Decl_itemContext;
+          const varName: string = this.getVarName(declItem.namemaybein().var_name().text);
+          const currIdSrcRange: SrcRange = this.getSrcRange(declItem.namemaybein().var_name().NAME());
+          const currAssignSrcRange: SrcRange = this.getSrcRange(declItem);//(declItem.namemaybein().var_name().NAME());
+          const currST: SymbolTable | undefined = this.getCurrST();
 
-        // gauranteed to pass this check as children visited first.
-        if (varInfo) {
-          // for hover
-          varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
-          // type overried takes precedence over value reassignement.
-          // should this continue being the case, or should both cases be reported?
-          // for now keep it as report both.
-
-          // take care of modifiers
-          let declModifiers: Decl_modifiersContext = ctx.decl_modifiers();
-          varInfo.substanceOnly = (declModifiers.SUB_MODIFIER() !== undefined) || varInfo.substanceOnly;
-          varInfo.isConst = (declModifiers.VAR_MODIFIER()?.text === varTypes.Const) || varInfo.isConst;
-          let typeString: string | undefined = declModifiers.TYPE_MODIFIER()?.text;
-          
-          if (typeString) {
-            const type: varTypes = getTypeFromString(typeString);
-            
-            if (varInfo.canSetType(type)) {
-              varInfo.type = type;
-              varInfo.idSrcRange = currIdSrcRange;
-            } else {
-              // error! trying to overried previous type decl
-              const errorMessage = incompatibleTypesError(type, varInfo);
-              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currIdSrcRange, errorMessage, true);
-              this.addError(errorUnderline);
-            }
+          // check if we are using $ to apply const
+          let varIsConst: boolean = (varName.charAt(0) === '$');
+          if (varIsConst) {
+            currAssignSrcRange.start.column += 1;
+            currIdSrcRange.start.column += 1;
           }
 
-          // check if initialize node exists
-          if (declItem.decl_assignment()) {
-            // check if it is initialized.
-            // as the children are visited first.
-            if (varInfo.initSrcRange !== undefined) {
-              // warning case! reinitalization!
-              if (varInfo.initSrcRange && varInfo.initSrcRange.toString() !== currAssignSrcRange.toString()) {
-                console.log("washfa")
-                const errorMessage1: string = overriddenValueWarning(varName, currAssignSrcRange);
-                const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
-                this.addError(errorUnderline1);
+          let varInfo: Variable | undefined;
+          if (currST) {
+            varInfo = currST.getVar(varName);
+          }
 
-                const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
-                const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currAssignSrcRange, errorMessage2, false);
-                this.addError(errorUnderline2);
+          // gauranteed to pass this check as children visited first.
+          if (varInfo) {
+            // for hover
+            varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
+            // type overried takes precedence over value reassignement.
+            // should this continue being the case, or should both cases be reported?
+            // for now keep it as report both.
+
+            // take care of modifiers
+            let declModifiers: Decl_modifiersContext = ctx.decl_modifiers();
+            varInfo.substanceOnly = (declModifiers.SUB_MODIFIER() !== undefined) || varInfo.substanceOnly;
+            varInfo.isConst = (declModifiers.VAR_MODIFIER()?.text === varTypes.Const) || varInfo.isConst;
+            let typeString: string | undefined = declModifiers.TYPE_MODIFIER()?.text;
+            
+            if (typeString) {
+              const type: varTypes = getTypeFromString(typeString);
+              
+              if (varInfo.canSetType(type)) {
+                varInfo.type = type;
+                varInfo.idSrcRange = currIdSrcRange;
+              } else {
+                // error! trying to overried previous type decl
+                const errorMessage = incompatibleTypesError(type, varInfo);
+                const errorUnderline: ErrorUnderline = this.getErrorUnderline(currIdSrcRange, errorMessage, true);
+                this.addError(errorUnderline);
               }
             }
-            varInfo.initSrcRange = currAssignSrcRange;
+
+            // check if initialize node exists
+            if (declItem.decl_assignment()) {
+              // check if it is initialized.
+              // as the children are visited first.
+              if (varInfo.initSrcRange !== undefined) {
+                // warning case! reinitalization!
+                if (varInfo.initSrcRange && varInfo.initSrcRange.toString() !== currAssignSrcRange.toString()) {
+                  console.log("washfa")
+                  const errorMessage1: string = overriddenValueWarning(varName, currAssignSrcRange);
+                  const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
+                  this.addError(errorUnderline1);
+
+                  const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
+                  const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currAssignSrcRange, errorMessage2, false);
+                  this.addError(errorUnderline2);
+                }
+              }
+              varInfo.initSrcRange = currAssignSrcRange;
+            }
+            varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
           }
-          varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
         }
       }
+    } catch (e) {
+      console.log(e);
+      return;
     }
   }
 
@@ -377,7 +383,9 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           varInfo.initSrcRange = currSrcRange;
           // TODO: might make sense to initialize every var to a overarrching type?
           // just straight up setting to a Paramter type here feels unelegant.
-          varInfo.type = varTypes.Parameter;
+          if (!isSubtTypeOf(varInfo.type, varTypes.Parameter) && isSubtTypeOf(varTypes.Parameter, varInfo.type)) {
+            varInfo.type = varTypes.Parameter;
+          }
 
           // for hovers
           varInfo.value = ctx.sum().text;
@@ -741,21 +749,24 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     }
 
     const varName: string = ctx.var_name().text; // Get the species name
-    const annotationlink: string = ctx.ESCAPED_STRING().text; // Get the annotation
+    const annotationLink: string = ctx.ESCAPED_STRING().text; // Get the annotation
     const idSrcRange: SrcRange = this.getSrcRange(ctx.var_name().NAME());
+    const annotationKeyword: string = ctx.ANNOT_KEYWORD().text;
     
     const currST: SymbolTable | undefined = this.getCurrST();
     let varInfo = currST?.getVar(varName);
     if (varInfo) {
-      if (!varInfo.annotations.includes(annotationlink)) {
-        varInfo.annotations.push(annotationlink);
+      if (!varInfo.annotationKeywordMap.has(annotationLink)) {
+        varInfo.annotations.push(annotationLink);
+        varInfo.annotationKeywordMap.set(annotationLink, annotationKeyword);
       }
       // update ref locations for hover
       varInfo.refLocations.set(idSrcRange.toString(), idSrcRange);
     } else {
       // var does not exist, so create one
       const varInfo = new Variable(varTypes.Unknown, false, undefined, idSrcRange, undefined, false);
-      varInfo.annotations.push(annotationlink);
+      varInfo.annotations.push(annotationLink);
+      varInfo.annotationKeywordMap.set(annotationLink, annotationKeyword);
       currST?.setVar(varName, varInfo);
     }
 
@@ -769,8 +780,9 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
             const currAnnotLink = singleAnnot.ESCAPED_STRING().text;
 
             if (varInfo) {
-              if (!varInfo.annotations.includes(currAnnotLink)) {
+              if (!varInfo.annotationKeywordMap.has(currAnnotLink)) {
                 varInfo.annotations.push(currAnnotLink);
+                varInfo.annotationKeywordMap.set(currAnnotLink, annotationKeyword);
               }
             }
           }
