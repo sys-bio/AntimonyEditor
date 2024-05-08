@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import "./CreateAnnotationModal.css";
 
 import { getChebi, getUniProt, getRhea, getOntology } from "../../features/AnnotationSearch";
@@ -42,10 +42,14 @@ interface Database {
   searchFunction: (
     setLoading: React.Dispatch<React.SetStateAction<boolean>>,
     setSearchResults: React.Dispatch<React.SetStateAction<AnnotationInfo[]>>,
+    ref: React.RefObject<HTMLInputElement>,
     ontologyId?: string
   ) => void;
 }
 
+/**
+ * @description The databases to query from
+ */
 const databases: Database[] = [
   {
     label: "ChEBI",
@@ -115,8 +119,48 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose }
   const [loading, setLoading] = useState<boolean>(false);
   const [step, setStep] = useState<number>(1);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [chosenDatabase, setChosenDatabase] = useState<Database | null>(null);
   const [databaseSearchResults, setDatabaseSearchResults] = useState<Database[]>(databases);
   const [annotationSearchResults, setAnnotationSearchResults] = useState<AnnotationInfo[]>([]);
+
+  const chebiRef = useRef<HTMLInputElement>(null);
+  const uniprotRef = useRef<HTMLInputElement>(null);
+  const rheaRef = useRef<HTMLInputElement>(null);
+  const goRef = useRef<HTMLInputElement>(null);
+  const clRef = useRef<HTMLInputElement>(null);
+  const prRef = useRef<HTMLInputElement>(null);
+  const obiRef = useRef<HTMLInputElement>(null);
+  const fmaRef = useRef<HTMLInputElement>(null);
+  const maRef = useRef<HTMLInputElement>(null);
+
+  const refs: { [key: string]: React.RefObject<HTMLInputElement> } = useMemo(
+    () => ({
+      chebi: chebiRef,
+      uniprot: uniprotRef,
+      rhea: rheaRef,
+      go: goRef,
+      cl: clRef,
+      pr: prRef,
+      obi: obiRef,
+      fma: fmaRef,
+      ma: maRef,
+    }),
+    []
+  );
+
+  /**
+   * @description Initialize each searchbar with their search function
+   */
+  useEffect(() => {
+    if (step === 2 && chosenDatabase) {
+      chosenDatabase.searchFunction(
+        setLoading,
+        setAnnotationSearchResults,
+        refs[chosenDatabase.id],
+        chosenDatabase.id
+      );
+    }
+  }, [step, chosenDatabase, refs]);
 
   /**
    * @description Handle search input change
@@ -137,7 +181,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose }
   const handleSelectDatabase = (database: Database) => {
     setStep(2);
     setSearchTerm("");
-    database.searchFunction(setLoading, setAnnotationSearchResults, database.id);
+    setChosenDatabase(database);
     setAnnotationSearchResults([]);
   };
 
@@ -147,8 +191,8 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose }
   const handleBack = () => {
     setStep(1);
     setSearchTerm("");
+    setChosenDatabase(null);
     setDatabaseSearchResults(databases);
-    setAnnotationSearchResults([]);
   };
 
   /**
@@ -171,13 +215,26 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose }
         {step === 2 && <div className="filler" />}
       </div>
 
-      <input
-        id="annot-browse"
-        type="text"
-        value={searchTerm}
-        onChange={handleSearch}
-        placeholder={step === 1 ? "Pick a database to query" : "Enter query"}
-      />
+      {step === 1 && (
+        <input
+          id="annot-browse"
+          type="text"
+          value={searchTerm}
+          onChange={handleSearch}
+          placeholder="Pick a database to query"
+        />
+      )}
+
+      {step === 2 && chosenDatabase && (
+        <input
+          id="annot-browse"
+          type="text"
+          value={searchTerm}
+          onChange={handleSearch}
+          placeholder="Enter query"
+          ref={refs[chosenDatabase.id]}
+        />
+      )}
 
       <ul className="annot-results">
         {loading ? (

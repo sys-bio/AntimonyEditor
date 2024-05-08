@@ -214,39 +214,35 @@ export async function searchOntology(
       return undefined;
     }
 
-    let info: AnnotationInfo[] = [];
-    response.json().then((data) => {
-      for (let i = 0; i < data.elements.length; i++) {
-        if (
-          true ||
-          (data.elements[i].type[0] === "class" && data.elements[i].type[1] === "entity")
-        ) {
-          // get the description
-          let descrip: string = "";
-          if (typeof data.elements[i].description === "string") {
-            descrip = data.elements[i].description;
-          } else if (data.elements[i].definition?.value) {
-            descrip = data.elements[i].definition.value;
-          } else {
-            if (Array.isArray(data.elements[i].definition)) {
-              for (let j = 0; j < data.elements[i].definition.length; j++) {
-                if (data.elements[i].definition[j].value) {
-                  descrip = data.elements[i].definition[j].value;
-                  break;
-                }
+    const data = await response.json();
+    let info: AnnotationInfo[] = data.elements.map((result: any) => {
+      if (result.type[0] === "class" && result.type[1] === "entity") {
+        // Get description
+        let description: string = "";
+        if (typeof result.description === "string") {
+          description = result.description;
+        } else if (result.definition?.value) {
+          description = result.definition.value;
+        } else {
+          if (Array.isArray(result.definition)) {
+            for (let i = 0; i < result.definition.length; i++) {
+              if (result.definition[i].value) {
+                description = result.definition[i].value;
+                break;
               }
             }
           }
-          // add this element to the list of results.
-          let curr: AnnotationInfo = {
-            id: data.elements[i].curie,
-            name: data.elements[i].label,
-            description: descrip,
-            link: data.elements[i].iri,
-          };
-          info.push(curr);
         }
+
+        // Add this element to the list of results
+        return {
+          id: result.curie,
+          name: result.label,
+          description: description,
+          link: result.iri,
+        };
       }
+      return [];
     });
 
     return info;
@@ -258,165 +254,177 @@ export async function searchOntology(
 
 export function getChebi(
   setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setSearchResults: React.Dispatch<React.SetStateAction<AnnotationInfo[]>>
+  setSearchResults: React.Dispatch<React.SetStateAction<AnnotationInfo[]>>,
+  ref: React.RefObject<HTMLInputElement>
 ) {
   let timer: ReturnType<typeof setTimeout>;
   const waitTime = 1000;
 
-  const chebiBrowse = document.getElementById("annot-browse") as HTMLInputElement;
+  const chebiBrowse = ref.current;
 
-  chebiBrowse.addEventListener("keyup", async (val) => {
-    if ((val.target as HTMLInputElement).value.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    clearTimeout(timer);
-    timer = setTimeout(async () => {
-      setSearchResults([]);
-      setLoading(true);
-      const searchResults = await searchChebi(val, 100);
-
-      // Error: Unable to connect to ChEBI
-      if (searchResults === undefined) {
-        setLoading(false);
-        setSearchResults([unableToRetrieve]);
+  if (chebiBrowse) {
+    chebiBrowse.addEventListener("keyup", async (val) => {
+      if ((val.target as HTMLInputElement).value.length < 1) {
+        setSearchResults([]);
         return;
       }
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        setSearchResults([]);
+        setLoading(true);
+        const searchResults = await searchChebi(val, 100);
 
-      // No results found in ChEBI
-      if (searchResults.length === 0) {
+        // Error: Unable to connect to ChEBI
+        if (searchResults === undefined) {
+          setLoading(false);
+          setSearchResults([unableToRetrieve]);
+          return;
+        }
+
+        // No results found in ChEBI
+        if (searchResults.length === 0) {
+          setLoading(false);
+          setSearchResults([noResultsFound]);
+          return;
+        }
+
+        // Otherwise, display results
         setLoading(false);
-        setSearchResults([noResultsFound]);
-        return;
-      }
-
-      // Otherwise, display results
-      setLoading(false);
-      setSearchResults(searchResults);
-    }, waitTime);
-  });
+        setSearchResults(searchResults);
+      }, waitTime);
+    });
+  }
 }
 
 export function getUniProt(
   setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setSearchResults: React.Dispatch<React.SetStateAction<AnnotationInfo[]>>
+  setSearchResults: React.Dispatch<React.SetStateAction<AnnotationInfo[]>>,
+  ref: React.RefObject<HTMLInputElement>
 ) {
   let timer: ReturnType<typeof setTimeout>;
   const waitTime = 300;
 
-  const uniBrowse = document.getElementById("annot-browse") as HTMLInputElement;
+  const uniBrowse = ref.current;
 
-  uniBrowse.addEventListener("keyup", async (val) => {
-    if ((val.target as HTMLInputElement).value.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    clearTimeout(timer);
-    timer = setTimeout(async () => {
-      setSearchResults([]);
-      setLoading(true);
-      const searchResults = await searchUniProt(val, 100);
-
-      // Error: Unable to connect to UniProt
-      if (searchResults === undefined) {
-        setLoading(false);
-        setSearchResults([unableToRetrieve]);
+  if (uniBrowse) {
+    uniBrowse.addEventListener("keyup", async (val) => {
+      if ((val.target as HTMLInputElement).value.length < 1) {
+        setSearchResults([]);
         return;
       }
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        setSearchResults([]);
+        setLoading(true);
+        const searchResults = await searchUniProt(val, 100);
 
-      // No results found in UniProt
-      if (searchResults.length === 0) {
+        // Error: Unable to connect to UniProt
+        if (searchResults === undefined) {
+          setLoading(false);
+          setSearchResults([unableToRetrieve]);
+          return;
+        }
+
+        // No results found in UniProt
+        if (searchResults.length === 0) {
+          setLoading(false);
+          setSearchResults([noResultsFound]);
+          return;
+        }
+
+        // Otherwise, display results
         setLoading(false);
-        setSearchResults([noResultsFound]);
-        return;
-      }
-
-      // Otherwise, display results
-      setLoading(false);
-      setSearchResults(searchResults);
-    }, waitTime);
-  });
+        setSearchResults(searchResults);
+      }, waitTime);
+    });
+  }
 }
 
 export function getRhea(
   setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setSearchResults: React.Dispatch<React.SetStateAction<AnnotationInfo[]>>
+  setSearchResults: React.Dispatch<React.SetStateAction<AnnotationInfo[]>>,
+  ref: React.RefObject<HTMLInputElement>
 ) {
   let timer: ReturnType<typeof setTimeout>;
   const waitTime = 1000;
 
-  const rheaBrowse = document.getElementById("annot-browse") as HTMLInputElement;
+  const rheaBrowse = ref.current;
 
-  rheaBrowse.addEventListener("keyup", async (val) => {
-    if ((val.target as HTMLInputElement).value.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    clearTimeout(timer);
-    timer = setTimeout(async () => {
-      setSearchResults([]);
-      setLoading(true);
-      const searchResults = await searchRhea(val, 100);
-
-      // Error: Unable to connect to Rhea
-      if (searchResults === undefined) {
-        setLoading(false);
-        setSearchResults([unableToRetrieve]);
+  if (rheaBrowse) {
+    rheaBrowse.addEventListener("keyup", async (val) => {
+      if ((val.target as HTMLInputElement).value.length < 1) {
+        setSearchResults([]);
         return;
       }
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        setSearchResults([]);
+        setLoading(true);
+        const searchResults = await searchRhea(val, 100);
 
-      // No results found in Rhea
-      if (searchResults.length === 0) {
+        // Error: Unable to connect to Rhea
+        if (searchResults === undefined) {
+          setLoading(false);
+          setSearchResults([unableToRetrieve]);
+          return;
+        }
+
+        // No results found in Rhea
+        if (searchResults.length === 0) {
+          setLoading(false);
+          setSearchResults([noResultsFound]);
+          return;
+        }
+
+        // Otherwise, display results
+        setSearchResults(searchResults);
         setLoading(false);
-        setSearchResults([noResultsFound]);
-        return;
-      }
-
-      // Otherwise, display results
-      setSearchResults(searchResults);
-      setLoading(false);
-    }, waitTime);
-  });
+      }, waitTime);
+    });
+  }
 }
 
 export function getOntology(
   setLoading: React.Dispatch<React.SetStateAction<boolean>>,
   setSearchResults: React.Dispatch<React.SetStateAction<AnnotationInfo[]>>,
+  ref: React.RefObject<HTMLInputElement>,
   ontologyId?: string
 ) {
   let timer: ReturnType<typeof setTimeout>;
   const waitTime = 1000;
 
-  const ontologyBrowse = document.getElementById("annot-browse") as HTMLInputElement;
+  const ontologyBrowse = ref.current;
 
-  ontologyBrowse.addEventListener("keyup", async (val) => {
-    if ((val.target as HTMLInputElement).value.length < 2 || ontologyId === undefined) {
-      setSearchResults([]);
-      return;
-    }
-    clearTimeout(timer);
-    timer = setTimeout(async () => {
-      setSearchResults([]);
-      setLoading(true);
-      const searchResults = await searchOntology(val, 100, ontologyId);
-
-      // Error: Unable to connect to ontologyId
-      if (searchResults === undefined) {
-        setLoading(false);
-        setSearchResults([unableToRetrieve]);
+  if (ontologyBrowse) {
+    ontologyBrowse.addEventListener("keyup", async (val) => {
+      if ((val.target as HTMLInputElement).value.length < 1 || ontologyId === undefined) {
+        setSearchResults([]);
         return;
       }
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        setSearchResults([]);
+        setLoading(true);
+        const searchResults = await searchOntology(val, 100, ontologyId);
 
-      // No results found in ontologyId
-      if (searchResults.length === 0) {
+        // Error: Unable to connect to ontologyId
+        if (searchResults === undefined) {
+          setLoading(false);
+          setSearchResults([unableToRetrieve]);
+          return;
+        }
+
+        // No results found in ontologyId
+        if (searchResults.length === 0) {
+          setLoading(false);
+          setSearchResults([noResultsFound]);
+          return;
+        }
+
+        // Otherwise, display results
         setLoading(false);
-        setSearchResults([noResultsFound]);
-        return;
-      }
-
-      // Otherwise, display results
-      setLoading(false);
-      setSearchResults(searchResults);
-    }, waitTime);
-  });
+        setSearchResults(searchResults);
+      }, waitTime);
+    });
+  }
 }
