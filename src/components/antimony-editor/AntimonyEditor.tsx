@@ -102,6 +102,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const [annotHighlighted, setAnnotHighlightTurnedOn] = useState<boolean>(true);
   const [editorDecorations, setEditorDecorations] =
     useState<monaco.editor.IEditorDecorationsCollection | null>(null);
+  const [annotationAddPosition, setAnnotationAddPosition] = useState<SrcPosition | null>(null);
+  const [varToAnnotate, setVarToAnnotate] = useState<string | null>(null);
 
   /**
    * @description Loads the editor and sets the language, theme, and content
@@ -224,9 +226,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               // check that user cursor is over an actual variable.
               let ST = ModelSemanticsChecker(ed, false, false);
               console.log(ST);
-              if ((varInfo = ST.hasVarAtLocation(word.word, srcRange))) {
+              let varAndAnnotationPositionInfo = ST.hasVarAtLocation(word.word, srcRange);
+              if (varAndAnnotationPositionInfo) {
                 // alert(word.word + ", " + varInfo.idSrcRange.toString());
                 setModalVisible(true);
+                setAnnotationAddPosition(varAndAnnotationPositionInfo.annotationPositon);
+                setVarToAnnotate(word.word);
               } else {
                 alert("Please select a variable to annotate.");
               }
@@ -427,7 +432,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       <div className="code-editor" ref={editorRef}></div>
       {isModalVisible && (
         <div ref={modalRef}>
-          <CreateAnnotationModal onClose={() => setModalVisible(false)} />
+          <CreateAnnotationModal onClose={() => setModalVisible(false)} annotationAddPosition={annotationAddPosition} editorInstance={editorInstance} varToAnnotate={varToAnnotate}/>
         </div>
       )}
     </>

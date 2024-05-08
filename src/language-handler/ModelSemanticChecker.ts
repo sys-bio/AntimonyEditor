@@ -132,8 +132,11 @@ export class AntimonyProgramAnalyzer {
 
     // Parse the input, where `compilationUnit` is whatever entry point you defined
     this.tree = this.parser.root();
-
+    console.log(this.tree);
     this.globalST = new GlobalST();
+    // for annotation position
+    this.globalST.endLine = this.tree._stop?.line;
+    
     this.stVisitor = new SymbolTableVisitor(this.globalST);
     this.stVisitor.visit(this.tree);
     this.semanticVisitor = new SemanticVisitor(this.globalST);
@@ -191,7 +194,7 @@ export class AntimonyProgramAnalyzer {
           let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
           let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
           let srcRange: SrcRange = new SrcRange(start, end);
-          let varInfo: Variable | undefined = this.globalST.hasVarAtLocation(word.word, srcRange);
+          let varInfo: Variable | undefined = this.globalST.hasVarAtLocation(word.word, srcRange)?.varInfo;
           if (varInfo) {
             if (varInfo.type === varTypes.Model) {
               valueOfHover += this.getModelHover(word.word);

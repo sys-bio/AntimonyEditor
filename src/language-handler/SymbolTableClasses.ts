@@ -1,4 +1,4 @@
-import { SrcRange, varTypes } from "./Types";
+import { SrcPosition, SrcRange, varTypes } from "./Types";
 import { Variable } from "./Variable";
 
 
@@ -10,6 +10,7 @@ export class SymbolTable {
     // this variable is found to be declared.
     // this takes care of variable reassignment during ST buildup
     private varMap: Map<string, Variable>;
+    public endLine: number | undefined;
 
     constructor() {
         this.varMap = new Map();
@@ -117,30 +118,35 @@ export class GlobalST extends SymbolTable {
     }
 
     /**
-     * looks up a var with id that exists at srcRange
+     * @description looks up a var with id that exists at srcRange
+     *              checks if this variable exists in a non function context.
      * @param id 
      * @param srcRange 
-     * @returns the variable of the info of that variable if it exists
-     *          undefined if a variable does not exist at that location and id
+     * @returns a record with field "varInfo" holding information about the variable, and 
+     *          the field "annotationPosition" that gives the position where an annotation for
+     *          this variable would be inserted. If the variable does not exist, undefined is returned.
      */
-    hasVarAtLocation(id: string, srcRange: SrcRange): Variable | undefined {
+    hasVarAtLocation(id: string, srcRange: SrcRange) {
         let varInfo: Variable | undefined = this.getVar(id);
         if (varInfo && varInfo.refLocations.has(srcRange.toString())) {
-            return varInfo;
-        }
-
-        for (const [key, funcST] of this.funcMap) {
-            varInfo = funcST.getVar(id);
-            if (varInfo && varInfo.refLocations.has(srcRange.toString())) {
-                return varInfo;
+            let line = 0
+            if (this.endLine) {
+                line = this.endLine;
             }
+            // col is 0 since in global scope
+            return {varInfo: varInfo, annotationPositon: new SrcPosition(line, 0)};
         }
-
         
         for (const [key, modelST] of this.modelMap) {
             varInfo = modelST.getVar(id);
             if (varInfo && varInfo.refLocations.has(srcRange.toString())) {
-                return varInfo;
+                let line = 0;
+                if (modelST.endLine) {
+                    line = modelST.endLine;
+                }
+                // col is 2 for indent within a model, 
+                // TODO: don't hardcode this!
+                return {varInfo: varInfo, annotationPositon: new SrcPosition(line, 2)};
             }
         }
 

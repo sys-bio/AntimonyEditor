@@ -126,10 +126,17 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           }
         }
 
+        // record end position for potential annotation insert
+        let lastLine: number | undefined = ctx._stop?.line;
+        let currST = this.globalST.getModelST(modName);
+        if (currST) {
+          currST.endLine = lastLine;
+        }
+
         // go through what is inside this model
         this.setScopeVisitChildren(modName, ctx, 'model');
       } else {
-        // redeclared function, error
+        // redeclared Model, error
         // should make a function to return errorUnderlines.
         const errorMessage = modelAlreadyExistsError(modName, modelST.getPosition());
         let errorUnderline: ErrorUnderline = this.getErrorUnderline(this.getSrcRange(ctx), errorMessage, true);

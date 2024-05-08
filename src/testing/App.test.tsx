@@ -4,12 +4,125 @@ import * as fs from 'fs';
 import { join } from 'path';
 import { isSubtTypeOf, varTypes } from '../language-handler/Types';
 import { AntimonyProgramAnalyzer } from '../language-handler/ModelSemanticChecker';
+import { searchRhea } from '../features/AnnotationSearch';
 
 // test('renders learn react link', () => {
 //   render(<App />);
 //   const linkElement = screen.getByText(/learn react/i);
 //   expect(linkElement).toBeInTheDocument();
 // });
+let target = {value: ''} as HTMLInputElement;
+let searchInput: KeyboardEvent = {
+    target: target,
+    altKey: false,
+    charCode: 0,
+    code: '',
+    ctrlKey: false,
+    isComposing: false,
+    key: '',
+    keyCode: 0,
+    location: 0,
+    metaKey: false,
+    repeat: false,
+    shiftKey: false,
+    getModifierState: function (keyArg: string): boolean {
+        throw new Error('Function not implemented.');
+    },
+    initKeyboardEvent: function (typeArg: string, bubblesArg?: boolean | undefined, cancelableArg?: boolean | undefined, viewArg?: Window | null | undefined, keyArg?: string | undefined, locationArg?: number | undefined, ctrlKey?: boolean | undefined, altKey?: boolean | undefined, shiftKey?: boolean | undefined, metaKey?: boolean | undefined): void {
+        throw new Error('Function not implemented.');
+    },
+    DOM_KEY_LOCATION_STANDARD: 0,
+    DOM_KEY_LOCATION_LEFT: 1,
+    DOM_KEY_LOCATION_RIGHT: 2,
+    DOM_KEY_LOCATION_NUMPAD: 3,
+    detail: 0,
+    view: null,
+    which: 0,
+    initUIEvent: function (typeArg: string, bubblesArg?: boolean | undefined, cancelableArg?: boolean | undefined, viewArg?: Window | null | undefined, detailArg?: number | undefined): void {
+        throw new Error('Function not implemented.');
+    },
+    bubbles: false,
+    cancelBubble: false,
+    cancelable: false,
+    composed: false,
+    currentTarget: null,
+    defaultPrevented: false,
+    eventPhase: 0,
+    isTrusted: false,
+    returnValue: false,
+    srcElement: null,
+    timeStamp: 0,
+    type: '',
+    composedPath: function (): EventTarget[] {
+        throw new Error('Function not implemented.');
+    },
+    initEvent: function (type: string, bubbles?: boolean | undefined, cancelable?: boolean | undefined): void {
+        throw new Error('Function not implemented.');
+    },
+    preventDefault: function (): void {
+        throw new Error('Function not implemented.');
+    },
+    stopImmediatePropagation: function (): void {
+        throw new Error('Function not implemented.');
+    },
+    stopPropagation: function (): void {
+        throw new Error('Function not implemented.');
+    },
+    NONE: 0,
+    CAPTURING_PHASE: 1,
+    AT_TARGET: 2,
+    BUBBLING_PHASE: 3
+}
+
+describe('rhea search tests', function() {
+    it('test test test', async () => {
+        const result = await searchRhea({} as KeyboardEvent, 0);
+        assert.strictEqual(result, undefined);
+    })
+
+    it('no input text', async () => {
+        const result = await searchRhea(searchInput, 10);
+        assert.deepStrictEqual(result, []);
+    })
+
+    it('no input text 2', async () => {
+        (searchInput.target as HTMLInputElement).value = ''
+        const result = await searchRhea(searchInput, 1);
+        assert.deepStrictEqual(result, []);
+    })
+
+    // it('basic query', async () => {
+    //     global.fetch = () => Promise.resolve({
+    //         ok: true,
+    //         json: () => Promise.resolve({ results: [
+    //             {id: '1', equation: 'kevin' },
+    //             {id: '2', equation: 'edison' },
+    //             {id: '3', equation: 'eva' },
+    //             {id: '4', equation: 'anish' },
+    //             {id: '5', equation: 'steve' }
+    //         ]}),
+    //         // body: new Readable,
+    //         // bodyUsed: true,
+    //         // headers: new Headers(),
+    //         // redirected: false,
+    //         // status: 200,
+    //         // statusText: 'OK',
+    //         // type: 'cors',
+    //         // url: '',
+    //     });
+
+    //     (searchInput.target as HTMLInputElement).value = 'Test'
+    //     const result = await searchRhea(searchInput, 1);
+    //     assert.deepStrictEqual(result, [
+    //         {description: "", id: '1', name: 'kevin', link: "https://www.rhea-db.org/rhea/1"},
+    //         {description: "", id: '2', name: 'edison', link: "https://www.rhea-db.org/rhea/2"},
+    //         {description: "", id: '3', name: 'eva', link: "https://www.rhea-db.org/rhea/3"},
+    //         {description: "", id: '4', name: 'anish', link: "https://www.rhea-db.org/rhea/4"},
+    //         {description: "", id: '5', name: 'steve', link: "https://www.rhea-db.org/rhea/5"}
+    //     ]);
+    // })
+})
+
 
 jest.mock('monaco-editor', () => ({
   MarkerSeverity: {

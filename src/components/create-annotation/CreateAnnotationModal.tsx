@@ -1,15 +1,23 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import "./CreateAnnotationModal.css";
+import * as monaco from "monaco-editor";
 
 import { getChebi, getUniProt, getRhea, getOntology } from "../../features/AnnotationSearch";
+import { SrcPosition } from "../../language-handler/Types";
 
 /**
  * @description CreateAnnotationModal interface
  * @interface
  * @property {function} onClose - Function to close the modal
+ * @property {} annotationAddPosition - SrcPosition where the new annotation is to be added
+ * @property {} editorInstance - Monaco editor instance to add annotation to
+ * @property {} varToAnnotate - id of the var being annotated.
  */
 interface CreateAnnotationModalProps {
   onClose: () => void;
+  annotationAddPosition: SrcPosition | null;
+  editorInstance: monaco.editor.IStandaloneCodeEditor | null;
+  varToAnnotate: string | null;
 }
 
 /**
@@ -115,7 +123,7 @@ const TOTAL_STEPS = 2;
  * @example - <CreateAnnotationModal onClose={closeModal} />
  * @returns - CreateAnnotationModal component
  */
-const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose }) => {
+const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, annotationAddPosition, editorInstance, varToAnnotate}) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [step, setStep] = useState<number>(1);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -201,6 +209,23 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose }
   const handleCreateAnnotation = (annotation: AnnotationInfo) => {
     onClose();
     // TODO: Create annotation
+    console.log(annotationAddPosition);
+    
+    let line = 0;
+    let col = 0;
+    if (annotationAddPosition) {
+      line = annotationAddPosition.line;
+      col = annotationAddPosition.column;
+    }
+    let id = { major: 1, minor: 1 };
+    let spaces = ""
+    for (let i = 0; i < col; i++) {
+      spaces += " ";
+    }            
+    let text = spaces + varToAnnotate + " identity \"" + annotation.link + "\";\n";
+    let selection = new monaco.Range(line, 0, line, 0);
+    let op = {identifier: id, range: selection, text: text, forceMoveMarkers: true};
+    editorInstance?.executeEdits("my-source", [op]);
   };
 
   return (
