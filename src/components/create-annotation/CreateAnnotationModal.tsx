@@ -282,7 +282,8 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
                   : handleCreateAnnotation(annotation)
               }
             >
-              {annotation.name}
+              <span className="annotationName">{annotation.name}</span>
+              <span className="annotationDescription">{annotation.description}</span>
             </li>
           ))
         )}

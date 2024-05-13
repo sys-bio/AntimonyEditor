@@ -80,18 +80,51 @@ export async function searchChebi(
       throw new Error("Unable to establish a connection to ChEBI.");
     }
 
-    const info: AnnotationInfo[] = chebiList["getLiteEntityResponse"]["return"]["ListElement"].map(
-      (result: any) => ({
-        id: result.chebiId._text,
-        name: result.chebiAsciiName._text,
-        description: "", // TODO: Get description
-        link: "http://identifiers.org/chebi/" + result.chebiId._text,
-      })
-    );
+    // let info: AnnotationInfo[] = [];
+    let listElements = chebiList["getLiteEntityResponse"]["return"]["ListElement"];
+    let info: AnnotationInfo[] = await Promise.all(listElements.map( async (element: any) => {
+      let description: string = await getCompleteChebiEntity(element.chebiId._text);
+      return {
+        id: element.chebiId._text,
+        name: element.chebiAsciiName._text,
+        description: description, // TODO: Get description
+        link: "http://identifiers.org/chebi/" + element.chebiId._text,
+      }
+    }))
+
     return info;
   } catch (error) {
     console.log(error);
     return undefined;
+  }
+}
+
+/**
+ * @description Retreives the specific information relative to a given chebi id
+ * @param id The chebi id
+ * @returns {Promise<string | any>} promise holding the definition of the species (if it exists), otherwsie empty string or any.
+ */
+async function getCompleteChebiEntity(id: string): Promise<string | any> {
+  try {
+    const response = await fetch(corsProxyUrl + `https://www.ebi.ac.uk/webservices/chebi/2.0/test/getCompleteEntity?chebiId=${id}`);
+    
+    if (response.ok) {
+      const convert = require("xml-js");
+      const data = await response.text();
+      let jsonStr = convert.xml2json(data, {
+        compact: true,
+        spaces: 2,
+      });
+      const results = JSON.parse(jsonStr);
+      let resBody = results["S:Envelope"]["S:Body"];
+      
+      if (resBody["S:Fault"] === undefined) {
+        return resBody["getCompleteEntityResponse"]["return"]["definition"]._text as string;
+      }
+      return "";
+    }
+  } catch (e) {
+    return "";
   }
 }
 

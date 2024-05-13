@@ -82,3 +82,13 @@
 .database-detail {
   color: #777;
 }
+
+.annotationName {
+  display: block;
+  font-size: 14px;
+}
+
+.annotationDescription {
+  display: block;
+  font-size: 12px;
+}
