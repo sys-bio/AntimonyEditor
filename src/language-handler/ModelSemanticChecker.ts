@@ -49,8 +49,6 @@ class ErrorListener implements ANTLRErrorListener<any> {
  * @returns {GlobalST} the complete symbol table representing the program in the monaco editor.
  */
 export const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEditor, annotHighlightOn: boolean, setGeneralHoverInfo: boolean, decorations?: monaco.editor.IEditorDecorationsCollection | null): GlobalST => {
-  console.log(annotHighlightOn);
-  console.log(decorations);
   // const errors: ErrorUnderline[] = getErrors(removeCarriageReturn(editor.getValue()), true);
   const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue());
 
@@ -132,7 +130,7 @@ export class AntimonyProgramAnalyzer {
 
     // Parse the input, where `compilationUnit` is whatever entry point you defined
     this.tree = this.parser.root();
-    console.log(this.tree);
+    // console.log(this.tree);
     this.globalST = new GlobalST();
     // for annotation position
     this.globalST.endLine = this.tree._stop?.line;
