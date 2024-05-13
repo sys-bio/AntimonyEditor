@@ -71,7 +71,8 @@
     "test": "node scripts/test.js",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
-    "publish": "gh-pages -d src"
+    "publish": "gh-pages -d src",
+    "antlr4ts": "antlr4ts -visitor src/language-handler/antlr/AntimonyGrammar.g4 -o src/language-handler/antlr"
   },
   "eslintConfig": {
     "extends": [
@@ -96,6 +97,7 @@
     "@babel/preset-react": "^7.23.3",
     "@testing-library/react": "^14.2.1",
     "@testing-library/user-event": "^14.5.2",
+    "antlr4ts-cli": "^0.5.0-alpha.4",
     "babel-jest": "^29.7.0",
     "gh-pages": "^6.1.1",
     "jest": "^28.1.3",

@@ -1,4 +1,4 @@
-// Generated from /Users/evaliu/Documents/AntimonyEditor/src/languages/antlr/AntimonyGrammar.g4 by ANTLR 4.9.0-SNAPSHOT
+// Generated from src/language-handler/antlr/AntimonyGrammar.g4 by ANTLR 4.9.0-SNAPSHOT
 
 
 import { ParseTreeListener } from "antlr4ts/tree/ParseTreeListener";
