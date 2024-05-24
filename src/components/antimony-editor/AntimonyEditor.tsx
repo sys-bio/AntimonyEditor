@@ -110,7 +110,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    */
   useEffect(() => {
     if (editorRef.current) {
-      let editor: any;
+      let editor: monaco.editor.IStandaloneCodeEditor;
       // Load the custom language
       monaco.languages.register({ id: "antimony" });
       monaco.languages.setMonarchTokensProvider("antimony", antimonyLanguage);
@@ -157,6 +157,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         // Set the antimonyString variable to the editor content
         window.antimonyString = editor.getValue();
       }
+      
+      editor.updateOptions({tabSize: 2, wordBasedSuggestions: "currentDocument", tabCompletion: "on", suggestSelection:"recentlyUsedByPrefix"});
 
       // this actually doesn't work lol
       setEditorDecorations(editor.createDecorationsCollection());
@@ -193,10 +195,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         ],
 
         // A precondition for this action.
-        precondition: null,
+        precondition: undefined,
 
         // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
-        keybindingContext: null,
+        keybindingContext: undefined,
 
         contextMenuGroupId: "navigation",
 
@@ -283,7 +285,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   }, [content, database, fileName]);
 
   useEffect(() => {
-    console.log("wapa");
     if (editorInstance) {
       ModelSemanticsChecker(editorInstance, annotHighlighted, false, editorDecorations);
     }

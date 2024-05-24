@@ -33,6 +33,8 @@ interface AnnotationInfo {
   id: string;
   description: string;
   link?: string;
+  ec?: string[];
+  organism?: {scientificName: string, commonName: string};
 }
 
 /**
@@ -222,11 +224,47 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
     for (let i = 0; i < col; i++) {
       spaces += " ";
     }            
-    let text = spaces + varToAnnotate + " identity \"" + annotation.link + "\";\n";
+    let text = spaces + varToAnnotate + " identity \"" + annotation.link + "\"; //" + annotation.name +"\n" ;
+
     let selection = new monaco.Range(line, 0, line, 0);
     let op = {identifier: id, range: selection, text: text, forceMoveMarkers: true};
     editorInstance?.executeEdits("my-source", [op]);
+    let a: monaco.IMarkdownString;
+
+    editorInstance?.revealLineInCenter(line);
+    // TODO: try to select the new annotation to make it clear which line was added.
   };
+
+  /**
+   * @description Takes care of showing EC number and associated link for a rhea search
+   * @param annotation 
+   * @returns html holding EC number and link if EC numbers exist.
+   */
+  const handleRheaSearchResults = (annotation: AnnotationInfo) => {
+    if (annotation.ec && annotation.ec.length > 0) {
+      return (
+        <span className="annotationEC">
+            {annotation.ec.map((ec, index) => (
+              <span>EC:<a className="ecLink" href={"https://enzyme.expasy.org/EC/" + ec} target="_blank" rel="noopener noreferrer">{ec}</a></span>))}
+        </span>
+      )
+    }
+  }
+
+  /**
+   * Takes care of showing the organism scientific and commonName
+   * @param annotation 
+   * @returns 
+   */
+  const handleUniProtSearchResults = (annotation: AnnotationInfo) => {
+    if (annotation.organism) {
+      return (
+        <span className="annotationEC">Organism: {annotation.organism.scientificName} 
+          {annotation.organism.commonName && " (" + annotation.organism.commonName+")"}
+        </span>
+      )
+    }
+  }
 
   return (
     <div className="annot-modal" onClick={(e) => e.stopPropagation()}>
@@ -284,6 +322,8 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
             >
               <span className="annotationName">{annotation.name}</span>
               <span className="annotationDescription">{annotation.description}</span>
+              {handleRheaSearchResults(annotation)}
+              {handleUniProtSearchResults(annotation)}
             </li>
           ))
         )}

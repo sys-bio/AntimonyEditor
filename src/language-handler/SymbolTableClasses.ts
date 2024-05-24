@@ -11,9 +11,11 @@ export class SymbolTable {
     // this takes care of variable reassignment during ST buildup
     private varMap: Map<string, Variable>;
     public endLine: number | undefined;
+    public annotationSet: Set<string>;
 
     constructor() {
         this.varMap = new Map();
+        this.annotationSet = new Set();
     }
 
     /**
@@ -131,7 +133,7 @@ export class GlobalST extends SymbolTable {
         if (varInfo && varInfo.refLocations.has(srcRange.toString())) {
             let line = 0
             if (this.endLine) {
-                line = this.endLine;
+                line = this.endLine + 1;
             }
             // col is 0 since in global scope
             return {varInfo: varInfo, annotationPositon: new SrcPosition(line, 0)};

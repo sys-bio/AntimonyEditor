@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { join } from 'path';
 import { isSubtTypeOf, varTypes } from '../language-handler/Types';
 import { AntimonyProgramAnalyzer } from '../language-handler/ModelSemanticChecker';
-import { searchRhea } from '../features/AnnotationSearch';
+import { searchOntology, searchRhea } from '../features/AnnotationSearch';
 
 // test('renders learn react link', () => {
 //   render(<App />);
@@ -74,7 +74,7 @@ let searchInput: KeyboardEvent = {
     BUBBLING_PHASE: 3
 }
 
-describe('rhea search tests', function() {
+describe('search tests', function() {
     it('test test test', async () => {
         const result = await searchRhea({} as KeyboardEvent, 0);
         assert.strictEqual(result, undefined);
@@ -91,7 +91,7 @@ describe('rhea search tests', function() {
         assert.deepStrictEqual(result, []);
     })
 
-    // it('basic query', async () => {
+    // it('basic rhea query', async () => {
     //     global.fetch = () => Promise.resolve({
     //         ok: true,
     //         json: () => Promise.resolve({ results: [
@@ -119,6 +119,29 @@ describe('rhea search tests', function() {
     //         {description: "", id: '3', name: 'eva', link: "https://www.rhea-db.org/rhea/3"},
     //         {description: "", id: '4', name: 'anish', link: "https://www.rhea-db.org/rhea/4"},
     //         {description: "", id: '5', name: 'steve', link: "https://www.rhea-db.org/rhea/5"}
+    //     ]);
+    // })
+
+    // it('basic ontology query', async () => {
+    //     global.fetch = () => Promise.resolve({
+    //         ok: true,
+    //         json: () => Promise.resolve({ results: {elements: [
+    //             {curie: '1', label: 'kevin', description: {value: "goat"}, iri: "link1", type: ["class", "entity"]},
+    //             {curie: '2', label: 'edison', description: {value: "slack variable"}, iri: "link2", type: ["class", "entity"]},
+    //             {curie: '3', label: 'eva' , description: {value: "god"}, iri: "link3", type: ["class", "entity"]},
+    //             {curie: '4', label: 'anish', description: {value: "smart"}, iri: "link4", type: ["class", "entity"]},
+    //             {curie: '5', label: 'steve', description: {value: "the steve"}, iri:"link5", type: ["class", "entity"]}
+    //         ]}}),
+    //     });
+
+    //     (searchInput.target as HTMLInputElement).value = 'Test'
+    //     const result = await searchOntology(searchInput, 1, "go");
+    //     assert.deepStrictEqual(result, [
+    //         {description: "goat", id: '1', name: 'kevin', link: "https://www.rhea-db.org/rhea/1"},
+    //         {description: "slack variable", id: '2', name: 'edison', link: "https://www.rhea-db.org/rhea/2"},
+    //         {description: "god", id: '3', name: 'eva', link: "https://www.rhea-db.org/rhea/3"},
+    //         {description: "smart", id: '4', name: 'anish', link: "https://www.rhea-db.org/rhea/4"},
+    //         {description: "the steve", id: '5', name: 'steve', link: "https://www.rhea-db.org/rhea/5"}
     //     ]);
     // })
 })

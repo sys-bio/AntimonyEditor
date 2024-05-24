@@ -187,6 +187,11 @@ export class AntimonyProgramAnalyzer {
   
         // Check if word exists
         if (word) {
+          // set range for hover
+          let hoverLine = position.lineNumber;
+          let hoverColumnStart = word.startColumn;
+          let hoverColumnEnd = word.endColumn;
+
           // check if variable with id word.word exists at the given position range.
           // if it does use the stored variable info to create a hover.
           let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
@@ -224,16 +229,58 @@ export class AntimonyProgramAnalyzer {
                 valueOfAnnotation += `<span style="color:#d33682;">${keyword} ${annotation.replace(/"/g, "")}</span> <br/> `;
               });
             } 
+
+            // add valueOfHover and valueOfAnnotation to hoverContents
+            hoverContents.push(
+              { supportHtml: true,
+                value: valueOfHover,
+              });
+            hoverContents.push(
+              { supportHtml: true,
+                value:  valueOfAnnotation });
+          } else {
+            // check if it is an annotation string.
+            let line: string = model.getLineContent(position.lineNumber);
+            let split: string[] = line.split('"');
+
+            let startCol = word.startColumn;
+            let endCol = word.startColumn;
+
+            while (startCol >= 0) {
+              if (line.charAt(startCol) === '"' || line.charAt(startCol) === ' ') {
+                startCol++;
+                break;
+              }
+              startCol--;
+            }
+
+            while (endCol < line.length) {
+              if (line.charAt(endCol) === '"' || line.charAt(endCol) === ' ' || line.charAt(endCol) === '\r' || line.charAt(endCol) === '\n') {
+                break;
+              }
+              endCol++;
+            }
+            let foundString: string = line.substring(startCol, endCol + 1)
+            if (foundString.charAt(0) === '"' && foundString.charAt(foundString.length - 1) === '"') {
+              foundString = foundString.replace('"', '');
+              startCol++;
+              endCol--;
+            }
+            console.log("found: " + foundString);
+            console.log(this.globalST.annotationSet);
+            if (this.isValidUrl(foundString) || this.globalST.annotationSet.has("\"" + foundString + "\"")) {
+              hoverContents.push(
+                {
+                  value: foundString,
+                }
+              )
+              // set new hover bounds to be that of the url
+              hoverColumnStart = startCol + 1;
+              hoverColumnEnd = endCol + 1;
+            }
           }
-          // add valueOfHover and valueOfAnnotation to hoverContents
-          hoverContents.push(
-            { supportHtml: true,
-              value:  valueOfHover });
-          hoverContents.push(
-            { supportHtml: true,
-              value:  valueOfAnnotation });
           return {
-            range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
+            range: new monaco.Range(hoverLine, hoverColumnStart, hoverLine, hoverColumnEnd),
             contents: hoverContents,
           };
         }
@@ -241,6 +288,17 @@ export class AntimonyProgramAnalyzer {
     });
     return hoverInfo;
   }
+
+  private isValidUrl(urlString: string): boolean {
+    let url;
+		try { 
+      url =new URL(urlString); 
+    }
+    catch(e){ 
+      return false; 
+    }
+    return url.protocol === "http:" || url.protocol === "https:";
+}
 
   /**
    * Gets string of what should appear when hovering over a model's id
