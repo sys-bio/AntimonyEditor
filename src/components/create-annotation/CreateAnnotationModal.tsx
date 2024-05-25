@@ -173,13 +173,14 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
   }, [step, chosenDatabase, refs]);
 
   /**
-   * @description Handle search input change
+   * @description Handle search input change, looks for matches on database name, as well as
+   * the type of variable the database is commonly used for, eg: species, compartments, reactions, etc.
    */
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
     if (step === 1) {
       const filtered = databases.filter((database) =>
-        database.label.toLowerCase().includes(event.target.value.toLowerCase())
+        database.label.toLowerCase().includes(event.target.value.toLowerCase()) || database.detail.toLowerCase().includes(event.target.value.toLowerCase())
       );
       setDatabaseSearchResults(filtered);
     }
@@ -241,11 +242,14 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
    * @returns html holding EC number and link if EC numbers exist.
    */
   const handleRheaSearchResults = (annotation: AnnotationInfo) => {
-    if (annotation.ec && annotation.ec.length > 0) {
+    if (annotation.ec && annotation.ec.length > 1) {
+      let len = annotation.ec.length;
       return (
         <span className="annotationEC">
             {annotation.ec.map((ec, index) => (
-              <span>EC:<a className="ecLink" href={"https://enzyme.expasy.org/EC/" + ec} target="_blank" rel="noopener noreferrer">{ec}</a></span>))}
+              <span>EC:<a className="ecLink" href={"https://enzyme.expasy.org/EC/" + ec} target="_blank" rel="noopener noreferrer">{ec}</a>
+              {annotation.ec && len > 1 && index < len - 1 && ", "}
+              </span>))}
         </span>
       )
     }
@@ -274,7 +278,10 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
             Back
           </button>
         )}
-        <div className="modal-title">{`Create Annotation (${step}/${TOTAL_STEPS})`}</div>
+        <div className="modal-title">
+          {step === 2 && `${chosenDatabase?.label} (${step}/${TOTAL_STEPS})`}
+          {step === 1 && `Create Annotation (${step}/${TOTAL_STEPS})`}
+        </div>
         {step === 2 && <div className="filler" />}
       </div>
 

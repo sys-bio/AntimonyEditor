@@ -7,7 +7,6 @@ import { SymbolTableVisitor } from './SymbolTableVisitor';
 import { SemanticVisitor } from './SemanticVisitor';
 import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from './Types';
 import { Variable } from './Variable';
-// import './MCS.css';
 
 
 /**
@@ -77,6 +76,7 @@ export const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEdito
       decorations.clear();
     }
   }
+
   const errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
   if (setGeneralHoverInfo) {
     const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
