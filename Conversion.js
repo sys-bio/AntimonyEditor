@@ -94,7 +94,7 @@ function processSBML() {
       clearPreviousLoads();
       var ptrSBMLCode = jsAllocateUTF8(sbmlCode);
       var load_int = loadSBMLString(sbmlCode);
-      //console.log("processSBML: int returned: ", load_int);
+
       if (load_int > 0) {
         antResult = getAntimonyString();
         if (window.conversion != "standard") {
