@@ -17,7 +17,7 @@ type AnnotationInfo = {
 const unableToRetrieve: AnnotationInfo = {
   name: "Unable to retrieve data from the database",
   id: "unable-to-retrieve",
-  description: "Unable to retrieve data from the database",
+  description: "",
 };
 
 /**
@@ -26,7 +26,7 @@ const unableToRetrieve: AnnotationInfo = {
 const noResultsFound: AnnotationInfo = {
   name: "No results found",
   id: "no-results-found",
-  description: "No results found",
+  description: "",
 };
 
 /**
@@ -82,15 +82,17 @@ export async function searchChebi(
 
     // let info: AnnotationInfo[] = [];
     let listElements = chebiList["getLiteEntityResponse"]["return"]["ListElement"];
-    let info: AnnotationInfo[] = await Promise.all(listElements.map( async (element: any) => {
-      let description: string = await getCompleteChebiEntity(element.chebiId._text);
-      return {
-        id: element.chebiId._text,
-        name: element.chebiAsciiName._text,
-        description: description, // TODO: Get description
-        link: "http://identifiers.org/chebi/" + element.chebiId._text,
-      }
-    }))
+    let info: AnnotationInfo[] = await Promise.all(
+      listElements.map(async (element: any) => {
+        let description: string = await getCompleteChebiEntity(element.chebiId._text);
+        return {
+          id: element.chebiId._text,
+          name: element.chebiAsciiName._text,
+          description: description, // TODO: Get description
+          link: "http://identifiers.org/chebi/" + element.chebiId._text,
+        };
+      })
+    );
 
     return info;
   } catch (error) {
@@ -106,8 +108,11 @@ export async function searchChebi(
  */
 async function getCompleteChebiEntity(id: string): Promise<string | any> {
   try {
-    const response = await fetch(corsProxyUrl + `https://www.ebi.ac.uk/webservices/chebi/2.0/test/getCompleteEntity?chebiId=${id}`);
-    
+    const response = await fetch(
+      corsProxyUrl +
+        `https://www.ebi.ac.uk/webservices/chebi/2.0/test/getCompleteEntity?chebiId=${id}`
+    );
+
     if (response.ok) {
       const convert = require("xml-js");
       const data = await response.text();
@@ -117,7 +122,7 @@ async function getCompleteChebiEntity(id: string): Promise<string | any> {
       });
       const results = JSON.parse(jsonStr);
       let resBody = results["S:Envelope"]["S:Body"];
-      
+
       if (resBody["S:Fault"] === undefined) {
         return resBody["getCompleteEntityResponse"]["return"]["definition"]._text as string;
       }

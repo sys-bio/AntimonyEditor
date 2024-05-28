@@ -69,12 +69,12 @@
   padding: 10px;
 }
 
-.annot-results li:not(.unable-to-retrieve, .no-results-found) {
+.annot-results li:not(.loading, .unable-to-retrieve, .no-results-found) {
   cursor: pointer;
   transition: background-color 0.3s;
 }
 
-.annot-results li:hover:not(.unable-to-retrieve, .no-results-found),
+.annot-results li:hover:not(.loading, .unable-to-retrieve, .no-results-found),
 .button:hover {
   background-color: #333;
 }

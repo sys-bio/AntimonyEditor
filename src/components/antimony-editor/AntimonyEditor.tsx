@@ -99,7 +99,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
   const [selectedFile, setSelectedFile] = useState<string>("");
-  const [annotHighlighted, setAnnotHighlightTurnedOn] = useState<boolean>(true);
+  const [annotHighlightedOn, setAnnotHighlightedOn] = useState<boolean>(false);
   const [editorDecorations, setEditorDecorations] =
     useState<monaco.editor.IEditorDecorationsCollection | null>(null);
   const [annotationAddPosition, setAnnotationAddPosition] = useState<SrcPosition | null>(null);
@@ -161,17 +161,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       // this actually doesn't work lol
       setEditorDecorations(editor.createDecorationsCollection());
 
-      editor.addAction({
-        id: "run-code",
-        label: "Toggle Annotation Highlight",
-        contextMenuOrder: 2,
-        contextMenuGroupId: "1_modification",
-        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
-        run: (ed: monaco.editor.IStandaloneCodeEditor) => {
-          setAnnotHighlightTurnedOn(!annotHighlighted);
-        },
-      });
-
       // addes the create annotations option to
       // the context menu, checks if the cursor is on
       // an actual variable or not.
@@ -200,35 +189,26 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
         contextMenuGroupId: "navigation",
 
-        contextMenuOrder: 1.5,
+        contextMenuOrder: 1,
 
         // Method that will be executed when the action is triggered.
         // @param editor The editor instance is passed in as a convenience
         run: function (ed: monaco.editor.IStandaloneCodeEditor) {
-          // debugger;
-          // alert("i'm running => " + ed.getPosition());
           const position = ed.getPosition();
-          console.log("wow");
           if (position) {
             const word = ed.getModel()?.getWordAtPosition(position);
-            console.log("wee");
 
             if (word) {
-              // check if variable with id word.word exists at the given position range.
-              // if it does use the stored variable info to create a hover.
+              // Check if variable with id word.word exists at the given position range.
+              // If it does, use the stored variable info to create a hover.
               let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
               let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
               let srcRange: SrcRange = new SrcRange(start, end);
 
-              let varInfo: Variable | undefined;
-              console.log("waa");
-
-              // check that user cursor is over an actual variable.
+              // Check that user cursor is over an actual variable.
               let ST = ModelSemanticsChecker(ed, false, false);
-              console.log(ST);
               let varAndAnnotationPositionInfo = ST.hasVarAtLocation(word.word, srcRange);
               if (varAndAnnotationPositionInfo) {
-                // alert(word.word + ", " + varInfo.idSrcRange.toString());
                 setModalVisible(true);
                 setAnnotationAddPosition(varAndAnnotationPositionInfo.annotationPositon);
                 setVarToAnnotate(word.word);
@@ -239,6 +219,32 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               alert("Please select a variable to annotate.");
             }
           }
+        },
+      });
+
+      // Adds the "Toggle Annotated Variable Indications On" option to the context menu.
+      // Checks if the cursor is on an actual variable or not.
+      editor.addAction({
+        // An unique identifier of the contributed action.
+        id: "highlight-annotation",
+
+        // A label of the action that will be presented to the user.
+        label: "Toggle Annotated Variable Indications On",
+
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+
+        // A precondition for this action.
+        precondition: null,
+
+        // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
+        keybindingContext: null,
+
+        contextMenuGroupId: "navigation",
+
+        contextMenuOrder: 1.5,
+
+        run: function (editor: monaco.editor.IStandaloneCodeEditor) {
+          setAnnotHighlightedOn((prevAnnotHighlightedOn) => !prevAnnotHighlightedOn);
         },
       });
 
@@ -262,7 +268,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
           // ModelParser(editor, true);
-          ModelSemanticsChecker(editor, annotHighlighted, true, editorDecorations);
+          ModelSemanticsChecker(editor, annotHighlightedOn, true, editorDecorations);
         }, 600);
       };
 
@@ -283,11 +289,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   }, [content, database, fileName]);
 
   useEffect(() => {
-    console.log("wapa");
     if (editorInstance) {
-      ModelSemanticsChecker(editorInstance, annotHighlighted, false, editorDecorations);
+      ModelSemanticsChecker(editorInstance, annotHighlightedOn, false, editorDecorations);
     }
-  }, [annotHighlighted, editorInstance]);
+  }, [annotHighlightedOn, editorInstance]);
 
   /**
    * @description Saves the name and content of the file selected to IndexedDB
@@ -432,7 +437,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       <div className="code-editor" ref={editorRef}></div>
       {isModalVisible && (
         <div ref={modalRef}>
-          <CreateAnnotationModal onClose={() => setModalVisible(false)} annotationAddPosition={annotationAddPosition} editorInstance={editorInstance} varToAnnotate={varToAnnotate}/>
+          <CreateAnnotationModal
+            onClose={() => setModalVisible(false)}
+            annotationAddPosition={annotationAddPosition}
+            editorInstance={editorInstance}
+            varToAnnotate={varToAnnotate}
+          />
         </div>
       )}
     </>
