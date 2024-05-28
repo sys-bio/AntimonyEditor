@@ -30,7 +30,6 @@ class ErrorListener implements ANTLRErrorListener<any> {
     msg: string,
     e: RecognitionException | undefined
   ): void {
-    // console.log(offendingSymbol)
     this.errors.push({line: line, column: charPositionInLine, msg: msg});
   }
 
@@ -59,7 +58,6 @@ export const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEdito
       for (let i = 0; i < highlightVars.length; i++) {
         const varInfo: Variable = highlightVars[i];
         for (const [key, range] of varInfo.refLocations) {
-          console.log("a");
           let mRange = new monaco.Range(range.start.line, range.start.column, range.end.line, range.end.column);
           editor.createDecorationsCollection([
             {
@@ -77,7 +75,6 @@ export const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEdito
     }
   }
 
-  const errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
   if (setGeneralHoverInfo) {
     const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
     if (hoverInfo) {
@@ -92,6 +89,7 @@ export const ModelSemanticsChecker = (editor: monaco.editor.IStandaloneCodeEdito
 
 
   // this is how to add error squiglies 
+  const errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
   let model: monaco.editor.ITextModel | null = editor.getModel();
   if (model !== null) {
     monaco.editor.removeAllMarkers("owner");
@@ -130,7 +128,6 @@ export class AntimonyProgramAnalyzer {
 
     // Parse the input, where `compilationUnit` is whatever entry point you defined
     this.tree = this.parser.root();
-    // console.log(this.tree);
     this.globalST = new GlobalST();
     // for annotation position
     this.globalST.endLine = this.tree._stop?.line;
@@ -139,7 +136,6 @@ export class AntimonyProgramAnalyzer {
     this.stVisitor.visit(this.tree);
     this.semanticVisitor = new SemanticVisitor(this.globalST);
     this.semanticVisitor.visit(this.tree);
-    // console.log(this.globalST);
 
     this.hoverKeyWordColor = new Map();
     this.hoverKeyWordColor.set(varTypes.Species, "#FD7F20");
@@ -266,11 +262,10 @@ export class AntimonyProgramAnalyzer {
               startCol++;
               endCol--;
             }
-            console.log("found: " + foundString);
-            console.log(this.globalST.annotationSet);
             if (this.isValidUrl(foundString) || this.globalST.annotationSet.has("\"" + foundString + "\"")) {
               hoverContents.push(
                 {
+                  supportHtml: true,
                   value: foundString,
                 }
               )
@@ -447,11 +442,9 @@ export function getErrors(antimonyCode: string, includeParseErrors: boolean): Er
   // Parse the input, where `compilationUnit` is whatever entry point you defined
   let tree = parser.root();
   // printing the tree for debugging purposes
-  // console.log(tree);
   
   // create and buildup a global symbol table from the parse tree.
   let globalSymbolTable: GlobalST = new GlobalST();
-  // console.log(globalSymbolTable);
   const stVisitor: SymbolTableVisitor = new SymbolTableVisitor(globalSymbolTable);
   stVisitor.visit(tree);
   const semanticVisitor: SemanticVisitor = new SemanticVisitor(stVisitor.globalST);

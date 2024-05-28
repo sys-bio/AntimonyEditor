@@ -126,9 +126,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         .get(fileName)
         .then((data) => {
           if (data) {
-            // setOriginalContent(data.content);
             setNewContent(data.content);
-            // setSelectedFile(data.name);
             window.selectedFile = data.name;
             editor.setValue(data.content);
           }
@@ -210,10 +208,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           // debugger;
           // alert("i'm running => " + ed.getPosition());
           const position = ed.getPosition();
-          console.log("wow");
           if (position) {
             const word = ed.getModel()?.getWordAtPosition(position);
-            console.log("wee");
 
             if (word) {
               // check if variable with id word.word exists at the given position range.
@@ -223,14 +219,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               let srcRange: SrcRange = new SrcRange(start, end);
 
               let varInfo: Variable | undefined;
-              console.log("waa");
 
               // check that user cursor is over an actual variable.
               let ST = ModelSemanticsChecker(ed, false, false);
-              console.log(ST);
               let varAndAnnotationPositionInfo = ST.hasVarAtLocation(word.word, srcRange);
               if (varAndAnnotationPositionInfo) {
-                // alert(word.word + ", " + varInfo.idSrcRange.toString());
                 setModalVisible(true);
                 setAnnotationAddPosition(varAndAnnotationPositionInfo.annotationPositon);
                 setVarToAnnotate(word.word);
@@ -263,7 +256,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
-          // ModelParser(editor, true);
           ModelSemanticsChecker(editor, annotHighlighted, true, editorDecorations);
         }, 600);
       };
