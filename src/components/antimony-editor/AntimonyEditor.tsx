@@ -11,7 +11,6 @@ import ModelSemanticsChecker from "../../language-handler/ModelSemanticChecker";
 import handleDownload from "../../features/HandleDownload";
 import { IDBPDatabase, DBSchema } from "idb";
 import { SrcPosition, SrcRange } from "../../language-handler/Types";
-import { Variable } from "../../language-handler/Variable";
 
 /**
  * @description AntimonyEditorProps interface
@@ -100,8 +99,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
   const [selectedFile, setSelectedFile] = useState<string>("");
   const [annotHighlightedOn, setAnnotHighlightedOn] = useState<boolean>(false);
-  const [editorDecorations, setEditorDecorations] =
-    useState<monaco.editor.IEditorDecorationsCollection | null>(null);
   const [annotationAddPosition, setAnnotationAddPosition] = useState<SrcPosition | null>(null);
   const [varToAnnotate, setVarToAnnotate] = useState<string | null>(null);
 
@@ -158,12 +155,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         window.antimonyString = editor.getValue();
       }
 
-      // this actually doesn't work lol
-      setEditorDecorations(editor.createDecorationsCollection());
-
-      // addes the create annotations option to
-      // the context menu, checks if the cursor is on
-      // an actual variable or not.
+      // Adds the create annotations option to the context menu
+      // Checks if the cursor is on an actual variable or not
       editor.addAction({
         // An unique identifier of the contributed action.
         id: "create-annotation",
@@ -222,14 +215,14 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         },
       });
 
-      // Adds the "Toggle Annotated Variable Indications On" option to the context menu.
+      // Adds the "Highlight Unannotated Variables" option to the context menu.
       // Checks if the cursor is on an actual variable or not.
       editor.addAction({
         // An unique identifier of the contributed action.
         id: "highlight-annotation",
 
         // A label of the action that will be presented to the user.
-        label: "Toggle Annotated Variable Indications On",
+        label: `Highlight Unannotated Variables ${annotHighlightedOn ? "Off" : "On"}`,
 
         keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
 
@@ -268,7 +261,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
           // ModelParser(editor, true);
-          ModelSemanticsChecker(editor, annotHighlightedOn, true, editorDecorations);
+          ModelSemanticsChecker(editor, annotHighlightedOn, true);
         }, 600);
       };
 
@@ -286,11 +279,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
       return () => editor.dispose();
     }
-  }, [content, database, fileName]);
+  }, [annotHighlightedOn, content, database, fileName]);
 
   useEffect(() => {
     if (editorInstance) {
-      ModelSemanticsChecker(editorInstance, annotHighlightedOn, false, editorDecorations);
+      ModelSemanticsChecker(editorInstance, annotHighlightedOn, false);
     }
   }, [annotHighlightedOn, editorInstance]);
 

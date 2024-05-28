@@ -56,44 +56,19 @@ class ErrorListener implements ANTLRErrorListener<any> {
 export const ModelSemanticsChecker = (
   editor: monaco.editor.IStandaloneCodeEditor,
   annotHighlightOn: boolean,
-  setGeneralHoverInfo: boolean,
-  decorations?: monaco.editor.IEditorDecorationsCollection | null
+  setGeneralHoverInfo: boolean
 ): GlobalST => {
   // const errors: ErrorUnderline[] = getErrors(removeCarriageReturn(editor.getValue()), true);
   const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue());
 
-  // TODO: this deco stuff does not work rn
-  if (decorations) {
-    if (annotHighlightOn) {
-      // var deco = editor.createDecorationsCollection();
-      const highlightVars: Variable[] = antAnalyzer.getAnnotatedVars();
-      for (let i = 0; i < highlightVars.length; i++) {
-        const varInfo: Variable = highlightVars[i];
-        for (const [key, range] of varInfo.refLocations) {
-          let mRange = new monaco.Range(
-            range.start.line,
-            range.start.column,
-            range.end.line,
-            range.end.column
-          );
-          editor.createDecorationsCollection([
-            {
-              range: mRange,
-              options: {
-                isWholeLine: false,
-                inlineClassName: "highlight",
-              },
-            },
-          ]);
-        }
-      }
-    } else {
-      decorations.clear();
-    }
-    console.log(decorations);
+  // Get all errors
+  let errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
+
+  // Get all unannotated variables (optional)
+  if (annotHighlightOn) {
+    errors = errors.concat(antAnalyzer.getUnannotatedVariables());
   }
 
-  const errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
   if (setGeneralHoverInfo) {
     const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
     if (hoverInfo) {
@@ -106,7 +81,7 @@ export const ModelSemanticsChecker = (
     }
   }
 
-  // this is how to add error squiglies
+  // Add error (and optional annotated) squiggles
   let model: monaco.editor.ITextModel | null = editor.getModel();
   if (model !== null) {
     monaco.editor.removeAllMarkers("owner");
@@ -264,7 +239,7 @@ export class AntimonyProgramAnalyzer {
           } else {
             // check if it is an annotation string.
             let line: string = model.getLineContent(position.lineNumber);
-            let split: string[] = line.split('"');
+            // let split: string[] = line.split('"');
 
             let startCol = word.startColumn;
             let endCol = word.startColumn;
@@ -379,38 +354,67 @@ export class AntimonyProgramAnalyzer {
   }
 
   /**
-   * Use this for adding annot highlighting, not
-   * adding it here to avoid using monaco.
-   * @returns all locations of annotated variables
+   * Used to add annotation highlighting
+   * @returns {ErrorUnderline[]} for all species, reactions, compartments variables without annotations
    */
-  getAnnotatedVars(): Variable[] {
-    const vars: Variable[] = [];
-    for (const [key, varInfo] of this.globalST.getVarMap()) {
-      if (varInfo.annotations.length > 0) {
-        vars.push(varInfo);
+  getUnannotatedVariables(): ErrorUnderline[] {
+    const unannotated: Variable[] = [];
+
+    // Get unannotated variables
+    for (const varInfo of this.globalST.getVarMap().values()) {
+      if (
+        varInfo.annotations.length === 0 &&
+        (varInfo.type === varTypes.Compartment ||
+          varInfo.type === varTypes.Species ||
+          varInfo.type === varTypes.Reaction)
+      ) {
+        unannotated.push(varInfo);
       }
     }
 
-    for (const [key1, modelMap] of this.globalST.getModelMap()) {
-      for (const [key2, varInfo] of modelMap.getVarMap()) {
-        if (varInfo.annotations.length > 0) {
-          vars.push(varInfo);
+    for (const modelMap of this.globalST.getModelMap().values()) {
+      for (const varInfo of modelMap.getVarMap().values()) {
+        if (
+          varInfo.annotations.length === 0 &&
+          (varInfo.type === varTypes.Compartment ||
+            varInfo.type === varTypes.Species ||
+            varInfo.type === varTypes.Reaction)
+        ) {
+          unannotated.push(varInfo);
         }
       }
     }
 
-    for (const [key1, funcMap] of this.globalST.getFuncMap()) {
-      for (const [key2, varInfo] of funcMap.getVarMap()) {
-        if (varInfo.annotations.length > 0) {
-          vars.push(varInfo);
+    for (const funcMap of this.globalST.getFuncMap().values()) {
+      for (const varInfo of funcMap.getVarMap().values()) {
+        if (
+          varInfo.annotations.length === 0 &&
+          (varInfo.type === varTypes.Compartment ||
+            varInfo.type === varTypes.Species ||
+            varInfo.type === varTypes.Reaction)
+        ) {
+          unannotated.push(varInfo);
         }
       }
     }
-    return vars;
-  }
 
-  getAnnotations() {
-    // do stuff
+    // Identify where to add unannotated squiggle
+    const errors: ErrorUnderline[] = [];
+    for (let i = 0; i < unannotated.length; i++) {
+      const varInfo: Variable = unannotated[i];
+      for (const range of varInfo.refLocations.values()) {
+        errors.push({
+          startLineNumber: range.start.line,
+          startColumn: range.start.column,
+          endLineNumber: range.end.line,
+          endColumn: range.end.column,
+          message: "Consider adding an annotation to this variable.",
+          severity: monaco.MarkerSeverity.Info,
+        });
+      }
+    }
+
+    return errors;
   }
 
   /**
