@@ -750,6 +750,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     }
   }
 
+  //TODO: make a function for the "annotation already exists" warning.
   visitAnnotation(ctx: AnnotationContext) {
     if (this.hasParseError(ctx)) {
       return;
@@ -761,11 +762,20 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     const annotationKeyword: string = ctx.ANNOT_KEYWORD().text;
     
     const currST: SymbolTable | undefined = this.getCurrST();
-    let varInfo = currST?.getVar(varName);
+    let varInfo: Variable | undefined = currST?.getVar(varName);
     if (varInfo) {
       if (!varInfo.annotationKeywordMap.has(annotationLink)) {
         varInfo.annotations.push(annotationLink);
         varInfo.annotationKeywordMap.set(annotationLink, annotationKeyword);
+
+        // for adding links to monaco
+        this.globalST.annotationSet.add(annotationLink);
+      } else {
+        // case where there is only one annotation for each keyword used.
+        const currAnnotSrcRange = this.getSrcRange(ctx.ESCAPED_STRING());
+        const errorMessage: string = "this annotation already exists";
+        const errorUnderline: ErrorUnderline = this.getErrorUnderline(currAnnotSrcRange, errorMessage, false);
+        this.addError(errorUnderline);
       }
       // update ref locations for hover
       varInfo.refLocations.set(idSrcRange.toString(), idSrcRange);
@@ -775,22 +785,31 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       varInfo.annotations.push(annotationLink);
       varInfo.annotationKeywordMap.set(annotationLink, annotationKeyword);
       currST?.setVar(varName, varInfo);
+      
+      // for adding links to monaco
+      this.globalST.annotationSet.add(annotationLink);
     }
 
     try {
       // go through possible list
       let annotList: Annot_listContext | undefined = ctx.annot_list();
-      if (annotList) {
-        if (annotList.children) {
-          for (let i = 0; i < annotList.children.length; i++) {
-            let singleAnnot = annotList.children[i] as New_annotContext;
-            const currAnnotLink = singleAnnot.ESCAPED_STRING().text;
+      if (annotList?.children) {
+        for (let i = 0; i < annotList.children.length; i++) {
+          let singleAnnot = annotList.children[i] as New_annotContext;
+          const currAnnotLink = singleAnnot.ESCAPED_STRING().text;
 
-            if (varInfo) {
-              if (!varInfo.annotationKeywordMap.has(currAnnotLink)) {
-                varInfo.annotations.push(currAnnotLink);
-                varInfo.annotationKeywordMap.set(currAnnotLink, annotationKeyword);
-              }
+          if (varInfo) {
+            if (!varInfo.annotationKeywordMap.has(currAnnotLink)) {
+              varInfo.annotations.push(currAnnotLink);
+              varInfo.annotationKeywordMap.set(currAnnotLink, annotationKeyword);
+
+              // for adding links to monaco
+              this.globalST.annotationSet.add(annotationLink);
+            } else {
+              const currAnnotSrcRange = this.getSrcRange(singleAnnot.ESCAPED_STRING());
+              const errorMessage: string = "this annotation already exists";
+              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currAnnotSrcRange, errorMessage, false);
+              this.addError(errorUnderline);
             }
           }
         }

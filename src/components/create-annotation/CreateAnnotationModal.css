@@ -61,7 +61,7 @@
   padding: 0;
   margin-top: 10px;
   margin-bottom: 0;
-  height: 200px;
+  height: 500px;
   overflow-y: auto;
 }
 
@@ -92,4 +92,26 @@
   display: block;
   font-size: 12px;
   color: #989393;
+}
+
+.annotationEC {
+  display: block;
+  font-size: 12px;
+  color: #989393;
+}
+
+.ecLink:link {
+  color: #3090d5;
+}
+
+.ecLink:visited {
+  color:#0000EE;
+}
+
+/* .ecLink:link {
+  color: #30d5c8;
+} */
+
+ecLink:hover {
+  color:#272eb5;
 }

@@ -9,6 +9,8 @@ type AnnotationInfo = {
   id: string;
   description: string;
   link?: string; // the link that will appear for the annotation
+  ec?: string[]; // for rhea only
+  organism?: {scientificName: string, commonName: string} // for uniprot only, to differentiate between protein names
 };
 
 /**
@@ -159,6 +161,7 @@ export async function searchUniProt(
     }
 
     const data = await response.json();
+    console.log(data);
     const info: AnnotationInfo[] = data.results.map((result: any) => {
       return {
         id: result.uniProtkbId,
@@ -167,6 +170,7 @@ export async function searchUniProt(
           result.proteinDescription?.submissionNames[0]?.fullName.value,
         description: "", // TODO: Get description
         link: "https://www.uniprot.org/uniprotkb/" + result.primaryAccession + "/entry",
+        organism: {scientificName: result.organism.scientificName, commonName: result.organism.commonName},
       };
     });
 
@@ -194,25 +198,35 @@ export async function searchRhea(
       return [];
     }
 
-    const response = await fetch(
-      `https://www.rhea-db.org/rhea/?query=${queryText}&columns=rhea-id,equation&format=json&limit=${size}`
-    );
+    const response = await fetch(`https://www.rhea-db.org/rhea/?query=${queryText}&columns=rhea-id,equation,ec&format=tsv&limit=${size}`);
 
     if (!response.ok) {
       return undefined;
     }
+    const data = await response.text();
+    let split = data.split('\n');
+    
+    let output: AnnotationInfo[] = []
 
-    const data = await response.json();
-    let info: AnnotationInfo[] = data.results.map((result: any) => {
-      return {
-        id: result.id,
-        name: result.equation,
-        description: "", // TODO: Get description
-        link: "https://www.rhea-db.org/rhea/" + result.id,
-      };
-    });
+    // get fields
+    for (let i = 1; i < split.length; i++) {
+      if (split[i].length !== 0) {
+        let currLine = split[i].split('\t');
+        let reactionId = currLine[0].substring(5);
+        let equation = currLine[1];
+        let ec: string[] = currLine[2].substring(3).split(';EC:');
 
-    return info;
+        output.push({
+          id: reactionId,
+          name: equation,
+          description: "",
+          link: "https://www.rhea-db.org/rhea/" + reactionId,
+          ec: ec,
+        });
+      }
+    }
+
+    return output;
   } catch (error) {
     console.log(error);
     return undefined;
@@ -253,6 +267,7 @@ export async function searchOntology(
     }
 
     const data = await response.json();
+    console.log(data)
     let info: AnnotationInfo[] = data.elements.map((result: any) => {
       if (result.type[0] === "class" && result.type[1] === "entity") {
         // Get description
