@@ -43,7 +43,7 @@ header {
   margin-left: 5%;
   display: flex;
   align-items: center;
-  
+  padding: 16px 8px;
 }
 
 .sidebar { 
@@ -68,4 +68,13 @@ footer {
 
 footer a {
   color: white;
+}
+
+.fileExpContainer {
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  padding: 4px;
+  flex-wrap: wrap;
+  min-height: 10%;
 }
