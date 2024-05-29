@@ -233,7 +233,6 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
     let a: monaco.IMarkdownString;
 
     editorInstance?.revealLineInCenter(line);
-    // TODO: try to select the new annotation to make it clear which line was added.
   };
 
   /**

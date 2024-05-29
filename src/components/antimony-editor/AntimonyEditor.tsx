@@ -140,7 +140,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           language: "xml",
           automaticLayout: true,
         });
-        console.log("SBML Editor");
+        
         // Set the antimonyString variable to the editor content
         window.sbmlString = editor.getValue();
       } else {
@@ -151,7 +151,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           automaticLayout: true,
         });
         window.antimonyActive = true;
-        console.log("Antimony Editor");
+
         // Set the antimonyString variable to the editor content
         window.antimonyString = editor.getValue();
       }

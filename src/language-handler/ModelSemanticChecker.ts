@@ -441,7 +441,6 @@ export function getErrors(antimonyCode: string, includeParseErrors: boolean): Er
 
   // Parse the input, where `compilationUnit` is whatever entry point you defined
   let tree = parser.root();
-  // printing the tree for debugging purposes
   
   // create and buildup a global symbol table from the parse tree.
   let globalSymbolTable: GlobalST = new GlobalST();
