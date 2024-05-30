@@ -43,7 +43,7 @@ header {
   margin-left: 5%;
   display: flex;
   align-items: center;
-  
+  padding: 16px 8px;
 }
 
 .sidebar { 
@@ -70,8 +70,11 @@ footer a {
   color: white;
 }
 
-@media (max-width: 780px) {
-  .subtitle {
-    height: 12%;
-  }
+.fileExpContainer {
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  padding: 4px;
+  flex-wrap: wrap;
+  min-height: 10%;
 }

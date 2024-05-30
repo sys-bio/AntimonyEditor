@@ -1,7 +1,5 @@
 import { SrcRange, isSubtTypeOf, varTypes } from "./Types"
 
-
-
 export class Variable {
     /**
      * id: the id of the variable, ie A = 1 has id A
@@ -18,10 +16,18 @@ export class Variable {
     public compartment: string | undefined;
     // // do we even need an initialized field if we have initSrcRange?
     // public initialized: boolean;
+
+    // This is the range of JUST the id of a variable
     public idSrcRange: SrcRange;
+    // This is typically the range of the whole assignment statement, so eg: "a = 1" would be the range
+    // NOTE: this is not the case for reactions as a choice.
     public initSrcRange: SrcRange | undefined;
     public substanceOnly: boolean;
-    
+    public value: string | undefined; // for numerical values
+    public displayName: string | undefined;
+    public annotations: string[];
+    public annotationKeywordMap: Map<string, string>;
+    public refLocations: Map<string, SrcRange>;
 
     constructor(type: varTypes,
                 isConst: boolean, 
@@ -36,6 +42,12 @@ export class Variable {
         this.idSrcRange = idSrcRange;
         this.initSrcRange = initSrcRange;
         this.substanceOnly = substanceOnly;
+        this.value = undefined;
+        this.displayName = undefined;
+        this.annotations = [];
+        this.annotationKeywordMap = new Map();
+        this.refLocations = new Map();
+        this.refLocations.set(idSrcRange.toString(), idSrcRange);
     }
 
     /**
@@ -43,7 +55,6 @@ export class Variable {
      * newType, false otherwise. Only checks if the type
      * can be set, does not actually set the type.
      * 
-     * TODO: fix this, is currently the reverse of what it should be.
      * @param newType 
      * @returns true or false
      */

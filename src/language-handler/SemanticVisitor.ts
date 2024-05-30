@@ -1,13 +1,55 @@
 import { AntimonyGrammarVisitor } from "./antlr/AntimonyGrammarVisitor";
 import { SymbolTable } from "./SymbolTableClasses";
 import { ErrorVisitor } from "./ErrorVisitor";
-import { FunctionContext, ModelContext, Modular_modelContext, ReactionContext, SpeciesContext, Var_nameContext } from "./antlr/AntimonyGrammarParser";
+import { AnnotationContext, FunctionContext, Is_assignmentContext, ModelContext, Modular_modelContext, ReactionContext, SpeciesContext, Var_nameContext } from "./antlr/AntimonyGrammarParser";
 import { ErrorUnderline, SrcRange, isSubtTypeOf, varTypes } from "./Types";
-import { defaultValueWarning, unitializedParameterError, unitializedRateLawWarning } from "./SemanticErrors";
+import { defaultValueWarning, overridingDisplayNameWarning, unitializedParameterError, unitializedRateLawWarning, varNotFound } from "./SemanticErrors";
 import { ErrorNode } from "antlr4ts/tree";
+import { Variable } from "./Variable";
 
 // goal is to loop through and look at all variables, classes, 
 export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisitor<void> {
+
+  visitIs_assignment(ctx: Is_assignmentContext) {
+    if (this.hasParseError(ctx)) {
+      return;
+    }
+
+    // note: we do not check for initialization error
+    // on id in is assignment (for now at least).
+    const varName: string = ctx.NAME().text; 
+    const displayName: string  = ctx.ESCAPED_STRING().text;
+    const currST: SymbolTable | undefined = this.getCurrST();
+    if (currST) {
+      const varInfo: Variable | undefined = currST.getVar(varName);
+      const idSrcRange: SrcRange = this.getSrcRange(ctx.NAME());
+      varInfo?.refLocations.set(idSrcRange.toString(), idSrcRange);
+      if (varInfo !== undefined) {
+        // check if there was already a display name assigned
+        if (varInfo.displayName === undefined) {
+          varInfo.displayName = displayName;
+        } else {
+          // warning for overriding
+          const warnMessage = overridingDisplayNameWarning(varName);
+          const warnUnderline = this.getErrorUnderline(idSrcRange, warnMessage, false);
+          this.addError(warnUnderline);
+        }
+      } else {
+        const warnMessage = varNotFound(varName);
+        const warnUnderline = this.getErrorUnderline(idSrcRange, warnMessage, false);
+        this.addError(warnUnderline);
+      }
+    }
+  }
+
+  /**
+   * TODO: this whole method
+   * @param ctx 
+   */
+  visitAnnotation(ctx: AnnotationContext) {
+
+  }
+
   visitModel(ctx: ModelContext) {
     if (this.hasParseError(ctx)) {
       return;

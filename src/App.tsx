@@ -282,7 +282,9 @@ const App: React.FC = () => {
           splitterSize='5px'
         >
           <section className='sidebar'>
-            <div className='subtitle'>File Explorer</div>
+            <div className='fileExpContainer'>
+              <div className='subtitle'>File Explorer</div>
+            </div>
             <FileExplorer files={uploadedFiles} onFileClick={handleFileClick} onDeleteFile={deleteFile}/>
           </section>
           <section className='editor'>
