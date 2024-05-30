@@ -234,45 +234,6 @@ export class AntimonyProgramAnalyzer {
             hoverContents.push(
               { supportHtml: true,
                 value:  valueOfAnnotation });
-          } else {
-            // check if it is an annotation string.
-            let line: string = model.getLineContent(position.lineNumber);
-            let split: string[] = line.split('"');
-
-            let startCol = word.startColumn;
-            let endCol = word.startColumn;
-
-            while (startCol >= 0) {
-              if (line.charAt(startCol) === '"' || line.charAt(startCol) === ' ') {
-                startCol++;
-                break;
-              }
-              startCol--;
-            }
-
-            while (endCol < line.length) {
-              if (line.charAt(endCol) === '"' || line.charAt(endCol) === ' ' || line.charAt(endCol) === '\r' || line.charAt(endCol) === '\n') {
-                break;
-              }
-              endCol++;
-            }
-            let foundString: string = line.substring(startCol, endCol + 1)
-            if (foundString.charAt(0) === '"' && foundString.charAt(foundString.length - 1) === '"') {
-              foundString = foundString.replace('"', '');
-              startCol++;
-              endCol--;
-            }
-            if (this.isValidUrl(foundString) || this.globalST.annotationSet.has("\"" + foundString + "\"")) {
-              hoverContents.push(
-                {
-                  supportHtml: true,
-                  value: foundString,
-                }
-              )
-              // set new hover bounds to be that of the url
-              hoverColumnStart = startCol + 1;
-              hoverColumnEnd = endCol + 1;
-            }
           }
           return {
             range: new monaco.Range(hoverLine, hoverColumnStart, hoverLine, hoverColumnEnd),
