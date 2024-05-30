@@ -175,11 +175,16 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    */
   useEffect(() => {
     if (editorInstance) {
-      const biomodelsUrl = editorInstance.getValue().split('BioModels: ')[1];
+      let biomodelsUrl = editorInstance.getValue().split('BioModels: ')[1];
       if (biomodelsUrl) {
         window.biomodelsUrl = biomodelsUrl.substring(0, biomodelsUrl.indexOf('\n'));
       } else {
-        window.biomodelsUrl = '';
+        biomodelsUrl = editorInstance.getValue().split('model_entity_is ')[1];
+        if (biomodelsUrl) {
+          window.biomodelsUrl = biomodelsUrl.substring(1, biomodelsUrl.lastIndexOf('"'));
+        } else {
+          window.biomodelsUrl = '';
+        }
       }
 
       if (!window.biomodelsOptionSet) {
