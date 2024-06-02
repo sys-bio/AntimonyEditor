@@ -222,14 +222,36 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
       line = annotationAddPosition.line;
       col = annotationAddPosition.column;
     }
-    let id = { major: 1, minor: 1 };
+
+    // this adds indentation for when annotation should be within a model
+    // if there is indentation, it should always be based on
+    // the preset indentation level of the editor (2 spaces I think?)
     let spaces = "";
     for (let i = 0; i < col; i++) {
       spaces += " ";
     }
-    let text = spaces + varToAnnotate + ' identity "' + annotation.link + "\"; //" + annotation.name +"\n" ;
+
+    // total number of lines in the editor currently
+    let lineCount: number | undefined = editorInstance?.getModel()?.getLineCount();
+
+    // setup the edits/operations the editor should perform.
+    let text = spaces + varToAnnotate + ' identity "' + annotation.link + "\"; //" + annotation.name;
     let selection = new monaco.Range(line, 0, line, 0);
+    let id = { major: 1, minor: 1 };
     let op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
+
+    if (lineCount && line > lineCount) {
+      // line to insert is more than existing lines in editor
+      // so need to prepend a new line
+      op.text = "\n" + op.text;
+    } else {
+      // new line already exists, append a
+      // newline so that inserting into 
+      // a model defined within the file works.
+      op.text = op.text + "\n";
+    }
+
+    // perform the editor update.
     editorInstance?.executeEdits("my-source", [op]);
     editorInstance?.revealLineInCenter(line);
   };

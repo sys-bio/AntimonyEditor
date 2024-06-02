@@ -13,7 +13,6 @@ import { SymbolTableVisitor } from "./SymbolTableVisitor";
 import { SemanticVisitor } from "./SemanticVisitor";
 import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from "./Types";
 import { Variable } from "./Variable";
-// import './MCS.css';
 
 /**
  * Defines a parse error, which includes a position (line, column) as well as the error message.
@@ -159,7 +158,7 @@ export class AntimonyProgramAnalyzer {
   }
 
   /**
-   * Adds variable information to hovers.
+   * Adds variable and annotation information to hovers.
    * @returns
    */
   getGeneralHoverInfo() {
@@ -222,23 +221,27 @@ export class AntimonyProgramAnalyzer {
               }
 
               varInfo.annotations.forEach((annotation) => {
-                let keyword = varInfo?.annotationKeywordMap.get(annotation);
-                let lineInfo = varInfo?.annotationLineNum.get(annotation);
-                let descriptiveText = "";
-                console.log(lineInfo);
+                // the annotation keyword, ie "identity", "part", etc
+                let keyword: string | undefined = varInfo?.annotationKeywordMap.get(annotation);
+                let lineInfo: SrcRange | undefined = varInfo?.annotationLineNum.get(annotation);
+                // any additional comment on the same line as the annotation.
+                let comment: string = "";
+                let link: string = annotation.replace(/"/g, "");
+
                 if (lineInfo) {
-                  // console.log(lineInfo.end.column + annotation.length);
-                  let line: string[] = model.getLineContent(lineInfo.end.line).substring(lineInfo.end.column + annotation.length - 1).split("//");
-                  console.log(line);
+                  // get the line the annotation is on, and try to find the comment string
+                  let lineContent: string = model.getLineContent(lineInfo.end.line);
+                  // split on both "//" and ";" on the line.
+                  let line: string[] = lineContent.substring(lineInfo.end.column + annotation.length - 2).split(/\/\/|;/);
+
                   if (line.length > 0 && line[line.length - 1].length !== 0) {
-                    descriptiveText = '"' + line[line.length - 1] + '"';
+                    comment = '"' + line[line.length - 1] + '"';
                   }
                 }
                 
-                let splitAnnot = annotation.split("/");
-                let id = splitAnnot[splitAnnot.length - 1];
-                valueOfAnnotation += `<span><span style="color:#d33682;">${keyword} </span> <span style="color:#76b947;">${descriptiveText}</span> 
-                <a href=${annotation.replace(/"/g, "")}>${id}</a></span><br/> `;
+                valueOfAnnotation += `<span><span style="color:#d33682;">${keyword} </span>
+                                      <a href=${annotation.replace(/"/g, "")}>${link}</a> 
+                                      <span style="color:#76b947;">${comment}</span></span><br/> `;
               });
             }
 
@@ -316,7 +319,7 @@ export class AntimonyProgramAnalyzer {
   }
 
   /**
-   * Gets string of what should appear when hovering over a model's id
+   * Gets string format of what should appear when hovering over a model's id
    * @param modelId
    * @returns {string}
    */
@@ -496,9 +499,12 @@ export function getErrors(antimonyCode: string, includeParseErrors: boolean): Er
   let globalSymbolTable: GlobalST = new GlobalST();
   const stVisitor: SymbolTableVisitor = new SymbolTableVisitor(globalSymbolTable);
   stVisitor.visit(tree);
+
+  // using the populated symbol table, we now do more extensive semantic checking
   const semanticVisitor: SemanticVisitor = new SemanticVisitor(stVisitor.globalST);
   semanticVisitor.visit(tree);
 
+  // this is mainly an option so that tests can focus on just semantic errors
   if (includeParseErrors) {
     stVisitor.addErrorList(addParseErrors(errorListener.getErrors()));
   }

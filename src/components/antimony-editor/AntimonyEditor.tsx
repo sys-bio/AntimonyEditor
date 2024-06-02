@@ -103,10 +103,179 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const [varToAnnotate, setVarToAnnotate] = useState<string | null>(null);
 
   /**
+   * sets up the antimony editor, 
+   * including language, color theme, retrieving selected file content, etc.
+   * @returns 
+   */
+  const editorSetup = () => {
+    if (editorRef.current) {
+      let editor: any;
+      // Load the custom language
+      monaco.languages.register({ id: "antimony" });
+      monaco.languages.setMonarchTokensProvider("antimony", antimonyLanguage);
+
+      // Load the custom theme
+      monaco.editor.defineTheme("antimonyTheme", antimonyTheme);
+      monaco.editor.setTheme("antimonyTheme");
+      // Retrieve content and file name from IndexedDB
+      database
+        .transaction("files")
+        .objectStore("files")
+        .get(fileName)
+        .then((data) => {
+          if (data) {
+            setNewContent(data.content);
+            window.selectedFile = data.name;
+            editor.setValue(data.content);
+          }
+        });
+      
+      // Set language configuration for bracket pair colorization
+      monaco.languages.setLanguageConfiguration("antimony", {
+        comments: {
+          lineComment: "//",
+        },
+        brackets: [
+          ["{", "}"],
+          ["[", "]"],
+          ["(", ")"],
+        ],
+      });
+
+      if (fileName.includes(".xml")) {
+        // Create the editor
+        editor = monaco.editor.create(editorRef.current, {
+          bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
+          value: content,
+          language: "xml",
+          automaticLayout: true,
+        });
+        
+        // Set the antimonyString variable to the editor content
+        window.sbmlString = editor.getValue();
+      } else {
+        editor = monaco.editor.create(editorRef.current, {
+          bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
+          value: content,
+          language: "antimony",
+          automaticLayout: true,
+        });
+        window.antimonyActive = true;
+
+        // Set the antimonyString variable to the editor content
+        window.antimonyString = editor.getValue();
+      }
+      return editor;
+    }
+    return null;
+  }
+
+  /**
+   * @description adds the menu option to create an annotation
+   * @param editor 
+   */
+  const addAnnotationOption = (editor: any) => {
+    if (editorRef.current) {
+      // Adds the create annotations option to the context menu
+      // Checks if the cursor is on an actual variable or not
+      editor.addAction({
+        // An unique identifier of the contributed action.
+        id: "create-annotation",
+
+        // A label of the action that will be presented to the user.
+        label: "Create Annotations",
+
+        // An optional array of keybindings for the action.
+        keybindings: [
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10,
+          // chord
+          monaco.KeyMod.chord(
+            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
+            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM
+          ),
+        ],
+
+        // A precondition for this action.
+        precondition: null,
+
+        // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
+        keybindingContext: null,
+
+        contextMenuGroupId: "navigation",
+
+        contextMenuOrder: 1,
+
+        // Method that will be executed when the action is triggered.
+        // @param editor The editor instance is passed in as a convenience
+        run: function (ed: monaco.editor.IStandaloneCodeEditor) {
+          const position = ed.getPosition();
+          if (position) {
+            const word = ed.getModel()?.getWordAtPosition(position);
+
+            if (word) {
+              // Check if variable with id word.word exists at the given position range.
+              // If it does, use the stored variable info to create a hover.
+              let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
+              let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
+              let srcRange: SrcRange = new SrcRange(start, end);
+
+              // Check that user cursor is over an actual variable.
+              let ST = ModelSemanticsChecker(ed, false, false);
+              let varAndAnnotationPositionInfo = ST.hasVarAtLocation(word.word, srcRange);
+              if (varAndAnnotationPositionInfo) {
+                setModalVisible(true);
+                setAnnotationAddPosition(varAndAnnotationPositionInfo.annotationPositon);
+                setVarToAnnotate(word.word);
+              } else {
+                alert("Please select a variable to annotate.");
+              }
+            } else {
+              alert("Please select a variable to annotate.");
+            }
+          }
+        },
+      });
+    }
+  }
+  
+  /**
+   * @description handles adding the men option to highlight unannotated variables
+   * @param editor 
+   */
+  const addAnnotationVarHighlightOption = (editor: any) => {
+    if (editorRef.current) {
+      // Adds the "Highlight Unannotated Variables" option to the context menu.
+      // Checks if the cursor is on an actual variable or not.
+      editor.addAction({
+        // An unique identifier of the contributed action.
+        id: "highlight-annotation",
+
+        // A label of the action that will be presented to the user.
+        label: `Highlight Unannotated Variables ${annotHighlightedOn ? "Off" : "On"}`,
+
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+
+        // A precondition for this action.
+        precondition: null,
+
+        // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
+        keybindingContext: null,
+
+        contextMenuGroupId: "navigation",
+
+        contextMenuOrder: 1.5,
+
+        run: function (editor: monaco.editor.IStandaloneCodeEditor) {
+          setAnnotHighlightedOn((prevAnnotHighlightedOn) => !prevAnnotHighlightedOn);
+        },
+      });
+    }
+  }
+
+  /**
    * @description Loads the editor and sets the language, theme, and content
    */
   useEffect(() => {
-    console.log(database)
     if (editorRef.current) {
       let editor: any;
       // Load the custom language
@@ -251,14 +420,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         ],
       });
 
-      // setOriginalContent(editor.getValue());
 
       // Delay the model parser to avoid parsing while the user is typing
       let typingTimer: any;
       const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
-          // ModelParser(editor, true);
           ModelSemanticsChecker(editor, annotHighlightedOn, true);
         }, 600);
       };
@@ -274,9 +441,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       // })
 
       getBiomodels(setLoading, setChosenModel);
-
       setEditorInstance(editor);
-
       setSelectedFile(fileName);
 
       return () => editor.dispose();
