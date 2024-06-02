@@ -12,7 +12,7 @@ const ContextMenu = React.forwardRef<HTMLDivElement, ContextMenuProps>(
     return (
       <div className="context-menu" style={{ top: y, left: x }} ref={ref}>
         <ul>
-          <li onClick={() => onOptionClick('delete')}>Delete</li>
+          <li onClick={() => onOptionClick('delete')}>Delete  &#x1F5D1;</li>
           {/* Add more options here */}
         </ul>
       </div>

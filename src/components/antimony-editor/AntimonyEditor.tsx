@@ -123,10 +123,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         .get(fileName)
         .then((data) => {
           if (data) {
-            console.log(data.content);
-            // setOriginalContent(data.content);
             setNewContent(data.content);
-            // setSelectedFile(data.name);
             window.selectedFile = data.name;
             editor.setValue(data.content);
           }
@@ -140,7 +137,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           language: "xml",
           automaticLayout: true,
         });
-        console.log("SBML Editor");
+        
         // Set the antimonyString variable to the editor content
         window.sbmlString = editor.getValue();
       } else {
@@ -151,7 +148,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           automaticLayout: true,
         });
         window.antimonyActive = true;
-        console.log("Antimony Editor");
+
         // Set the antimonyString variable to the editor content
         window.antimonyString = editor.getValue();
       }

@@ -30,7 +30,6 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <App/>
-    {/* <App emitter={emitter} modeldata={''}/> */}
   </React.StrictMode>
 );
 
