@@ -101,9 +101,11 @@ const App: React.FC = () => {
     setSelectedFileName(fileName);
   
     // Store the selected file's information in IndexedDB
-    if (db) {
-      db.put('files', { name: fileName, content: fileContent });
-    }
+    // if (db) {
+    //   db.getAll("files").then((data) => {console.log("WOW"); console.log(data);});
+    //   db.put('files', { name: fileName, content: fileContent });
+    //   db.getAll("files").then((data) => {console.log(data); console.log("WOW");});
+    // }
   };
 
   const handleAntToSBML = async (fileContent: string, fileName: string) => {

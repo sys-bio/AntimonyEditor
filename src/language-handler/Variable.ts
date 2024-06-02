@@ -27,6 +27,7 @@ export class Variable {
     public displayName: string | undefined;
     public annotations: string[];
     public annotationKeywordMap: Map<string, string>;
+    public annotationLineNum: Map<string, SrcRange>;
     public refLocations: Map<string, SrcRange>;
 
     constructor(type: varTypes,
@@ -46,6 +47,7 @@ export class Variable {
         this.displayName = undefined;
         this.annotations = [];
         this.annotationKeywordMap = new Map();
+        this.annotationLineNum = new Map();
         this.refLocations = new Map();
         this.refLocations.set(idSrcRange.toString(), idSrcRange);
     }

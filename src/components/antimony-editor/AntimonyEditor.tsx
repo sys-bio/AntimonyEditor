@@ -106,6 +106,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    * @description Loads the editor and sets the language, theme, and content
    */
   useEffect(() => {
+    console.log(database)
     if (editorRef.current) {
       let editor: any;
       // Load the custom language
@@ -115,7 +116,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       // Load the custom theme
       monaco.editor.defineTheme("antimonyTheme", antimonyTheme);
       monaco.editor.setTheme("antimonyTheme");
-
       // Retrieve content and file name from IndexedDB
       database
         .transaction("files")
@@ -123,6 +123,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         .get(fileName)
         .then((data) => {
           if (data) {
+            console.log(data.content);
             // setOriginalContent(data.content);
             setNewContent(data.content);
             // setSelectedFile(data.name);
@@ -270,6 +271,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         setNewContent(editor.getValue());
         delayedModelParser(editor);
       });
+
+      // editor.onDidChangeCursorPosition(() => {
+      //   console.log(editor.getPosition());
+      // })
 
       getBiomodels(setLoading, setChosenModel);
 
