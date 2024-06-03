@@ -224,7 +224,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               let srcRange: SrcRange = new SrcRange(start, end);
 
               // Check that user cursor is over an actual variable.
-              let ST = ModelSemanticsChecker(ed, false, false);
+              let ST = ModelSemanticsChecker(ed, annotHighlightedOn, false);
               let varAndAnnotationPositionInfo = ST.hasVarAtLocation(word.word, srcRange);
               if (varAndAnnotationPositionInfo) {
                 setModalVisible(true);
@@ -243,7 +243,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   }
 
   /**
-   * @description handles adding the men option to highlight unannotated variables
+   * @description handles adding the menu option to highlight unannotated variables
    * @param editor 
    */
   const addAnnotationVarHighlightOption = (editor: any) => {
@@ -271,6 +271,78 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
         run: function (editor: monaco.editor.IStandaloneCodeEditor) {
           setAnnotHighlightedOn((prevAnnotHighlightedOn) => !prevAnnotHighlightedOn);
+        },
+      });
+    }
+  }
+
+  /**
+   * @description handles adding the menu option to navigate to the first
+   * annotation (by line number) for a selected variable
+   * @param editor 
+   */
+  const addNavigateEditAnnotationOption = (editor: any) => {
+    if (editorRef.current) {
+      editor.addAction({
+        // An unique identifier of the contributed action.
+        id: "Navigate to Edit Annotation",
+
+        // A label of the action that will be presented to the user.
+        label: `Navigate to Edit Annotation`,
+
+        // keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+
+        // A precondition for this action.
+        precondition: null,
+
+        // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
+        keybindingContext: null,
+
+        contextMenuGroupId: "navigation",
+
+        contextMenuOrder: 1.5,
+
+        // Method that will be executed when the action is triggered.
+        // @param editor The editor instance is passed in as a convenience
+        run: function (ed: monaco.editor.IStandaloneCodeEditor) {
+          const position = ed.getPosition();
+          if (position) {
+            const word = ed.getModel()?.getWordAtPosition(position);
+
+            if (word) {
+              // Check if variable with id word.word exists at the given position range.
+              // If it does, use the stored variable info to create a hover.
+              let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
+              let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
+              let srcRange: SrcRange = new SrcRange(start, end);
+
+              // Check that user cursor is over an actual variable.
+              // this feels scuffed, could probably store the ST somewhere to reduce calls to ModelSemanticsChecker
+              // in the future.
+              let ST = ModelSemanticsChecker(ed, annotHighlightedOn, false);
+              let info = ST.hasVarAtLocation(word.word, srcRange);
+              if (info && info.varInfo.annotations.length > 0) {
+                let line = Number.MAX_VALUE;
+                for (const value of info.varInfo.annotationLineNum.values()) {
+                  line = Math.min(value.start.line, line);
+                } 
+
+                const range = {
+                  startLineNumber: line,
+                  startColumn: 1,
+                  endLineNumber: line,
+                  endColumn: editor.getModel().getLineMaxColumn(line),
+                };
+
+                ed.setSelection(range);
+                ed.revealLineInCenter(line);
+              } else {
+                alert("Please select an annotated variable");
+              }
+            } else {
+              alert("Please select an annotated variable");
+            }
+          }
         },
       });
     }
@@ -328,89 +400,15 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
       // Adds the create annotations option to the context menu
       // Checks if the cursor is on an actual variable or not
-      editor.addAction({
-        // An unique identifier of the contributed action.
-        id: "create-annotation",
-
-        // A label of the action that will be presented to the user.
-        label: "Create Annotations",
-
-        // An optional array of keybindings for the action.
-        keybindings: [
-          monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10,
-          // chord
-          monaco.KeyMod.chord(
-            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
-            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM
-          ),
-        ],
-
-        // A precondition for this action.
-        precondition: null,
-
-        // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
-        keybindingContext: null,
-
-        contextMenuGroupId: "navigation",
-
-        contextMenuOrder: 1,
-
-        // Method that will be executed when the action is triggered.
-        // @param editor The editor instance is passed in as a convenience
-        run: function (ed: monaco.editor.IStandaloneCodeEditor) {
-          const position = ed.getPosition();
-          if (position) {
-            const word = ed.getModel()?.getWordAtPosition(position);
-
-            if (word) {
-              // Check if variable with id word.word exists at the given position range.
-              // If it does, use the stored variable info to create a hover.
-              let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
-              let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
-              let srcRange: SrcRange = new SrcRange(start, end);
-
-              // Check that user cursor is over an actual variable.
-              let ST = ModelSemanticsChecker(ed, false, false);
-              let varAndAnnotationPositionInfo = ST.hasVarAtLocation(word.word, srcRange);
-              if (varAndAnnotationPositionInfo) {
-                setModalVisible(true);
-                setAnnotationAddPosition(varAndAnnotationPositionInfo.annotationPositon);
-                setVarToAnnotate(word.word);
-              } else {
-                alert("Please select a variable to annotate.");
-              }
-            } else {
-              alert("Please select a variable to annotate.");
-            }
-          }
-        },
-      });
+      addAnnotationOption(editor);
 
       // Adds the "Highlight Unannotated Variables" option to the context menu.
       // Checks if the cursor is on an actual variable or not.
-      editor.addAction({
-        // An unique identifier of the contributed action.
-        id: "highlight-annotation",
-
-        // A label of the action that will be presented to the user.
-        label: `Highlight Unannotated Variables ${annotHighlightedOn ? "Off" : "On"}`,
-
-        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
-
-        // A precondition for this action.
-        precondition: null,
-
-        // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
-        keybindingContext: null,
-
-        contextMenuGroupId: "navigation",
-
-        contextMenuOrder: 1.5,
-
-        run: function (editor: monaco.editor.IStandaloneCodeEditor) {
-          setAnnotHighlightedOn((prevAnnotHighlightedOn) => !prevAnnotHighlightedOn);
-        },
-      });
+      addAnnotationVarHighlightOption(editor);
+      
+      // Adds the "Navigate to Edit Annotation" option to the context menu
+      // checks if the cursor is on an actual variable or not.
+      addNavigateEditAnnotationOption(editor);
 
       // Set language configuration for bracket pair colorization
       monaco.languages.setLanguageConfiguration("antimony", {
@@ -423,7 +421,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           ["(", ")"],
         ],
       });
-            
+
       handleEditorContentChagne(editor);
       handleCursorPositionChange(editor);
       getBiomodels(setLoading, setChosenModel);

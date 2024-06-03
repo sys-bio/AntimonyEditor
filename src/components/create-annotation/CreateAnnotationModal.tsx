@@ -239,7 +239,8 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
     let lineCount: number | undefined = editorInstance?.getModel()?.getLineCount();
 
     // setup the edits/operations the editor should perform.
-    let text = spaces + varToAnnotate + ' identity "' + annotation.link + "\"; //" + annotation.name;
+    let comment = "//" + annotation.name;
+    let text = spaces + varToAnnotate + ' identity "' + annotation.link + "\";" + comment;
     let selection = new monaco.Range(line, 0, line, 0);
     let id = { major: 1, minor: 1 };
     let op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
@@ -258,6 +259,10 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
     // perform the editor update.
     editorInstance?.executeEdits("my-source", [op]);
     editorInstance?.revealLineInCenter(line);
+    // make sure the added line is selected.
+    editorInstance?.setSelection(new monaco.Range(line, spaces.length + 1,
+                                                  line,
+                                                  text.length - spaces.length - comment.length + 2));
   };
 
   /**
