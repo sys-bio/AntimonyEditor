@@ -84,6 +84,9 @@ export async function searchChebi(
 
     // let info: AnnotationInfo[] = [];
     let listElements = chebiList["getLiteEntityResponse"]["return"]["ListElement"];
+    if (!Array.isArray(listElements)) {
+      listElements = [listElements];
+    }
     let info: AnnotationInfo[] = await Promise.all(
       listElements.map(async (element: any) => {
         let description: string = await getCompleteChebiEntity(element.chebiId._text);

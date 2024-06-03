@@ -241,7 +241,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       });
     }
   }
-  
+
   /**
    * @description handles adding the men option to highlight unannotated variables
    * @param editor 
@@ -423,28 +423,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           ["(", ")"],
         ],
       });
-
-
-      // Delay the model parser to avoid parsing while the user is typing
-      let typingTimer: any;
-      const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
-        clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => {
-          ModelSemanticsChecker(editor, annotHighlightedOn, true);
-        }, 600);
-      };
-
-      // Parse the model whenever the user types
-      editor.onDidChangeModelContent(() => {
-        setNewContent(editor.getValue());
-        delayedModelParser(editor);
-      });
-  
-      editor.onDidChangeCursorPosition(() => {
-        let position: monaco.Position = editor.getPosition()
-        handleSelectedPosition(new SrcPosition(position.lineNumber, position.column));
-      })
-
+            
+      handleEditorContentChagne(editor);
+      handleCursorPositionChange(editor);
       getBiomodels(setLoading, setChosenModel);
       setEditorInstance(editor);
       setSelectedFile(fileName);
@@ -453,6 +434,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     }
   }, [annotHighlightedOn, content, database, fileName]);
 
+  /**
+   * @description reruns semantic checker in case something related to
+   * the editor changes, or the annotation highlight feature is selected.
+   */
   useEffect(() => {
     if (editorInstance) {
       ModelSemanticsChecker(editorInstance, annotHighlightedOn, false);
@@ -500,6 +485,39 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     }
   }, [chosenModel]);
 
+  /**
+   * when the cursor position changes in the editor
+   * we use the callback function `handleSelectedPosition` 
+   * to update state.
+   * @param editor 
+   */
+  const handleCursorPositionChange = (editor: any) => {
+    editor.onDidChangeCursorPosition(() => {
+      let position: monaco.Position = editor.getPosition()
+      if (position) {
+        handleSelectedPosition(new SrcPosition(position.lineNumber, position.column));
+      }
+    })
+  }
+
+
+  const handleEditorContentChagne = (editor: any) => {
+    // Delay the model parser to avoid parsing while the user is typing
+    let typingTimer: any;
+    const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => {
+        ModelSemanticsChecker(editor, annotHighlightedOn, true);
+      }, 600);
+    };
+
+    // Parse the model whenever the user types
+    editor.onDidChangeModelContent(() => {
+      setNewContent(editor.getValue());
+      delayedModelParser(editor);
+    });
+  }
+  
   /**
    * @description Handles conversion from Antimony to SBML
    */

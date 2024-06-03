@@ -195,8 +195,12 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
    * @description Handle selecting a database
    */
   const handleSelectDatabase = (database: Database) => {
+    let autoPopulate = "";
+    if (varToAnnotate) {
+      autoPopulate = varToAnnotate
+    }
     setStep(2);
-    setSearchTerm("");
+    setSearchTerm(autoPopulate);
     setChosenDatabase(database);
     setAnnotationSearchResults([]);
   };

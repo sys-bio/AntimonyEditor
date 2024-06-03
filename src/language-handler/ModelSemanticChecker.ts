@@ -219,85 +219,77 @@ export class AntimonyProgramAnalyzer {
               }
 
               varInfo.annotations.forEach((annotation) => {
+                // get any additional comment on the same line as the annotation
+                let comment: string = this.getAnnotationComment(annotation, varInfo, model);
+
                 // the annotation keyword, ie "identity", "part", etc
                 let keyword: string | undefined = varInfo?.annotationKeywordMap.get(annotation);
-                let lineInfo: SrcRange | undefined = varInfo?.annotationLineNum.get(annotation);
-                // any additional comment on the same line as the annotation.
-                let comment: string = "";
                 let link: string = annotation.replace(/"/g, "");
-
-                if (lineInfo) {
-                  // get the line the annotation is on, and try to find the comment string
-                  let lineContent: string = model.getLineContent(lineInfo.end.line);
-                  // split on both "//" and ";" on the line.
-                  let line: string[] = lineContent.substring(lineInfo.end.column + annotation.length - 2).split(/\/\/|;/);
-
-                  if (line.length > 0 && line[line.length - 1].length !== 0) {
-                    comment = '"' + line[line.length - 1] + '"';
-                  }
-                }
                 
                 valueOfAnnotation += `<span><span style="color:#d33682;">${keyword} </span>
                                       <a href=${annotation.replace(/"/g, "")}>${link}</a> 
                                       <span style="color:#76b947;">${comment}</span></span><br/> `;
               });
             }
-
+      
             // add valueOfHover and valueOfAnnotation to hoverContents
             hoverContents.push({ supportHtml: true, value: valueOfHover });
             hoverContents.push({ supportHtml: true, value: valueOfAnnotation });
           } else {
-          //   // check if it is an annotation string.
-          //   let line: string = model.getLineContent(position.lineNumber);
-          //   let startCol = word.startColumn;
-          //   let endCol = word.startColumn;
+            // // check if it is an annotation string.
+            // let line: string = model.getLineContent(position.lineNumber);
+            // let startCol = word.startColumn;
+            // let endCol = word.startColumn;
 
-          //   while (startCol >= 0) {
-          //     if (line.charAt(startCol) === '"' || line.charAt(startCol) === " ") {
-          //       startCol++;
-          //       break;
-          //     }
-          //     startCol--;
-          //   }
+            // while (startCol >= 0) {
+            //   if (line.charAt(startCol) === '"' || line.charAt(startCol) === " ") {
+            //     startCol++;
+            //     break;
+            //   }
+            //   startCol--;
+            // }
 
-          //   while (endCol < line.length) {
-          //     if (
-          //       line.charAt(endCol) === '"' ||
-          //       line.charAt(endCol) === " " ||
-          //       line.charAt(endCol) === "\r" ||
-          //       line.charAt(endCol) === "\n"
-          //     ) {
-          //       endCol--;
-          //       break;
-          //     }
-          //     endCol++;
-          //   }
-          //   let foundString: string = line.substring(startCol, endCol + 1);
-          //   console.log("before: " + foundString);
-          //   if (
-          //     foundString.charAt(0) === '"' &&
-          //     foundString.charAt(foundString.length - 1) === '"'
-          //   ) {
-          //     foundString = foundString.replace('"', "");
-          //     startCol++;
-          //     endCol--;
-          //   }
-          //   console.log("found: " + foundString);
-          //   console.log(this.globalST.annotationSet);
-          //   if (
-          //     this.isValidUrl(foundString) ||
-          //     this.globalST.annotationSet.has('"' + foundString + '"')
-          //   ) {
-          //     hoverContents.push({
-          //       supportHtml: true,
-          //       value: foundString,
-          //     });
-          //     // set new hover bounds to be that of the url
-          //     hoverColumnStart = startCol + 1;
-          //     hoverColumnEnd = endCol + 2;
-          //   }
+            // while (endCol < line.length) {
+            //   if (
+            //     line.charAt(endCol) === '"' ||
+            //     line.charAt(endCol) === " " ||
+            //     line.charAt(endCol) === "\r" ||
+            //     line.charAt(endCol) === "\n"
+            //   ) {
+            //     endCol--;
+            //     break;
+            //   }
+            //   endCol++;
+            // }
+            // let foundString: string = line.substring(startCol, endCol + 1);
+            // console.log("before: " + foundString);
+            // if (
+            //   foundString.charAt(0) === '"' &&
+            //   foundString.charAt(foundString.length - 1) === '"'
+            // ) {
+            //   foundString = foundString.replace('"', "");
+            //   startCol++;
+            //   endCol--;
+            // }
+            // console.log("found: " + foundString);
+            // console.log(this.globalST.annotationSet);
+            // if (
+            //   this.isValidUrl(foundString) ||
+            //   this.globalST.annotationSet.has('"' + foundString + '"')
+            // ) {
+            //   hoverContents.push({
+            //     supportHtml: true,
+            //     value: foundString,
+            //   });
+            //   // set new hover bounds to be that of the url
+            //   hoverColumnStart = startCol + 1;
+            //   hoverColumnEnd = endCol + 2;
+            // }
           }
-          console.log("range: " + hoverColumnStart + ", " + hoverColumnEnd);
+
+          // hoverContents.push({supportHtml: true, value: "http://identifiers.org/chebi/CHEBI:25107"});
+          // hoverContents.push({supportHtml: true, value: `<span><a>http://identifiers.org/chebi/CHEBI:25107</a></span>`});
+          // console.log("range: " + hoverColumnStart + ", " + hoverColumnEnd);
           return {
             range: new monaco.Range(hoverLine, hoverColumnStart, hoverLine, hoverColumnEnd),
             contents: hoverContents,
@@ -308,59 +300,30 @@ export class AntimonyProgramAnalyzer {
     return hoverInfo;
   }
 
-  // private handleURLinEditor(model: monaco.editor.ITextModel,
-  //                           position: monaco.Position,
-  //                           word: monaco.editor.IWordAtPosition,
-  //                           hoverContents: monaco.IMarkdownString[]) {
-  //   // // check if it is an annotation string.
-  //   let line: string = model.getLineContent(position.lineNumber);
-  //   // let split: string[] = line.split('"');
+  /**
+   * grabs any comment on the line of a single line annotation
+   * @param annotation the annotation hyperlink string
+   * @param varInfo variable info for the var being annotated
+   * @param model editor text model
+   * @returns comment if it exists, empty string otherwise
+   */
+  private getAnnotationComment(annotation: string, varInfo: Variable | undefined, model: monaco.editor.ITextModel): string {
+    let lineInfo: SrcRange | undefined = varInfo?.annotationLineNum.get(annotation);
+    let comment: string = "";
 
-  //   let startCol = word.startColumn;
-  //   let endCol = word.startColumn;
+    if (lineInfo) {
+      // get the line the annotation is on, and try to find the comment string
+      let lineContent: string = model.getLineContent(lineInfo.end.line);
+      // split on both "//" and ";" on the line.
+      let commentStart: number = lineInfo.end.column + annotation.length - 2;
+      let line: string[] = lineContent.substring(commentStart).split(/\/\/|;/);
 
-  //   while (startCol >= 0) {
-  //     if (line.charAt(startCol) === '"' || line.charAt(startCol) === " ") {
-  //       startCol++;
-  //       break;
-  //     }
-  //     startCol--;
-  //   }
-
-  //   while (endCol < line.length) {
-  //     if (
-  //       line.charAt(endCol) === '"' ||
-  //       line.charAt(endCol) === " " ||
-  //       line.charAt(endCol) === "\r" ||
-  //       line.charAt(endCol) === "\n"
-  //     ) {
-  //       break;
-  //     }
-  //     endCol++;
-  //   }
-  //   let foundString: string = line.substring(startCol, endCol + 1);
-  //   if (
-  //     foundString.charAt(0) === '"' &&
-  //     foundString.charAt(foundString.length - 1) === '"'
-  //   ) {
-  //     foundString = foundString.replace('"', "");
-  //     startCol++;
-  //     endCol--;
-  //   }
-  //   console.log("found: " + foundString);
-  //   console.log(this.globalST.annotationSet);
-  //   if (
-  //     this.isValidUrl(foundString) ||
-  //     this.globalST.annotationSet.has('"' + foundString + '"')
-  //   ) {
-  //     hoverContents.push({
-  //       value: foundString,
-  //     });
-  //     // set new hover bounds to be that of the url
-  //     hoverColumnStart = startCol + 1;
-  //     hoverColumnEnd = endCol + 1;
-  //   }
-  // }
+      if (line.length > 0 && line[line.length - 1].length !== 0) {
+        comment = '"' + line[line.length - 1] + '"';
+      }
+    }
+    return comment;
+  }
 
   private isValidUrl(urlString: string): boolean {
     let url;

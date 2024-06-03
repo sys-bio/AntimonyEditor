@@ -40,7 +40,7 @@ const App: React.FC = () => {
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
     Number(window.localStorage.getItem('current_file_index') || null)
   );
-  const [selectedEditorPosition, setSelectedEditorPosition] = useState<SrcPosition>(new SrcPosition(0, 0));
+  const [selectedEditorPosition, setSelectedEditorPosition] = useState<SrcPosition>(new SrcPosition(1, 1));
 
   /**
    * @description Use the openDB function to open the database
