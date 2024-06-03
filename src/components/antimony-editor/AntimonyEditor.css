@@ -52,6 +52,7 @@
 
 .code-editor {
   height: 90%;
+  cursor: text, auto !important;
 }
 
 /* Dropdown Button */

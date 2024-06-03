@@ -23,6 +23,8 @@ interface AntimonyEditorProps {
   content: string;
   fileName: string;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  selectedFilePosition: SrcPosition;
+  handleSelectedPosition: (position: SrcPosition) => void;
 }
 
 /**
@@ -84,6 +86,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   fileName,
   database,
   handleFileUpload,
+  selectedFilePosition,
+  handleSelectedPosition
 }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -435,10 +439,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         setNewContent(editor.getValue());
         delayedModelParser(editor);
       });
-
-      // editor.onDidChangeCursorPosition(() => {
-      //   console.log(editor.getPosition());
-      // })
+  
+      editor.onDidChangeCursorPosition(() => {
+        let position: monaco.Position = editor.getPosition()
+        handleSelectedPosition(new SrcPosition(position.lineNumber, position.column));
+      })
 
       getBiomodels(setLoading, setChosenModel);
       setEditorInstance(editor);

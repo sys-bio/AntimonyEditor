@@ -123,6 +123,7 @@ export class AntimonyProgramAnalyzer {
 
     this.stVisitor = new SymbolTableVisitor(this.globalST);
     this.stVisitor.visit(this.tree);
+    // console.log(this.globalST);
     this.semanticVisitor = new SemanticVisitor(this.globalST);
     this.semanticVisitor.visit(this.tree);
 
@@ -162,10 +163,9 @@ export class AntimonyProgramAnalyzer {
    * @returns
    */
   getGeneralHoverInfo() {
-    let hoverContents: monaco.IMarkdownString[] = [];
     let hoverInfo = monaco.languages.registerHoverProvider("antimony", {
       provideHover: (model, position) => {
-        hoverContents = [];
+        let hoverContents: monaco.IMarkdownString[] = [];
         let valueOfHover: string = "";
         let valueOfAnnotation: string = "";
         const word = model.getWordAtPosition(position);
@@ -182,10 +182,8 @@ export class AntimonyProgramAnalyzer {
           let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
           let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
           let srcRange: SrcRange = new SrcRange(start, end);
-          let varInfo: Variable | undefined = this.globalST.hasVarAtLocation(
-            word.word,
-            srcRange
-          )?.varInfo;
+          let varInfo: Variable | undefined = this.globalST.hasVarAtLocation(word.word,srcRange)?.varInfo;
+
           if (varInfo) {
             if (varInfo.type === varTypes.Model) {
               valueOfHover += this.getModelHover(word.word);
@@ -249,55 +247,57 @@ export class AntimonyProgramAnalyzer {
             hoverContents.push({ supportHtml: true, value: valueOfHover });
             hoverContents.push({ supportHtml: true, value: valueOfAnnotation });
           } else {
-            // // check if it is an annotation string.
-            // let line: string = model.getLineContent(position.lineNumber);
-            // // let split: string[] = line.split('"');
+          //   // check if it is an annotation string.
+          //   let line: string = model.getLineContent(position.lineNumber);
+          //   let startCol = word.startColumn;
+          //   let endCol = word.startColumn;
 
-            // let startCol = word.startColumn;
-            // let endCol = word.startColumn;
+          //   while (startCol >= 0) {
+          //     if (line.charAt(startCol) === '"' || line.charAt(startCol) === " ") {
+          //       startCol++;
+          //       break;
+          //     }
+          //     startCol--;
+          //   }
 
-            // while (startCol >= 0) {
-            //   if (line.charAt(startCol) === '"' || line.charAt(startCol) === " ") {
-            //     startCol++;
-            //     break;
-            //   }
-            //   startCol--;
-            // }
-
-            // while (endCol < line.length) {
-            //   if (
-            //     line.charAt(endCol) === '"' ||
-            //     line.charAt(endCol) === " " ||
-            //     line.charAt(endCol) === "\r" ||
-            //     line.charAt(endCol) === "\n"
-            //   ) {
-            //     break;
-            //   }
-            //   endCol++;
-            // }
-            // let foundString: string = line.substring(startCol, endCol + 1);
-            // if (
-            //   foundString.charAt(0) === '"' &&
-            //   foundString.charAt(foundString.length - 1) === '"'
-            // ) {
-            //   foundString = foundString.replace('"', "");
-            //   startCol++;
-            //   endCol--;
-            // }
-            // console.log("found: " + foundString);
-            // console.log(this.globalST.annotationSet);
-            // if (
-            //   this.isValidUrl(foundString) ||
-            //   this.globalST.annotationSet.has('"' + foundString + '"')
-            // ) {
-            //   hoverContents.push({
-            //     value: foundString,
-            //   });
-            //   // set new hover bounds to be that of the url
-            //   hoverColumnStart = startCol + 1;
-            //   hoverColumnEnd = endCol + 1;
-            // }
+          //   while (endCol < line.length) {
+          //     if (
+          //       line.charAt(endCol) === '"' ||
+          //       line.charAt(endCol) === " " ||
+          //       line.charAt(endCol) === "\r" ||
+          //       line.charAt(endCol) === "\n"
+          //     ) {
+          //       endCol--;
+          //       break;
+          //     }
+          //     endCol++;
+          //   }
+          //   let foundString: string = line.substring(startCol, endCol + 1);
+          //   console.log("before: " + foundString);
+          //   if (
+          //     foundString.charAt(0) === '"' &&
+          //     foundString.charAt(foundString.length - 1) === '"'
+          //   ) {
+          //     foundString = foundString.replace('"', "");
+          //     startCol++;
+          //     endCol--;
+          //   }
+          //   console.log("found: " + foundString);
+          //   console.log(this.globalST.annotationSet);
+          //   if (
+          //     this.isValidUrl(foundString) ||
+          //     this.globalST.annotationSet.has('"' + foundString + '"')
+          //   ) {
+          //     hoverContents.push({
+          //       supportHtml: true,
+          //       value: foundString,
+          //     });
+          //     // set new hover bounds to be that of the url
+          //     hoverColumnStart = startCol + 1;
+          //     hoverColumnEnd = endCol + 2;
+          //   }
           }
+          console.log("range: " + hoverColumnStart + ", " + hoverColumnEnd);
           return {
             range: new monaco.Range(hoverLine, hoverColumnStart, hoverLine, hoverColumnEnd),
             contents: hoverContents,
@@ -307,6 +307,60 @@ export class AntimonyProgramAnalyzer {
     });
     return hoverInfo;
   }
+
+  // private handleURLinEditor(model: monaco.editor.ITextModel,
+  //                           position: monaco.Position,
+  //                           word: monaco.editor.IWordAtPosition,
+  //                           hoverContents: monaco.IMarkdownString[]) {
+  //   // // check if it is an annotation string.
+  //   let line: string = model.getLineContent(position.lineNumber);
+  //   // let split: string[] = line.split('"');
+
+  //   let startCol = word.startColumn;
+  //   let endCol = word.startColumn;
+
+  //   while (startCol >= 0) {
+  //     if (line.charAt(startCol) === '"' || line.charAt(startCol) === " ") {
+  //       startCol++;
+  //       break;
+  //     }
+  //     startCol--;
+  //   }
+
+  //   while (endCol < line.length) {
+  //     if (
+  //       line.charAt(endCol) === '"' ||
+  //       line.charAt(endCol) === " " ||
+  //       line.charAt(endCol) === "\r" ||
+  //       line.charAt(endCol) === "\n"
+  //     ) {
+  //       break;
+  //     }
+  //     endCol++;
+  //   }
+  //   let foundString: string = line.substring(startCol, endCol + 1);
+  //   if (
+  //     foundString.charAt(0) === '"' &&
+  //     foundString.charAt(foundString.length - 1) === '"'
+  //   ) {
+  //     foundString = foundString.replace('"', "");
+  //     startCol++;
+  //     endCol--;
+  //   }
+  //   console.log("found: " + foundString);
+  //   console.log(this.globalST.annotationSet);
+  //   if (
+  //     this.isValidUrl(foundString) ||
+  //     this.globalST.annotationSet.has('"' + foundString + '"')
+  //   ) {
+  //     hoverContents.push({
+  //       value: foundString,
+  //     });
+  //     // set new hover bounds to be that of the url
+  //     hoverColumnStart = startCol + 1;
+  //     hoverColumnEnd = endCol + 1;
+  //   }
+  // }
 
   private isValidUrl(urlString: string): boolean {
     let url;

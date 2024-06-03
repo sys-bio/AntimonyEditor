@@ -629,8 +629,8 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
 
     const eventName: Reaction_nameContext | undefined = ctx.reaction_name()
     let id = "";
-    if ( eventName) {
-      id =  eventName.namemaybein().text;
+    if (eventName) {
+      id = eventName.namemaybein().var_name().NAME().text;
       this.handleEventOrReactionName(id, eventName, varTypes.Event);
     }
 
@@ -662,6 +662,10 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
   private handleEventOrReactionName(id: string, name: Reaction_nameContext, type: varTypes.Event | varTypes.Reaction) {
     if (this.hasParseError(name)) {
       return;
+    }
+
+    if (type === varTypes.Event) {
+      debugger;
     }
 
     this.visit(name.namemaybein());

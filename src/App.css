@@ -63,7 +63,13 @@ footer {
   border-top: 3px solid #474757;
   background-color: #1c1c1c;
   color: white;
-  width: 100%;
+  /* width: 100%; */
+}
+
+footer .footer-content {
+  display: flex;
+  justify-content: space-between;
+  white-space: nowrap;
 }
 
 footer a {

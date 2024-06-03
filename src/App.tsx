@@ -6,6 +6,7 @@ import { SolidSplitter } from './components/CustomSplitters';
 import { Split } from '@geoffcox/react-splitter';
 import AntimonyEditor from './components/antimony-editor/AntimonyEditor';
 import { IDBPDatabase } from 'idb';
+import { SrcPosition } from './language-handler/Types';
 
 /**
  * @description MyDB interface
@@ -39,6 +40,7 @@ const App: React.FC = () => {
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
     Number(window.localStorage.getItem('current_file_index') || null)
   );
+  const [selectedEditorPosition, setSelectedEditorPosition] = useState<SrcPosition>(new SrcPosition(0, 0));
 
   /**
    * @description Use the openDB function to open the database
@@ -89,6 +91,14 @@ const App: React.FC = () => {
       });
     }
   };
+
+  /**
+   * call back for antimonyEditor to use
+   * @param position 
+   */
+  const handleSelectedPosition = async (position: SrcPosition) => {
+    setSelectedEditorPosition(position);
+  }
 
   /**
    * @description Handle the file click
@@ -291,7 +301,7 @@ const App: React.FC = () => {
           </section>
           <section className='editor'>
             {db ? ( // Conditionally render the AntimonyEditor component when db is defined
-                <AntimonyEditor key={selectedFileName} content={selectedFileContent} fileName={selectedFileName} database={db} handleFileUpload={handleFileUpload} />
+                <AntimonyEditor key={selectedFileName} content={selectedFileContent} fileName={selectedFileName} database={db} handleFileUpload={handleFileUpload} selectedFilePosition={selectedEditorPosition} handleSelectedPosition={handleSelectedPosition}/>
               ) : (
                 // You can provide a loading message or handle the absence of the database as needed
                 <div>Loading...</div>
@@ -300,9 +310,12 @@ const App: React.FC = () => {
         </Split>
       </div>
       <footer>
-        <a target="_blank" rel="noopener noreferrer" href="https://reproduciblebiomodels.org/">
-          Copyright © 2023 Center for Reproducible Biomedical Modeling
-        </a>
+        <div className="footer-content">
+          <a target="_blank" rel="noopener noreferrer" href="https://reproduciblebiomodels.org/">
+            Copyright © 2023 Center for Reproducible Biomedical Modeling
+          </a>
+          <div className="selected-editor-position">Ln {selectedEditorPosition.line}, Col {selectedEditorPosition.column}</div>
+        </div>
       </footer>
     </div>
   );
