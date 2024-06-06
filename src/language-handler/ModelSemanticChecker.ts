@@ -35,7 +35,7 @@ class ErrorListener implements ANTLRErrorListener<any> {
     msg: string,
     e: RecognitionException | undefined
   ): void {
-    this.errors.push({line: line, column: charPositionInLine, msg: msg});
+    this.errors.push({ line: line, column: charPositionInLine, msg: msg });
   }
 
   getErrors(): parseErrors[] {
@@ -182,7 +182,10 @@ export class AntimonyProgramAnalyzer {
           let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
           let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
           let srcRange: SrcRange = new SrcRange(start, end);
-          let varInfo: Variable | undefined = this.globalST.hasVarAtLocation(word.word,srcRange)?.varInfo;
+          let varInfo: Variable | undefined = this.globalST.hasVarAtLocation(
+            word.word,
+            srcRange
+          )?.varInfo;
 
           if (varInfo) {
             if (varInfo.type === varTypes.Model) {
@@ -225,13 +228,13 @@ export class AntimonyProgramAnalyzer {
                 // the annotation keyword, ie "identity", "part", etc
                 let keyword: string | undefined = varInfo?.annotationKeywordMap.get(annotation);
                 let link: string = annotation.replace(/"/g, "");
-                
+
                 valueOfAnnotation += `<span><span style="color:#d33682;">${keyword} </span>
                                       <a href=${annotation.replace(/"/g, "")}>${link}</a> 
                                       <span style="color:#76b947;">${comment}</span></span><br/> `;
               });
             }
-      
+
             // add valueOfHover and valueOfAnnotation to hoverContents
             hoverContents.push({ supportHtml: true, value: valueOfHover });
             hoverContents.push({ supportHtml: true, value: valueOfAnnotation });
@@ -240,7 +243,6 @@ export class AntimonyProgramAnalyzer {
             // let line: string = model.getLineContent(position.lineNumber);
             // let startCol = word.startColumn;
             // let endCol = word.startColumn;
-
             // while (startCol >= 0) {
             //   if (line.charAt(startCol) === '"' || line.charAt(startCol) === " ") {
             //     startCol++;
@@ -248,7 +250,6 @@ export class AntimonyProgramAnalyzer {
             //   }
             //   startCol--;
             // }
-
             // while (endCol < line.length) {
             //   if (
             //     line.charAt(endCol) === '"' ||
@@ -307,7 +308,11 @@ export class AntimonyProgramAnalyzer {
    * @param model editor text model
    * @returns comment if it exists, empty string otherwise
    */
-  private getAnnotationComment(annotation: string, varInfo: Variable | undefined, model: monaco.editor.ITextModel): string {
+  private getAnnotationComment(
+    annotation: string,
+    varInfo: Variable | undefined,
+    model: monaco.editor.ITextModel
+  ): string {
     let lineInfo: SrcRange | undefined = varInfo?.annotationLineNum.get(annotation);
     let comment: string = "";
 
@@ -438,7 +443,7 @@ export class AntimonyProgramAnalyzer {
           endLineNumber: range.end.line,
           endColumn: range.end.column,
           message: "Consider adding an annotation to this variable.",
-          severity: monaco.MarkerSeverity.Info,
+          severity: monaco.MarkerSeverity.Error,
         });
       }
     }
@@ -511,7 +516,7 @@ export function getErrors(antimonyCode: string, includeParseErrors: boolean): Er
 
   // Parse the input, where `compilationUnit` is whatever entry point you defined
   let tree = parser.root();
-  
+
   // create and buildup a global symbol table from the parse tree.
   let globalSymbolTable: GlobalST = new GlobalST();
   const stVisitor: SymbolTableVisitor = new SymbolTableVisitor(globalSymbolTable);
