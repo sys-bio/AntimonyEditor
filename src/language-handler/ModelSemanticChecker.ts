@@ -123,7 +123,7 @@ export class AntimonyProgramAnalyzer {
 
     this.stVisitor = new SymbolTableVisitor(this.globalST);
     this.stVisitor.visit(this.tree);
-    // console.log(this.globalST);
+
     this.semanticVisitor = new SemanticVisitor(this.globalST);
     this.semanticVisitor.visit(this.tree);
 
