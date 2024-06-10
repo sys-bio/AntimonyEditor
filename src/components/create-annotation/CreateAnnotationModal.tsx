@@ -11,13 +11,13 @@ import { SrcPosition } from "../../language-handler/Types";
  * @property {function} onClose - Function to close the modal
  * @property {} annotationAddPosition - SrcPosition where the new annotation is to be added
  * @property {} editorInstance - Monaco editor instance to add annotation to
- * @property {} varToAnnotate - id of the var being annotated.
+ * @property {} varToAnnotate - id and name of the var being annotated.
  */
 interface CreateAnnotationModalProps {
   onClose: () => void;
   annotationAddPosition: SrcPosition | null;
   editorInstance: monaco.editor.IStandaloneCodeEditor | null;
-  varToAnnotate: string | null;
+  varToAnnotate: {id: string, name: string | undefined} | null;
 }
 
 /**
@@ -197,7 +197,11 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
   const handleSelectDatabase = (database: Database) => {
     let autoPopulate = "";
     if (varToAnnotate) {
-      autoPopulate = varToAnnotate
+      if (varToAnnotate.name) {
+        autoPopulate = varToAnnotate.name;
+      } else {
+        autoPopulate = varToAnnotate.id;
+      }
     }
     setStep(2);
     setSearchTerm(autoPopulate);
@@ -240,7 +244,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
 
     // setup the edits/operations the editor should perform.
     let comment = "//" + annotation.name;
-    let text = spaces + varToAnnotate + ' identity "' + annotation.link + "\";" + comment;
+    let text = spaces + varToAnnotate?.id + ' identity "' + annotation.link + "\";" + comment;
     let selection = new monaco.Range(line, 0, line, 0);
     let id = { major: 1, minor: 1 };
     let op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };

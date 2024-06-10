@@ -22,6 +22,8 @@ import { SrcPosition, SrcRange } from "../../language-handler/Types";
 interface AntimonyEditorProps {
   content: string;
   fileName: string;
+  annotUnderlinedOn: boolean;
+  setAnnotUnderlinedOn: (value: React.SetStateAction<boolean>) => void
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   selectedFilePosition: SrcPosition;
   handleSelectedPosition: (position: SrcPosition) => void;
@@ -85,9 +87,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   content,
   fileName,
   database,
+  annotUnderlinedOn,
+  setAnnotUnderlinedOn,
   handleFileUpload,
   selectedFilePosition,
-  handleSelectedPosition
+  handleSelectedPosition,
 }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -102,77 +106,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
   const [selectedFile, setSelectedFile] = useState<string>("");
-  const [annotHighlightedOn, setAnnotHighlightedOn] = useState<boolean>(false);
   const [annotationAddPosition, setAnnotationAddPosition] = useState<SrcPosition | null>(null);
-  const [varToAnnotate, setVarToAnnotate] = useState<string | null>(null);
+  const [varToAnnotate, setVarToAnnotate] = useState<{id: string, name: string | undefined} | null>(null);
 
-  /**
-   * sets up the antimony editor, 
-   * including language, color theme, retrieving selected file content, etc.
-   * @returns 
-   */
-  const editorSetup = () => {
-    if (editorRef.current) {
-      let editor: any;
-      // Load the custom language
-      monaco.languages.register({ id: "antimony" });
-      monaco.languages.setMonarchTokensProvider("antimony", antimonyLanguage);
-
-      // Load the custom theme
-      monaco.editor.defineTheme("antimonyTheme", antimonyTheme);
-      monaco.editor.setTheme("antimonyTheme");
-      // Retrieve content and file name from IndexedDB
-      database
-        .transaction("files")
-        .objectStore("files")
-        .get(fileName)
-        .then((data) => {
-          if (data) {
-            setNewContent(data.content);
-            window.selectedFile = data.name;
-            editor.setValue(data.content);
-          }
-        });
-      
-      // Set language configuration for bracket pair colorization
-      monaco.languages.setLanguageConfiguration("antimony", {
-        comments: {
-          lineComment: "//",
-        },
-        brackets: [
-          ["{", "}"],
-          ["[", "]"],
-          ["(", ")"],
-        ],
-      });
-
-      if (fileName.includes(".xml")) {
-        // Create the editor
-        editor = monaco.editor.create(editorRef.current, {
-          bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
-          value: content,
-          language: "xml",
-          automaticLayout: true,
-        });
-        
-        // Set the antimonyString variable to the editor content
-        window.sbmlString = editor.getValue();
-      } else {
-        editor = monaco.editor.create(editorRef.current, {
-          bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
-          value: content,
-          language: "antimony",
-          automaticLayout: true,
-        });
-        window.antimonyActive = true;
-
-        // Set the antimonyString variable to the editor content
-        window.antimonyString = editor.getValue();
-      }
-      return editor;
-    }
-    return null;
-  }
 
   /**
    * @description adds the menu option to create an annotation
@@ -224,12 +160,13 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               let srcRange: SrcRange = new SrcRange(start, end);
 
               // Check that user cursor is over an actual variable.
-              let ST = ModelSemanticsChecker(ed, annotHighlightedOn, false);
+              let ST = ModelSemanticsChecker(ed, annotUnderlinedOn, false);
               let varAndAnnotationPositionInfo = ST.hasVarAtLocation(word.word, srcRange);
               if (varAndAnnotationPositionInfo) {
                 setModalVisible(true);
                 setAnnotationAddPosition(varAndAnnotationPositionInfo.annotationPositon);
-                setVarToAnnotate(word.word);
+                let displayName = varAndAnnotationPositionInfo.varInfo.displayName?.replaceAll("\"","");
+                setVarToAnnotate({id: word.word, name: displayName});
               } else {
                 alert("Please select a variable to annotate.");
               }
@@ -246,16 +183,16 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    * @description handles adding the menu option to highlight unannotated variables
    * @param editor 
    */
-  const addAnnotationVarHighlightOption = (editor: any) => {
+  const addAnnotationVarUnderlineOption = (editor: any) => {
     if (editorRef.current) {
       // Adds the "Highlight Unannotated Variables" option to the context menu.
       // Checks if the cursor is on an actual variable or not.
       editor.addAction({
         // An unique identifier of the contributed action.
-        id: "highlight-annotation",
+        id: "underline-annotation",
 
         // A label of the action that will be presented to the user.
-        label: `Highlight Unannotated Variables ${annotHighlightedOn ? "Off" : "On"}`,
+        label: `Underline Unannotated Variables ${annotUnderlinedOn ? "Off" : "On"}`,
 
         keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
 
@@ -270,7 +207,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         contextMenuOrder: 1.5,
 
         run: function (editor: monaco.editor.IStandaloneCodeEditor) {
-          setAnnotHighlightedOn((prevAnnotHighlightedOn) => !prevAnnotHighlightedOn);
+          setAnnotUnderlinedOn((prevAnnotUnderlinedOn) => !prevAnnotUnderlinedOn);
         },
       });
     }
@@ -319,7 +256,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               // Check that user cursor is over an actual variable.
               // this feels scuffed, could probably store the ST somewhere to reduce calls to ModelSemanticsChecker
               // in the future.
-              let ST = ModelSemanticsChecker(ed, annotHighlightedOn, false);
+              let ST = ModelSemanticsChecker(ed, annotUnderlinedOn, false);
               let info = ST.hasVarAtLocation(word.word, srcRange);
               if (info && info.varInfo.annotations.length > 0) {
                 let line = Number.MAX_VALUE;
@@ -402,9 +339,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       // Checks if the cursor is on an actual variable or not
       addAnnotationOption(editor);
 
-      // Adds the "Highlight Unannotated Variables" option to the context menu.
+      // Adds the "Underline Unannotated Variables" option to the context menu.
       // Checks if the cursor is on an actual variable or not.
-      addAnnotationVarHighlightOption(editor);
+      addAnnotationVarUnderlineOption(editor);
       
       // Adds the "Navigate to Edit Annotation" option to the context menu
       // checks if the cursor is on an actual variable or not.
@@ -430,7 +367,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
       return () => editor.dispose();
     }
-  }, [annotHighlightedOn, content, database, fileName]);
+  }, [annotUnderlinedOn, content, database, fileName]);
 
   /**
    * @description reruns semantic checker in case something related to
@@ -438,9 +375,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    */
   useEffect(() => {
     if (editorInstance) {
-      ModelSemanticsChecker(editorInstance, annotHighlightedOn, false);
+      ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false);
     }
-  }, [annotHighlightedOn, editorInstance]);
+  }, [annotUnderlinedOn, editorInstance]);
 
   /**
    * @description Saves the name and content of the file selected to IndexedDB
@@ -505,7 +442,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
       clearTimeout(typingTimer);
       typingTimer = setTimeout(() => {
-        ModelSemanticsChecker(editor, annotHighlightedOn, true);
+        ModelSemanticsChecker(editor, annotUnderlinedOn, true);
       }, 600);
     };
 

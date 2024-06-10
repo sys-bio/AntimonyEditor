@@ -438,7 +438,7 @@ export class AntimonyProgramAnalyzer {
           endLineNumber: range.end.line,
           endColumn: range.end.column,
           message: "Consider adding an annotation to this variable.",
-          severity: monaco.MarkerSeverity.Info,
+          severity: monaco.MarkerSeverity.Error,
         });
       }
     }

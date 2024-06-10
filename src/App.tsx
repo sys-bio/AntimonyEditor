@@ -41,6 +41,8 @@ const App: React.FC = () => {
     Number(window.localStorage.getItem('current_file_index') || null)
   );
   const [selectedEditorPosition, setSelectedEditorPosition] = useState<SrcPosition>(new SrcPosition(1, 1));
+  // keep track in App so that the option persists across different files.
+  const [annotUnderlinedOn, setAnnotUnderlinedOn] = useState<boolean>(false);
 
   /**
    * @description Use the openDB function to open the database
@@ -301,7 +303,15 @@ const App: React.FC = () => {
           </section>
           <section className='editor'>
             {db ? ( // Conditionally render the AntimonyEditor component when db is defined
-                <AntimonyEditor key={selectedFileName} content={selectedFileContent} fileName={selectedFileName} database={db} handleFileUpload={handleFileUpload} selectedFilePosition={selectedEditorPosition} handleSelectedPosition={handleSelectedPosition}/>
+                <AntimonyEditor key={selectedFileName} 
+                                content={selectedFileContent} 
+                                fileName={selectedFileName} 
+                                database={db} 
+                                annotUnderlinedOn={annotUnderlinedOn}
+                                setAnnotUnderlinedOn={setAnnotUnderlinedOn}
+                                handleFileUpload={handleFileUpload} 
+                                selectedFilePosition={selectedEditorPosition} 
+                                handleSelectedPosition={handleSelectedPosition}/>
               ) : (
                 // You can provide a loading message or handle the absence of the database as needed
                 <div>Loading...</div>
