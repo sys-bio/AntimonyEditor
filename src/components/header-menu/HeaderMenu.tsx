@@ -4,7 +4,7 @@ import "./HeaderMenu.css";
 /**
  * @description HeaderMenu interface
  * @interface
- * @property {string} fileName - The current select file (TODO: Verify if fileName is the right type to be converted)
+ * @property {string} fileName - The current select file
  * @property {function} handleConversionAntimony - Handle the Antimony to SBML file conversion process
  * @property {function} handleConversionSBML - Handle the SBML to Antimony file conversion
  * @property {function} handleFileDownload - Handle the file download
@@ -147,7 +147,13 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                 <li
                   onClick={() => {
                     setDropdownVisible("");
-                    handleConversionAntimony();
+                    if (fileName.endsWith(".ant")) {
+                      handleConversionAntimony();
+                    } else {
+                      alert(
+                        "Invalid file type.\nOnly Antimony (.ant) files can be converted to SBML (.xml)."
+                      );
+                    }
                   }}
                 >
                   <div className="header-menu-command">Convert Antimony → SBML</div>
@@ -155,7 +161,13 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                 <li
                   onClick={() => {
                     setDropdownVisible("");
-                    handleConversionSBML();
+                    if (fileName.endsWith(".xml")) {
+                      handleConversionSBML();
+                    } else {
+                      alert(
+                        "Invalid file type.\nOnly SBML (.xml) files can be converted to Antimony (.ant)."
+                      );
+                    }
                   }}
                 >
                   <div className="header-menu-command">Convert SBML → Antimony</div>
