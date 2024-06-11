@@ -8,7 +8,6 @@ import { getBiomodels, getModel } from "../../features/BrowseBiomodels";
 import Loader from "../Loader";
 import CreateAnnotationModal from "../create-annotation/CreateAnnotationModal";
 import ModelSemanticsChecker from "../../language-handler/ModelSemanticChecker";
-import handleDownload from "../../features/HandleDownload";
 import { IDBPDatabase, DBSchema } from "idb";
 import { SrcPosition, SrcRange } from "../../language-handler/Types";
 
@@ -17,16 +16,24 @@ import { SrcPosition, SrcRange } from "../../language-handler/Types";
  * @interface
  * @property {string} content - The content of the editor
  * @property {string} fileName - The name of the file
- * @property {string} handleFileUpload - Handle the file upload
+ * @property {object} editorInstance - The current editor instance
+ * @property {function} setEditorInstance - The function to set the current editor instance
+ * @property {object} selectedFilePosition -
+ * @property {function} handleSelectedPosition -
+ * @property {function} handleConversionSBML - Handle the SBML to Antimony file conversion
  */
 interface AntimonyEditorProps {
   content: string;
   fileName: string;
   annotUnderlinedOn: boolean;
   setAnnotUnderlinedOn: (value: React.SetStateAction<boolean>) => void
-  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  editorInstance: monaco.editor.IStandaloneCodeEditor | null;
+  setEditorInstance: React.Dispatch<
+    React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>
+  >;
   selectedFilePosition: SrcPosition;
   handleSelectedPosition: (position: SrcPosition) => void;
+  handleConversionSBML: () => void;
 }
 
 /**
@@ -79,7 +86,6 @@ declare global {
  * @param content - AntimonyEditorProp
  * @param fileName - AntimonyEditorProp
  * @param database - IDBPDatabase<MyDB>
- * @param handleFileUpload - AntimonyEditorProp
  * @example - <AntimonyEditor content={content} fileName={fileName} database={database} />
  * @returns - AntimonyEditor component
  */
@@ -89,20 +95,17 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   database,
   annotUnderlinedOn,
   setAnnotUnderlinedOn,
-  handleFileUpload,
+  editorInstance,
+  setEditorInstance,
   selectedFilePosition,
   handleSelectedPosition,
+  handleConversionSBML,
 }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [isDropdownVisible, setDropdownVisible] = useState(false);
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const [chosenModel, setChosenModel] = useState<string | null>(null);
-  const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(
-    null
-  );
   // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
   const [selectedFile, setSelectedFile] = useState<string>("");
@@ -112,7 +115,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
   /**
    * @description adds the menu option to create an annotation
-   * @param editor 
+   * @param editor
    */
   const addAnnotationOption = (editor: any) => {
     if (editorRef.current) {
@@ -177,11 +180,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         },
       });
     }
-  }
+  };
 
   /**
    * @description handles adding the menu option to highlight unannotated variables
-   * @param editor 
+   * @param editor
    */
   const addAnnotationVarUnderlineOption = (editor: any) => {
     if (editorRef.current) {
@@ -211,12 +214,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         },
       });
     }
-  }
+  };
 
   /**
    * @description handles adding the menu option to navigate to the first
    * annotation (by line number) for a selected variable
-   * @param editor 
+   * @param editor
    */
   const addNavigateEditAnnotationOption = (editor: any) => {
     if (editorRef.current) {
@@ -262,7 +265,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
                 let line = Number.MAX_VALUE;
                 for (const value of info.varInfo.annotationLineNum.values()) {
                   line = Math.min(value.start.line, line);
-                } 
+                }
 
                 const range = {
                   startLineNumber: line,
@@ -283,7 +286,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         },
       });
     }
-  }
+  };
 
   /**
    * @description Loads the editor and sets the language, theme, and content
@@ -319,7 +322,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           language: "xml",
           automaticLayout: true,
         });
-        
+
         // Set the antimonyString variable to the editor content
         window.sbmlString = editor.getValue();
       } else {
@@ -422,19 +425,18 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
   /**
    * when the cursor position changes in the editor
-   * we use the callback function `handleSelectedPosition` 
+   * we use the callback function `handleSelectedPosition`
    * to update state.
-   * @param editor 
+   * @param editor
    */
   const handleCursorPositionChange = (editor: any) => {
     editor.onDidChangeCursorPosition(() => {
-      let position: monaco.Position = editor.getPosition()
+      let position: monaco.Position = editor.getPosition();
       if (position) {
         handleSelectedPosition(new SrcPosition(position.lineNumber, position.column));
       }
-    })
-  }
-
+    });
+  };
 
   const handleEditorContentChagne = (editor: any) => {
     // Delay the model parser to avoid parsing while the user is typing
@@ -451,106 +453,20 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       setNewContent(editor.getValue());
       delayedModelParser(editor);
     });
-  }
-  
-  /**
-   * @description Handles conversion from Antimony to SBML
-   */
-  const handleConversionAnt = () => {
-    try {
-      if (window.processAntimony) {
-        window.processAntimony();
-      } else {
-        console.error("processAntimony function not found in the global scope.");
-      }
-    } catch (err) {
-      console.log("Conversion error:", err);
-    }
   };
-
-  /**
-   * @description Handles conversion from SBML to Antimony
-   */
-  const handleConversionSBML = () => {
-    try {
-      if (window.processSBML) {
-        window.processSBML();
-      } else {
-        console.error("processSBML function not found in the global scope.");
-      }
-    } catch (err) {
-      console.log("Conversion error:", err);
-    }
-  };
-
-  const handleButtonClick = () => {
-    if (dropdownRef.current) {
-      setDropdownVisible(!isDropdownVisible);
-    }
-  };
-
-  const handleOutsideClick = (event: MouseEvent) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-      setDropdownVisible(false);
-    }
-    if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-      setModalVisible(false);
-    }
-  };
-
-  useEffect(() => {
-    window.addEventListener("click", handleOutsideClick);
-
-    return () => {
-      window.removeEventListener("click", handleOutsideClick);
-    };
-  }, []);
 
   return (
     <>
-      <div className="menu">
-        <input
-          id="file-upload"
-          type="file"
-          multiple
-          onChange={handleFileUpload}
-          accept=".ant,.xml,.txt"
-        />
-        <label htmlFor="file-upload" className="file-upload-label">
-          Load File(s)
-        </label>
+      <div className="search-container">
         {/* <button className='button' onClick={save}> Save Changes </button> */}
-        {/* <button className='btn'>Navigate to Edit Annotations</button> */}
-        {/* <CustomButton name={'Insert Rate Law'} />
-        <CustomButton name={'Annotated Variable Highlight Off'} /> */}
-        <div className="menu-middle">
-          <Loader loading={loading} />
-          <div>
-            <input id="biomodel-browse" type="text" placeholder="Search biomodels" />
-            <div id="biomddropdown">
-              <ul />
-            </div>
-          </div>
-          <div className="dropdown" ref={dropdownRef}>
-            <button onClick={handleButtonClick} className="dropbtn">
-              Antimony ↔ SBML
-            </button>
-            <div id="myDropdown" className={`dropdown-content ${isDropdownVisible ? "show" : ""}`}>
-              <button className="convert-button" onClick={handleConversionAnt}>
-                Antimony → SBML
-              </button>
-              <button className="convert-button" onClick={handleConversionSBML}>
-                SBML → Antimony
-              </button>
-            </div>
+        {/* <CustomButton name={'Insert Rate Law'} /> */}
+        <Loader loading={loading} />
+        <div>
+          <input id="biomodel-browse" type="text" placeholder="Search biomodels" />
+          <div id="biomddropdown">
+            <ul />
           </div>
         </div>
-        <button
-          className="download-button"
-          onClick={() => handleDownload(editorInstance, fileName)}
-        >
-          Save File to Downloads Folder
-        </button>
       </div>
       <div className="code-editor" ref={editorRef}></div>
       {isModalVisible && (
