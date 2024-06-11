@@ -138,6 +138,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
   const [databaseSearchResults, setDatabaseSearchResults] = useState<Database[]>(databases);
   const [annotationSearchResults, setAnnotationSearchResults] = useState<AnnotationInfo[]>([]);
 
+  const modalRef = useRef<HTMLDivElement>(null);
   const chebiRef = useRef<HTMLInputElement>(null);
   const uniprotRef = useRef<HTMLInputElement>(null);
   const rheaRef = useRef<HTMLInputElement>(null);
@@ -177,6 +178,19 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
     }
   }, [step, chosenDatabase, refs]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose(); // Close the modal if the click is outside the modal
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
+
   /**
    * @description Handle search input change, looks for matches on database name, as well as
    * the type of variable the database is commonly used for, eg: species, compartments, reactions, etc.
@@ -184,8 +198,10 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
     if (step === 1) {
-      const filtered = databases.filter((database) =>
-        database.label.toLowerCase().includes(event.target.value.toLowerCase()) || database.detail.toLowerCase().includes(event.target.value.toLowerCase())
+      const filtered = databases.filter(
+        (database) =>
+          database.label.toLowerCase().includes(event.target.value.toLowerCase()) ||
+          database.detail.toLowerCase().includes(event.target.value.toLowerCase())
       );
       setDatabaseSearchResults(filtered);
     }
@@ -197,7 +213,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
   const handleSelectDatabase = (database: Database) => {
     let autoPopulate = "";
     if (varToAnnotate) {
-      autoPopulate = varToAnnotate
+      autoPopulate = varToAnnotate;
     }
     setStep(2);
     setSearchTerm(autoPopulate);
@@ -240,7 +256,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
 
     // setup the edits/operations the editor should perform.
     let comment = "//" + annotation.name;
-    let text = spaces + varToAnnotate + ' identity "' + annotation.link + "\";" + comment;
+    let text = spaces + varToAnnotate + ' identity "' + annotation.link + '";' + comment;
     let selection = new monaco.Range(line, 0, line, 0);
     let id = { major: 1, minor: 1 };
     let op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
@@ -251,7 +267,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
       op.text = "\n" + op.text;
     } else {
       // new line already exists, append a
-      // newline so that inserting into 
+      // newline so that inserting into
       // a model defined within the file works.
       op.text = op.text + "\n";
     }
@@ -260,9 +276,14 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
     editorInstance?.executeEdits("my-source", [op]);
     editorInstance?.revealLineInCenter(line);
     // make sure the added line is selected.
-    editorInstance?.setSelection(new monaco.Range(line, spaces.length + 1,
-                                                  line,
-                                                  text.length - spaces.length - comment.length + 2));
+    editorInstance?.setSelection(
+      new monaco.Range(
+        line,
+        spaces.length + 1,
+        line,
+        text.length - spaces.length - comment.length + 2
+      )
+    );
   };
 
   /**
@@ -275,10 +296,20 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
       let len = annotation.ec.length;
       return (
         <span className="annotationEC">
-            {annotation.ec.map((ec, index) => (
-              <span>EC:<a className="ecLink" href={"https://enzyme.expasy.org/EC/" + ec} target="_blank" rel="noopener noreferrer">{ec}</a>
+          {annotation.ec.map((ec, index) => (
+            <span>
+              EC:
+              <a
+                className="ecLink"
+                href={"https://enzyme.expasy.org/EC/" + ec}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {ec}
+              </a>
               {annotation.ec && len > 1 && index < len - 1 && ", "}
-              </span>))}
+            </span>
+          ))}
         </span>
       );
     }
@@ -301,7 +332,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
   };
 
   return (
-    <div className="annot-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="annot-modal" ref={modalRef} onClick={(e) => e.stopPropagation()}>
       <div className="modal-title-container">
         {step === 2 && (
           <button className="back-button" onClick={handleBack}>

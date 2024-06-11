@@ -117,7 +117,7 @@ const App: React.FC = () => {
    * @param fileName - The name of the file
    */
   const handleFileClick = (fileContent: string, fileName: string) => {
-    //window.selectedFile = fileName;
+    // window.selectedFile = fileName;
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
 
@@ -146,7 +146,6 @@ const App: React.FC = () => {
         // If the file doesn't exist, add it to the array
         updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
         db.put("files", { name: window.selectedFile, content: fileContent });
-        console.log("add");
         // }
         window.addEventListener("grabbedSBMLResult", sbmlResultHandler, { once: true });
         // Sort the files alphabetically and numerically based on their names
@@ -158,11 +157,8 @@ const App: React.FC = () => {
   };
 
   function sbmlResultHandler() {
-    console.log("sbmlResult event received");
     let sbml = window.sbmlResult;
-    console.log(window.selectedFile);
     if (window.selectedFile !== "" && window.selectedFile.includes(".ant")) {
-      console.log("ran");
       handleAntToSBML(sbml, window.selectedFile.replace("ant", "xml"))
         .then(() => {
           window.antimonyActive = false;
@@ -192,7 +188,6 @@ const App: React.FC = () => {
         // If the file doesn't exist, add it to the array
         updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
         db.put("files", { name: window.selectedFile, content: fileContent });
-        console.log("add");
         // }
         // Sort the files alphabetically and numerically based on their names
         return updatedFiles.sort((a, b) =>
@@ -203,11 +198,8 @@ const App: React.FC = () => {
   };
 
   function antimonyResultHandler() {
-    console.log("antimonyResult event received");
     let antimony = window.antimonyResult;
-    console.log(window.selectedFile);
     if (window.selectedFile !== "" && window.selectedFile.includes(".xml")) {
-      console.log("ran");
       window.conversion = "standard";
       handleSBMLtoAntConversion(antimony, window.selectedFile.replace("xml", "ant"))
         .then(() => {
@@ -218,7 +210,6 @@ const App: React.FC = () => {
           console.error("Error in handleFileConversion:", error);
         });
     } else {
-      console.log("ran empty antimony");
       window.conversion = "";
       handleSBMLtoAntConversion(antimony, window.fileName + ".ant")
         .then(() => {
@@ -264,8 +255,6 @@ const App: React.FC = () => {
 
       // Check if the deleted file was the currently selected file
       if (selectedFileName === fileName) {
-        console.log("filename matches");
-
         setSelectedFileContent("// Enter Antimony Model Here");
         setSelectedFileName("");
         setSelectedFileIndex(null);
@@ -273,12 +262,9 @@ const App: React.FC = () => {
         window.localStorage.removeItem("current_file_index");
         window.localStorage.setItem("current_file", "// Enter Antimony Model Here");
       } else if (selectedFileIndex !== null) {
-        console.log("filename doesnot match");
-
         // Update the selectedFileIndex if the deleted file was not selected
         const newIndex = updatedFiles.findIndex((file) => file.name === selectedFileName);
         setSelectedFileIndex(newIndex !== -1 ? newIndex : null);
-        console.log(newIndex);
 
         // Handle case where the current file index is no longer valid
         if (newIndex === -1) {
@@ -289,7 +275,6 @@ const App: React.FC = () => {
           window.localStorage.setItem("current_file", "// Enter Antimony Model Here");
         }
       }
-      console.log("delete has gone through");
       const files = await db.getAll("files");
       const fileNames = files.map((file) => file.name);
     }
