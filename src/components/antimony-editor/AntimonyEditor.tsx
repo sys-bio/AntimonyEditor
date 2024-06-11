@@ -242,6 +242,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         window.journal = model.journal;
         window.fileName = model.modelId;
         window.sbmlString = model.sbmlData;
+        window.conversion = "biomodels";
         handleConversionSBML();
         setLoading(false);
       });
