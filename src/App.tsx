@@ -126,10 +126,40 @@ const App: React.FC = () => {
     window.localStorage.setItem("current_file_name", fileName);
   };
 
+  /**
+   * @description Handles conversion from Antimony to SBML
+   */
+  const handleConversionAntimony = () => {
+    try {
+      if (window.processAntimony) {
+        window.processAntimony();
+      } else {
+        console.error("processAntimony function not found in the global scope.");
+      }
+    } catch (err) {
+      console.error("Conversion error:", err);
+    }
+  };
+
+  function sbmlResultHandler() {
+    let sbml = window.sbmlResult;
+    if (window.selectedFile !== "" && window.selectedFile.includes(".ant")) {
+      handleAntToSBML(sbml, window.selectedFile.replace("ant", "xml"))
+        .then(() => {
+          window.antimonyActive = false;
+          window.sbmlString = "";
+        })
+        .catch((error) => {
+          console.error("Error in handleFileConversion:", error);
+        });
+    }
+  }
+
   const handleAntToSBML = async (fileContent: string, fileName: string) => {
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
     window.selectedFile = fileName;
+
     // Store the selected file's information in IndexedDB
     if (db) {
       setUploadedFiles((prevFiles) => {
@@ -153,13 +183,39 @@ const App: React.FC = () => {
     }
   };
 
-  function sbmlResultHandler() {
-    let sbml = window.sbmlResult;
-    if (window.selectedFile !== "" && window.selectedFile.includes(".ant")) {
-      handleAntToSBML(sbml, window.selectedFile.replace("ant", "xml"))
+  /**
+   * @description Handles conversion from SBML to Antimony
+   */
+  const handleConversionSBML = () => {
+    try {
+      if (window.processSBML) {
+        window.processSBML();
+      } else {
+        console.error("processSBML function not found in the global scope.");
+      }
+    } catch (err) {
+      console.error("Conversion error:", err);
+    }
+  };
+
+  function antimonyResultHandler() {
+    let antimony = window.antimonyResult;
+    if (window.selectedFile !== "" && window.selectedFile.includes(".xml")) {
+      window.conversion = "standard";
+      handleSBMLtoAntConversion(antimony, window.selectedFile.replace("xml", "ant"))
         .then(() => {
-          window.antimonyActive = false;
-          window.sbmlString = "";
+          window.antimonyActive = true;
+          window.antimonyString = "";
+        })
+        .catch((error) => {
+          console.error("Error in handleFileConversion:", error);
+        });
+    } else {
+      window.conversion = "";
+      handleSBMLtoAntConversion(antimony, window.fileName + ".ant")
+        .then(() => {
+          window.antimonyActive = true;
+          window.antimonyString = "";
         })
         .catch((error) => {
           console.error("Error in handleFileConversion:", error);
@@ -193,31 +249,6 @@ const App: React.FC = () => {
       });
     }
   };
-
-  function antimonyResultHandler() {
-    let antimony = window.antimonyResult;
-    if (window.selectedFile !== "" && window.selectedFile.includes(".xml")) {
-      window.conversion = "standard";
-      handleSBMLtoAntConversion(antimony, window.selectedFile.replace("xml", "ant"))
-        .then(() => {
-          window.antimonyActive = true;
-          window.antimonyString = "";
-        })
-        .catch((error) => {
-          console.error("Error in handleFileConversion:", error);
-        });
-    } else {
-      window.conversion = "";
-      handleSBMLtoAntConversion(antimony, window.fileName + ".ant")
-        .then(() => {
-          window.antimonyActive = true;
-          window.antimonyString = "";
-        })
-        .catch((error) => {
-          console.error("Error in handleFileConversion:", error);
-        });
-    }
-  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -262,16 +293,31 @@ const App: React.FC = () => {
       } else if (selectedFileIndex === 1) {
         // If the selected file is deleted and was the first file, select the new first file.
         handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
-      } else {
-        // If the selected file is deleted, select the file before it.
+      } else if (selectedFileIndex === updatedFiles.length) {
+        // If the selected file is deleted and was the last file, select the file before it.
         const newIndex = selectedFileIndex - 1;
         handleFileClick(updatedFiles[newIndex].content, updatedFiles[newIndex].name, newIndex);
+      } else {
+        // If the selected file is deleted, select the file now in its place.
+        handleFileClick(
+          updatedFiles[selectedFileIndex].content,
+          updatedFiles[selectedFileIndex].name,
+          selectedFileIndex
+        );
       }
     }
   };
 
   /**
+   * @description Download the selected file into Downloads folder.
+   */
+  const handleFileDownload = () => {
+    handleDownload(editorInstance, selectedFileName);
+  };
+
+  /**
    * @description Open a new file.
+   * @param newFileName - The name of the new file
    */
   const handleNewFile = async (newFileName: string) => {
     // Simulate opening a file
@@ -293,40 +339,6 @@ const App: React.FC = () => {
       (file: { name: string; content: string }) => file.name === newFileName
     );
     handleFileClick(newFileContent, newFileName, newFileIndex);
-  };
-
-  const handleFileDownload = () => {
-    handleDownload(editorInstance, selectedFileName);
-  };
-
-  /**
-   * @description Handles conversion from Antimony to SBML
-   */
-  const handleConversionAntimony = () => {
-    try {
-      if (window.processAntimony) {
-        window.processAntimony();
-      } else {
-        console.error("processAntimony function not found in the global scope.");
-      }
-    } catch (err) {
-      console.error("Conversion error:", err);
-    }
-  };
-
-  /**
-   * @description Handles conversion from SBML to Antimony
-   */
-  const handleConversionSBML = () => {
-    try {
-      if (window.processSBML) {
-        window.processSBML();
-      } else {
-        console.error("processSBML function not found in the global scope.");
-      }
-    } catch (err) {
-      console.error("Conversion error:", err);
-    }
   };
 
   return (
