@@ -34,7 +34,7 @@ interface AnnotationInfo {
   description: string;
   link?: string;
   ec?: string[];
-  organism?: {scientificName: string, commonName: string};
+  organism?: { scientificName: string; commonName: string };
 }
 
 /**
@@ -125,7 +125,12 @@ const TOTAL_STEPS = 2;
  * @example - <CreateAnnotationModal onClose={closeModal} />
  * @returns - CreateAnnotationModal component
  */
-const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, annotationAddPosition, editorInstance, varToAnnotate}) => {
+const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
+  onClose,
+  annotationAddPosition,
+  editorInstance,
+  varToAnnotate,
+}) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [step, setStep] = useState<number>(1);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -133,6 +138,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
   const [databaseSearchResults, setDatabaseSearchResults] = useState<Database[]>(databases);
   const [annotationSearchResults, setAnnotationSearchResults] = useState<AnnotationInfo[]>([]);
 
+  const modalRef = useRef<HTMLDivElement>(null);
   const chebiRef = useRef<HTMLInputElement>(null);
   const uniprotRef = useRef<HTMLInputElement>(null);
   const rheaRef = useRef<HTMLInputElement>(null);
@@ -172,6 +178,19 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
     }
   }, [step, chosenDatabase, refs]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose(); // Close the modal if the click is outside the modal
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
+
   /**
    * @description Handle search input change, looks for matches on database name, as well as
    * the type of variable the database is commonly used for, eg: species, compartments, reactions, etc.
@@ -179,8 +198,10 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
     if (step === 1) {
-      const filtered = databases.filter((database) =>
-        database.label.toLowerCase().includes(event.target.value.toLowerCase()) || database.detail.toLowerCase().includes(event.target.value.toLowerCase())
+      const filtered = databases.filter(
+        (database) =>
+          database.label.toLowerCase().includes(event.target.value.toLowerCase()) ||
+          database.detail.toLowerCase().includes(event.target.value.toLowerCase())
       );
       setDatabaseSearchResults(filtered);
     }
@@ -190,8 +211,12 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
    * @description Handle selecting a database
    */
   const handleSelectDatabase = (database: Database) => {
+    let autoPopulate = "";
+    if (varToAnnotate) {
+      autoPopulate = varToAnnotate;
+    }
     setStep(2);
-    setSearchTerm("");
+    setSearchTerm(autoPopulate);
     setChosenDatabase(database);
     setAnnotationSearchResults([]);
   };
@@ -211,33 +236,59 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
    */
   const handleCreateAnnotation = (annotation: AnnotationInfo) => {
     onClose();
-    // TODO: Create annotation
-    console.log(annotationAddPosition);
-    
     let line = 0;
     let col = 0;
     if (annotationAddPosition) {
       line = annotationAddPosition.line;
       col = annotationAddPosition.column;
     }
-    let id = { major: 1, minor: 1 };
-    let spaces = ""
+
+    // this adds indentation for when annotation should be within a model
+    // if there is indentation, it should always be based on
+    // the preset indentation level of the editor (2 spaces I think?)
+    let spaces = "";
     for (let i = 0; i < col; i++) {
       spaces += " ";
-    }            
-    let text = spaces + varToAnnotate + " identity \"" + annotation.link + "\"; //" + annotation.name +"\n" ;
+    }
 
+    // total number of lines in the editor currently
+    let lineCount: number | undefined = editorInstance?.getModel()?.getLineCount();
+
+    // setup the edits/operations the editor should perform.
+    let comment = "//" + annotation.name;
+    let text = spaces + varToAnnotate + ' identity "' + annotation.link + '";' + comment;
     let selection = new monaco.Range(line, 0, line, 0);
-    let op = {identifier: id, range: selection, text: text, forceMoveMarkers: true};
-    editorInstance?.executeEdits("my-source", [op]);
-    let a: monaco.IMarkdownString;
+    let id = { major: 1, minor: 1 };
+    let op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
 
+    if (lineCount && line > lineCount) {
+      // line to insert is more than existing lines in editor
+      // so need to prepend a new line
+      op.text = "\n" + op.text;
+    } else {
+      // new line already exists, append a
+      // newline so that inserting into
+      // a model defined within the file works.
+      op.text = op.text + "\n";
+    }
+
+    // perform the editor update.
+    editorInstance?.executeEdits("my-source", [op]);
     editorInstance?.revealLineInCenter(line);
+    // make sure the added line is selected.
+    editorInstance?.setSelection(
+      new monaco.Range(
+        line,
+        spaces.length + 1,
+        line,
+        text.length - spaces.length - comment.length + 2
+      )
+    );
   };
 
   /**
    * @description Takes care of showing EC number and associated link for a rhea search
-   * @param annotation 
+   * @param annotation
    * @returns html holding EC number and link if EC numbers exist.
    */
   const handleRheaSearchResults = (annotation: AnnotationInfo) => {
@@ -245,32 +296,43 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
       let len = annotation.ec.length;
       return (
         <span className="annotationEC">
-            {annotation.ec.map((ec, index) => (
-              <span>EC:<a className="ecLink" href={"https://enzyme.expasy.org/EC/" + ec} target="_blank" rel="noopener noreferrer">{ec}</a>
+          {annotation.ec.map((ec, index) => (
+            <span>
+              EC:
+              <a
+                className="ecLink"
+                href={"https://enzyme.expasy.org/EC/" + ec}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {ec}
+              </a>
               {annotation.ec && len > 1 && index < len - 1 && ", "}
-              </span>))}
+            </span>
+          ))}
         </span>
-      )
+      );
     }
-  }
+  };
 
   /**
    * Takes care of showing the organism scientific and commonName
-   * @param annotation 
-   * @returns 
+   * @param annotation
+   * @returns
    */
   const handleUniProtSearchResults = (annotation: AnnotationInfo) => {
     if (annotation.organism) {
       return (
-        <span className="annotationEC">Organism: {annotation.organism.scientificName} 
-          {annotation.organism.commonName && " (" + annotation.organism.commonName+")"}
+        <span className="annotationEC">
+          Organism: {annotation.organism.scientificName}
+          {annotation.organism.commonName && " (" + annotation.organism.commonName + ")"}
         </span>
-      )
+      );
     }
-  }
+  };
 
   return (
-    <div className="annot-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="annot-modal" ref={modalRef} onClick={(e) => e.stopPropagation()}>
       <div className="modal-title-container">
         {step === 2 && (
           <button className="back-button" onClick={handleBack}>
@@ -307,7 +369,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({ onClose, 
 
       <ul className="annot-results">
         {loading ? (
-          <li>Loading...</li>
+          <li className="loading">Loading...</li>
         ) : step === 1 ? (
           databaseSearchResults.map((database: Database) => (
             <li key={database.id} onClick={() => handleSelectDatabase(database)}>

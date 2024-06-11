@@ -329,7 +329,6 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
               if (varInfo.initSrcRange !== undefined) {
                 // warning case! reinitalization!
                 if (varInfo.initSrcRange && varInfo.initSrcRange.toString() !== currAssignSrcRange.toString()) {
-                  console.log("washfa")
                   const errorMessage1: string = overriddenValueWarning(varName, currAssignSrcRange);
                   const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
                   this.addError(errorUnderline1);
@@ -346,7 +345,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         }
       }
     } catch (e) {
-      console.log(e);
+      // console.log(e);
       return;
     }
   }
@@ -630,8 +629,8 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
 
     const eventName: Reaction_nameContext | undefined = ctx.reaction_name()
     let id = "";
-    if ( eventName) {
-      id =  eventName.namemaybein().text;
+    if (eventName) {
+      id = eventName.namemaybein().var_name().NAME().text;
       this.handleEventOrReactionName(id, eventName, varTypes.Event);
     }
 
@@ -663,6 +662,10 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
   private handleEventOrReactionName(id: string, name: Reaction_nameContext, type: varTypes.Event | varTypes.Reaction) {
     if (this.hasParseError(name)) {
       return;
+    }
+
+    if (type === varTypes.Event) {
+      debugger;
     }
 
     this.visit(name.namemaybein());
@@ -765,6 +768,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     let varInfo: Variable | undefined = currST?.getVar(varName);
     if (varInfo) {
       if (!varInfo.annotationKeywordMap.has(annotationLink)) {
+        varInfo.annotationLineNum.set(annotationLink, this.getSrcRange(ctx));
         varInfo.annotations.push(annotationLink);
         varInfo.annotationKeywordMap.set(annotationLink, annotationKeyword);
 
@@ -782,8 +786,10 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     } else {
       // var does not exist, so create one
       const varInfo = new Variable(varTypes.Unknown, false, undefined, idSrcRange, undefined, false);
+      varInfo.annotationLineNum.set(annotationLink, this.getSrcRange(ctx));
       varInfo.annotations.push(annotationLink);
       varInfo.annotationKeywordMap.set(annotationLink, annotationKeyword);
+      
       currST?.setVar(varName, varInfo);
       
       // for adding links to monaco
@@ -800,6 +806,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
 
           if (varInfo) {
             if (!varInfo.annotationKeywordMap.has(currAnnotLink)) {
+              varInfo.annotationLineNum.set(currAnnotLink, this.getSrcRange(ctx));
               varInfo.annotations.push(currAnnotLink);
               varInfo.annotationKeywordMap.set(currAnnotLink, annotationKeyword);
 

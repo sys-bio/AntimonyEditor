@@ -26,6 +26,7 @@
     "css-minimizer-webpack-plugin": "^3.2.0",
     "dotenv": "^10.0.0",
     "dotenv-expand": "^5.1.0",
+    "ejs": "^3.1.10",
     "eslint": "^8.3.0",
     "eslint-config-react-app": "^7.0.1",
     "eslint-webpack-plugin": "^3.1.1",
@@ -35,7 +36,7 @@
     "identity-obj-proxy": "^3.0.0",
     "jest-resolve": "^27.4.2",
     "mini-css-extract-plugin": "^2.4.5",
-    "monaco-editor": "^0.45.0",
+    "monaco-editor": "^0.48.0",
     "octokit": "^3.1.2",
     "postcss": "^8.4.4",
     "postcss-flexbugs-fixes": "^5.0.2",
@@ -99,13 +100,13 @@
     "@babel/preset-react": "^7.23.3",
     "@testing-library/react": "^14.2.1",
     "@testing-library/user-event": "^14.5.2",
+    "antlr4ts-cli": "^0.5.0-alpha.4",
     "babel-jest": "^29.7.0",
     "gh-pages": "^6.1.1",
     "jest": "^28.1.3",
     "jest-environment-jsdom": "^29.7.0",
     "jest-watch-typeahead": "^2.2.2",
-    "react-test-renderer": "^18.2.0",
-    "antlr4ts-cli": "^0.5.0-alpha.4"
+    "react-test-renderer": "^18.2.0"
   },
   "jest": {
     "roots": [
