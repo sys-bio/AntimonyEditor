@@ -37,16 +37,18 @@ const App: React.FC = () => {
   const [selectedFileContent, setSelectedFileContent] = useState<string>(
     window.localStorage.getItem("current_file") || "// Enter Antimony Model Here"
   );
-  const [selectedFileName, setSelectedFileName] = useState<string>("");
+  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
+    Number(window.localStorage.getItem("current_file_index") || null)
+  );
+  const [selectedFileName, setSelectedFileName] = useState<string>(
+    window.localStorage.getItem("current_file_name") || "blank.txt"
+  );
   const [db, setDb] = useState<IDBPDatabase<MyDB> | null>();
   const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(
     null
   );
   const [fileExplorerKey, setFileExplorerKey] = useState<number>(0);
   const [sbmlResultListenerAdded, setSbmlResultListenerAdded] = useState<boolean>(false);
-  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
-    Number(window.localStorage.getItem("current_file_index") || null)
-  );
   const [selectedEditorPosition, setSelectedEditorPosition] = useState<SrcPosition>(
     new SrcPosition(1, 1)
   );
@@ -115,18 +117,13 @@ const App: React.FC = () => {
    * @description Handle the file click
    * @param fileContent - The content of the file
    * @param fileName - The name of the file
+   * @param index - The index of the file
    */
-  const handleFileClick = (fileContent: string, fileName: string) => {
-    // window.selectedFile = fileName;
+  const handleFileClick = (fileContent: string, fileName: string, index: number) => {
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
-
-    // Store the selected file's information in IndexedDB
-    // if (db) {
-    //   db.getAll("files").then((data) => {console.log("WOW"); console.log(data);});
-    //   db.put('files', { name: fileName, content: fileContent });
-    //   db.getAll("files").then((data) => {console.log(data); console.log("WOW");});
-    // }
+    window.localStorage.setItem("current_file_index", index.toString());
+    window.localStorage.setItem("current_file_name", fileName);
   };
 
   const handleAntToSBML = async (fileContent: string, fileName: string) => {
@@ -238,7 +235,7 @@ const App: React.FC = () => {
       } else {
         setSelectedFileIndex(null);
         setSelectedFileContent("// Enter Antimony Model Here");
-        setSelectedFileName("");
+        setSelectedFileName("blank.txt");
         window.localStorage.removeItem("current_file_index");
       }
     };
@@ -246,38 +243,56 @@ const App: React.FC = () => {
     loadData();
   }, []);
 
-  //DELETE FUNCTIONALITY
+  /**
+   * @description Deletes the given file
+   * @param fileName - The name of the file to delete
+   */
   const deleteFile = async (fileName: string) => {
     if (db) {
       await db.delete("files", fileName); // Delete from IndexedDB
       const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
-      setUploadedFiles(updatedFiles); // Update state
+      setUploadedFiles(updatedFiles);
 
-      // Check if the deleted file was the currently selected file
-      if (selectedFileName === fileName) {
-        setSelectedFileContent("// Enter Antimony Model Here");
-        setSelectedFileName("");
-        setSelectedFileIndex(null);
-        window.localStorage.removeItem("current_file_name");
-        window.localStorage.removeItem("current_file_index");
-        window.localStorage.setItem("current_file", "// Enter Antimony Model Here");
-      } else if (selectedFileIndex !== null) {
-        // Update the selectedFileIndex if the deleted file was not selected
-        const newIndex = updatedFiles.findIndex((file) => file.name === selectedFileName);
-        setSelectedFileIndex(newIndex !== -1 ? newIndex : null);
+      // NOTE: Currently, a file is selected before it is deleted.
+      //       Therefore, fileName === selectedFileName always holds in this method (for now).
 
-        // Handle case where the current file index is no longer valid
-        if (newIndex === -1) {
-          setSelectedFileContent("// Enter Antimony Model Here");
-          setSelectedFileName("");
-          window.localStorage.removeItem("current_file_index");
-          window.localStorage.removeItem("current_file");
-          window.localStorage.setItem("current_file", "// Enter Antimony Model Here");
-        }
+      if (selectedFileIndex === null || updatedFiles.length === 1) {
+        // If last file was deleted, create a new blank file.
+        handleNewFile("blank.txt");
+      } else if (selectedFileIndex === 1) {
+        // If the selected file is deleted and was the first file, select the new first file.
+        handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
+      } else {
+        // If the selected file is deleted, select the file before it.
+        const newIndex = selectedFileIndex - 1;
+        handleFileClick(updatedFiles[newIndex].content, updatedFiles[newIndex].name, newIndex);
       }
-      const files = await db.getAll("files");
-      const fileNames = files.map((file) => file.name);
     }
+  };
+
+  /**
+   * @description Open a new file.
+   */
+  const handleNewFile = async (newFileName: string) => {
+    // Simulate opening a file
+    const newFileContent = "// Enter Antimony Model Here";
+    const file = new File([newFileContent], newFileName, { type: "text/plain" });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+
+    const event = {
+      target: {
+        files: dataTransfer.files,
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+
+    await handleFileUpload(event);
+
+    // Simulate clicking the file
+    const newFileIndex = uploadedFiles.findIndex(
+      (file: { name: string; content: string }) => file.name === newFileName
+    );
+    handleFileClick(newFileContent, newFileName, newFileIndex);
   };
 
   const handleFileDownload = () => {
@@ -322,6 +337,7 @@ const App: React.FC = () => {
         handleConversionSBML={handleConversionSBML}
         handleFileDownload={handleFileDownload}
         handleFileUpload={handleFileUpload}
+        handleNewFile={handleNewFile}
       />
       <div className="middle">
         <Split
@@ -335,9 +351,14 @@ const App: React.FC = () => {
               <div className="fileExplorerTitle">File Explorer</div>
             </div>
             <FileExplorer
+              key={fileExplorerKey}
               files={uploadedFiles}
               onFileClick={handleFileClick}
               onDeleteFile={deleteFile}
+              selectedFileIndex={selectedFileIndex}
+              setSelectedFileIndex={setSelectedFileIndex}
+              selectedFileName={selectedFileName}
+              setSelectedFileName={setSelectedFileName}
             />
           </section>
           <section className="editor">

@@ -11,28 +11,47 @@ import ContextMenu from "../context-menu/ContextMenu";
  * @property {function} onFileClick - The onFileClick function
  * @property {string} onFileClick[].content - The content of the file
  * @property {string} onFileClick[].fileName - The name of the file
+ * @property {string} onFileClick[].index - The index of the file
+ * @property {function} onDeleteFile - The onDeleteFile function that deletes the given file
+ * @property {number | null} selectedFileIndex - The index of the currently selected file
+ * @property {function} setSelectedFileIndex - The function to set the selectedFileIndex
+ * @property {string} selectedFileName - The name of the currently selected file
+ * @property {function} setSelectedFileName - The function to set the setSelectedFileName
+ *
  */
 interface FileExplorerProps {
   files: { name: string; content: string }[];
-  onFileClick: (fileContent: string, fileName: string) => void;
+  onFileClick: (fileContent: string, fileName: string, index: number) => void;
   onDeleteFile: (fileName: string) => void;
+  selectedFileIndex: number | null;
+  setSelectedFileIndex: React.Dispatch<React.SetStateAction<number | null>>;
+  selectedFileName: string;
+  setSelectedFileName: React.Dispatch<React.SetStateAction<string>>;
 }
 
 /**
  * @description FileExplorer component
- * @param files - The files object
- * @param onFileClick - The onFileClick function
+ * @param files - FileExplorerProp
+ * @param onFileClick - FileExplorerProp
+ * @param onDeleteFile - FileExplorerProp
+ * @param selectedFileIndex - FileExplorerProp
+ * @param setSelectedFileIndex - FileExplorerProp
+ * @param selectedFileName - FileExplorerProp
+ * @param setSelectedFileName - FileExplorerProp
  * @returns - FileExplorer component
  */
-const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDeleteFile }) => {
-  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
-    Number(window.localStorage.getItem("current_file_index") || null)
-  );
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+const FileExplorer: React.FC<FileExplorerProps> = ({
+  files,
+  onFileClick,
+  onDeleteFile,
+  selectedFileIndex,
+  setSelectedFileIndex,
+  selectedFileName,
+  setSelectedFileName,
+}) => {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [deletedFileIndex, setDeletedFileIndex] = useState(null);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
-  const [contextMenuProps, setContextMenuProps] = useState(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -41,10 +60,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
    * @param fileName - The name of the file
    */
   const handleFileButtonClick = (index: number, fileName: string) => {
-    setSelectedFileName(fileName);
-    onFileClick(files[index].content, fileName);
-    window.localStorage.setItem("current_file_index", index.toString());
-    window.localStorage.setItem("current_file_name", fileName);
+    onFileClick(files[index].content, fileName, index);
   };
 
   useEffect(() => {
@@ -61,7 +77,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
       // No file is selected, you might want to reset selectedFileIndex here as well
       setSelectedFileIndex(null);
     }
-  }, [selectedFileName, files]); // Depend on selectedFileName and files
+  }, [selectedFileName, setSelectedFileIndex, files]); // Depend on selectedFileName and files
 
   //updates states based on local storage information
   useEffect(() => {
@@ -81,7 +97,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
         }
       }
     }
-  }, [files]);
+  }, [files, setSelectedFileIndex, setSelectedFileName]);
 
   //updates local storage when selectedFileIndex changes
   useEffect(() => {
@@ -89,15 +105,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
       window.localStorage.setItem("current_file_index", String(selectedFileIndex));
     }
   }, [selectedFileIndex]);
-
-  //DELETE FILE BELOW
-
-  useEffect(() => {
-    if (files.length === 0) {
-      setSelectedFileIndex(null);
-      setSelectedFileName(null);
-    }
-  }, [files]);
 
   const handleFileRightClick = (e: any, index: any, fileName: any) => {
     e.preventDefault(); // Prevent the default context menu
