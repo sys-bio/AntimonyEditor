@@ -89,10 +89,10 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
    */
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      // Check if Ctrl+Shift+N is pressed
+      // Check if Alt+N is pressed
       if (event.altKey && event.key === "n") {
         event.preventDefault();
-        handleNewFile("blank.txt");
+        handleNewFile("untitled.ant");
       }
 
       // Check if Ctrl+O is pressed
@@ -137,7 +137,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                     className="header-menu-command"
                     onClick={() => {
                       setDropdownVisible("");
-                      handleNewFile("blank.txt");
+                      handleNewFile("untitled.ant");
                     }}
                   >
                     <div>New File</div>

@@ -41,7 +41,7 @@ const App: React.FC = () => {
     Number(window.localStorage.getItem("current_file_index") || null)
   );
   const [selectedFileName, setSelectedFileName] = useState<string>(
-    window.localStorage.getItem("current_file_name") || "blank.txt"
+    window.localStorage.getItem("current_file_name") || "untitled.ant"
   );
   const [db, setDb] = useState<IDBPDatabase<MyDB> | null>();
   const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(
@@ -156,31 +156,36 @@ const App: React.FC = () => {
   }
 
   const handleAntToSBML = async (fileContent: string, fileName: string) => {
-    setSelectedFileContent(fileContent);
-    setSelectedFileName(fileName);
     window.selectedFile = fileName;
 
-    // Store the selected file's information in IndexedDB
-    if (db) {
-      setUploadedFiles((prevFiles) => {
-        window.removeEventListener("grabbedSBMLResult", sbmlResultHandler);
-        setSbmlResultListenerAdded(false);
-        let updatedFiles = [...prevFiles];
-        // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
+    setUploadedFiles((prevFiles) => {
+      window.removeEventListener("grabbedSBMLResult", sbmlResultHandler);
+      setSbmlResultListenerAdded(false);
+      let updatedFiles = [...prevFiles];
+      // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
 
-        // if (existingFileIndex !== -1) {
-        // } else {
-        // If the file doesn't exist, add it to the array
-        updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
+      // if (existingFileIndex !== -1) {
+      // } else {
+      // If the file doesn't exist, add it to the array
+      updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
+
+      // Store the selected file's information in IndexedDB
+      // NOTE: db is always undefined here for some reason.
+      if (db) {
         db.put("files", { name: window.selectedFile, content: fileContent });
-        // }
-        window.addEventListener("grabbedSBMLResult", sbmlResultHandler, { once: true });
-        // Sort the files alphabetically and numerically based on their names
-        return updatedFiles.sort((a, b) =>
-          a.name.localeCompare(b.name, undefined, { numeric: true })
-        );
-      });
-    }
+      }
+
+      window.addEventListener("grabbedSBMLResult", sbmlResultHandler, { once: true });
+
+      // Sort the files alphabetically and numerically based on their names
+      updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+      // Select the converted file
+      const convertedIndex = updatedFiles.findIndex((file) => file.name === fileName);
+      handleFileClick(fileContent, fileName, convertedIndex);
+
+      return updatedFiles;
+    });
   };
 
   /**
@@ -224,30 +229,37 @@ const App: React.FC = () => {
   }
 
   const handleSBMLtoAntConversion = async (fileContent: string, fileName: string) => {
-    setSelectedFileContent(fileContent);
-    setSelectedFileName(fileName);
     window.selectedFile = fileName;
-    // Store the selected file's information in IndexedDB
-    if (db) {
-      setUploadedFiles((prevFiles) => {
-        window.removeEventListener("grabbedAntimonyResult", antimonyResultHandler);
-        setSbmlResultListenerAdded(false);
-        let updatedFiles = [...prevFiles];
-        // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
 
-        // if (existingFileIndex !== -1) {
-        //   // alert('File already exists');
-        // } else {
-        // If the file doesn't exist, add it to the array
-        updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
+    setUploadedFiles((prevFiles) => {
+      window.removeEventListener("grabbedAntimonyResult", antimonyResultHandler);
+      setSbmlResultListenerAdded(false);
+      let updatedFiles = [...prevFiles];
+      // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
+
+      // if (existingFileIndex !== -1) {
+      //   // alert('File already exists');
+      // } else {
+      // If the file doesn't exist, add it to the array
+      updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
+
+      // Store the selected file's information in IndexedDB
+      // NOTE: db is always undefined here for some reason.
+      if (db) {
         db.put("files", { name: window.selectedFile, content: fileContent });
-        // }
-        // Sort the files alphabetically and numerically based on their names
-        return updatedFiles.sort((a, b) =>
-          a.name.localeCompare(b.name, undefined, { numeric: true })
-        );
-      });
-    }
+      }
+
+      window.addEventListener("grabbedAntimonyResult", antimonyResultHandler, { once: true });
+
+      // Sort the files alphabetically and numerically based on their names
+      updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+      // Select the converted file
+      const convertedIndex = updatedFiles.findIndex((file) => file.name === fileName);
+      handleFileClick(fileContent, fileName, convertedIndex);
+
+      return updatedFiles;
+    });
   };
 
   useEffect(() => {
@@ -266,7 +278,7 @@ const App: React.FC = () => {
       } else {
         setSelectedFileIndex(null);
         setSelectedFileContent("// Enter Antimony Model Here");
-        setSelectedFileName("blank.txt");
+        setSelectedFileName("untitled.ant");
         window.localStorage.removeItem("current_file_index");
       }
     };
@@ -277,33 +289,37 @@ const App: React.FC = () => {
   /**
    * @description Deletes the given file
    * @param fileName - The name of the file to delete
+   * @param deleteFromFileExplorer - Represents whether to delete the file from the file explorer
    */
-  const deleteFile = async (fileName: string) => {
+  const deleteFile = async (fileName: string, deleteFromFileExplorer: boolean) => {
     if (db) {
       await db.delete("files", fileName); // Delete from IndexedDB
-      const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
-      setUploadedFiles(updatedFiles);
 
-      // NOTE: Currently, a file is selected before it is deleted.
-      //       Therefore, fileName === selectedFileName always holds in this method (for now).
+      if (deleteFromFileExplorer) {
+        const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
+        setUploadedFiles(updatedFiles);
 
-      if (selectedFileIndex === null || updatedFiles.length === 1) {
-        // If last file was deleted, create a new blank file.
-        handleNewFile("blank.txt");
-      } else if (selectedFileIndex === 1) {
-        // If the selected file is deleted and was the first file, select the new first file.
-        handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
-      } else if (selectedFileIndex === updatedFiles.length) {
-        // If the selected file is deleted and was the last file, select the file before it.
-        const newIndex = selectedFileIndex - 1;
-        handleFileClick(updatedFiles[newIndex].content, updatedFiles[newIndex].name, newIndex);
-      } else {
-        // If the selected file is deleted, select the file now in its place.
-        handleFileClick(
-          updatedFiles[selectedFileIndex].content,
-          updatedFiles[selectedFileIndex].name,
-          selectedFileIndex
-        );
+        // NOTE: Currently, a file is selected before it is deleted.
+        //       Therefore, fileName === selectedFileName always holds in this method (for now).
+
+        if (selectedFileIndex === null || updatedFiles.length === 1) {
+          // If last file was deleted, create a new blank file.
+          handleNewFile("untitled.ant");
+        } else if (selectedFileIndex === 1) {
+          // If the selected file is deleted and was the first file, select the new first file.
+          handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
+        } else if (selectedFileIndex === updatedFiles.length) {
+          // If the selected file is deleted and was the last file, select the file before it.
+          const newIndex = selectedFileIndex - 1;
+          handleFileClick(updatedFiles[newIndex].content, updatedFiles[newIndex].name, newIndex);
+        } else {
+          // If the selected file is deleted, select the file now in its place.
+          handleFileClick(
+            updatedFiles[selectedFileIndex].content,
+            updatedFiles[selectedFileIndex].name,
+            selectedFileIndex
+          );
+        }
       }
     }
   };
@@ -365,6 +381,7 @@ const App: React.FC = () => {
             <FileExplorer
               key={fileExplorerKey}
               files={uploadedFiles}
+              setFiles={setUploadedFiles}
               onFileClick={handleFileClick}
               onDeleteFile={deleteFile}
               selectedFileIndex={selectedFileIndex}
@@ -396,7 +413,7 @@ const App: React.FC = () => {
       <footer>
         <div className="footer-content">
           <a target="_blank" rel="noopener noreferrer" href="https://reproduciblebiomodels.org/">
-            Copyright © 2023 Center for Reproducible Biomedical Modeling
+            Copyright © 2024 Center for Reproducible Biomedical Modeling
           </a>
           <div className="selected-editor-position">
             Ln {selectedEditorPosition.line}, Col {selectedEditorPosition.column}
