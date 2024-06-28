@@ -16,3 +16,5 @@ to
   appPublic: resolveApp('public'),
   appHtml: resolveApp('public/index.html'),
 and change it back after deployment.
+
+If any changes are made to Conversion.js in the root folder, make sure those changes are reflected in the public/Conversion.js file as well.
