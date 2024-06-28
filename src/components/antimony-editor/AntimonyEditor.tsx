@@ -1,26 +1,37 @@
-import React, { useRef, useEffect, useState } from 'react';
-import * as monaco from 'monaco-editor';
-import { antimonyLanguage } from '../../language-handler/antlr/AntimonyLanguage';
-import { antimonyTheme } from '../../language-handler/AntimonyTheme';
-import './AntimonyEditor.css';
-import { getBiomodels, getModel } from '../../features/BrowseBiomodels';
-import Loader from '../Loader';
-import ModelParser from '../../language-handler/ModelParser';
-import ModelSemanticsChecker from '../../language-handler/ModelSemanticChecker';
-import handleDownload from '../../features/HandleDownload';
-import { IDBPDatabase, DBSchema } from 'idb';
+import React, { useRef, useEffect, useState } from "react";
+import * as monaco from "monaco-editor";
+import { antimonyLanguage } from "../../language-handler/antlr/AntimonyLanguage";
+import { antimonyTheme } from "../../language-handler/AntimonyTheme";
+// import CustomButton from '../CustomButton';
+import "./AntimonyEditor.css";
+import { getBiomodels, getModel } from "../../features/BrowseBiomodels";
+import Loader from "../Loader";
+import CreateAnnotationModal from "../create-annotation/CreateAnnotationModal";
+import ModelSemanticsChecker from "../../language-handler/ModelSemanticChecker";
+import { IDBPDatabase, DBSchema } from "idb";
+import { SrcPosition, SrcRange } from "../../language-handler/Types";
 
 /**
  * @description AntimonyEditorProps interface
  * @interface
  * @property {string} content - The content of the editor
  * @property {string} fileName - The name of the file
- * @property {string} handleFileUpload - Handle the file upload
+ * @property {object} editorInstance - The current editor instance
+ * @property {function} setEditorInstance - The function to set the current editor instance
+ * @property {object} selectedFilePosition -
+ * @property {function} handleSelectedPosition -
+ * @property {function} handleConversionSBML - Handle the SBML to Antimony file conversion
  */
 interface AntimonyEditorProps {
   content: string;
   fileName: string;
-  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  editorInstance: monaco.editor.IStandaloneCodeEditor | null;
+  setEditorInstance: React.Dispatch<
+    React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>
+  >;
+  selectedFilePosition: SrcPosition;
+  handleSelectedPosition: (position: SrcPosition) => void;
+  handleConversionSBML: () => void;
 }
 
 /**
@@ -76,18 +87,272 @@ declare global {
  * @param content - AntimonyEditorProp
  * @param fileName - AntimonyEditorProp
  * @param database - IDBPDatabase<MyDB>
- * @param handleFileUpload - AntimonyEditorProp
  * @example - <AntimonyEditor content={content} fileName={fileName} database={database} />
  * @returns - AntimonyEditor component
  */
-const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({ content, fileName, database, handleFileUpload }) => {
+const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({
+  content,
+  fileName,
+  database,
+  editorInstance,
+  setEditorInstance,
+  selectedFilePosition,
+  handleSelectedPosition,
+  handleConversionSBML,
+}) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const [chosenModel, setChosenModel] = useState<string | null>(null);
-  const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
   const [newContent, setNewContent] = useState<string>(content); // Track the new content
-  const [selectedFile, setSelectedFile] = useState<string>('')
+  const [selectedFile, setSelectedFile] = useState<string>("");
+  const [annotHighlightedOn, setAnnotHighlightedOn] = useState<boolean>(false);
+  const [annotationAddPosition, setAnnotationAddPosition] = useState<SrcPosition | null>(null);
+  const [varToAnnotate, setVarToAnnotate] = useState<string | null>(null);
+
+  /**
+   * sets up the antimony editor,
+   * including language, color theme, retrieving selected file content, etc.
+   * @returns
+   */
+  const editorSetup = () => {
+    if (editorRef.current) {
+      let editor: any;
+      // Load the custom language
+      monaco.languages.register({ id: "antimony" });
+      monaco.languages.setMonarchTokensProvider("antimony", antimonyLanguage);
+
+      // Load the custom theme
+      monaco.editor.defineTheme("antimonyTheme", antimonyTheme);
+      monaco.editor.setTheme("antimonyTheme");
+      // Retrieve content and file name from IndexedDB
+      database
+        .transaction("files")
+        .objectStore("files")
+        .get(fileName)
+        .then((data) => {
+          if (data) {
+            setNewContent(data.content);
+            window.selectedFile = data.name;
+            editor.setValue(data.content);
+          }
+        });
+
+      // Set language configuration for bracket pair colorization
+      monaco.languages.setLanguageConfiguration("antimony", {
+        comments: {
+          lineComment: "//",
+        },
+        brackets: [
+          ["{", "}"],
+          ["[", "]"],
+          ["(", ")"],
+        ],
+      });
+
+      if (fileName.includes(".xml")) {
+        // Create the editor
+        editor = monaco.editor.create(editorRef.current, {
+          bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
+          value: content,
+          language: "xml",
+          automaticLayout: true,
+        });
+
+        // Set the antimonyString variable to the editor content
+        window.sbmlString = editor.getValue();
+      } else {
+        editor = monaco.editor.create(editorRef.current, {
+          bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
+          value: content,
+          language: "antimony",
+          automaticLayout: true,
+        });
+        window.antimonyActive = true;
+
+        // Set the antimonyString variable to the editor content
+        window.antimonyString = editor.getValue();
+      }
+      return editor;
+    }
+    return null;
+  };
+
+  /**
+   * @description adds the menu option to create an annotation
+   * @param editor
+   */
+  const addAnnotationOption = (editor: any) => {
+    if (editorRef.current) {
+      // Adds the create annotations option to the context menu
+      // Checks if the cursor is on an actual variable or not
+      editor.addAction({
+        // An unique identifier of the contributed action.
+        id: "create-annotation",
+
+        // A label of the action that will be presented to the user.
+        label: "Create Annotations",
+
+        // An optional array of keybindings for the action.
+        keybindings: [
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10,
+          // chord
+          monaco.KeyMod.chord(
+            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
+            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM
+          ),
+        ],
+
+        // A precondition for this action.
+        precondition: null,
+
+        // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
+        keybindingContext: null,
+
+        contextMenuGroupId: "navigation",
+
+        contextMenuOrder: 1,
+
+        // Method that will be executed when the action is triggered.
+        // @param editor The editor instance is passed in as a convenience
+        run: function (ed: monaco.editor.IStandaloneCodeEditor) {
+          const position = ed.getPosition();
+          if (position) {
+            const word = ed.getModel()?.getWordAtPosition(position);
+
+            if (word) {
+              // Check if variable with id word.word exists at the given position range.
+              // If it does, use the stored variable info to create a hover.
+              let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
+              let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
+              let srcRange: SrcRange = new SrcRange(start, end);
+
+              // Check that user cursor is over an actual variable.
+              let ST = ModelSemanticsChecker(ed, annotHighlightedOn, false);
+              let varAndAnnotationPositionInfo = ST.hasVarAtLocation(word.word, srcRange);
+              if (varAndAnnotationPositionInfo) {
+                setModalVisible(true);
+                setAnnotationAddPosition(varAndAnnotationPositionInfo.annotationPositon);
+                setVarToAnnotate(word.word);
+              } else {
+                alert("Please select a variable to annotate.");
+              }
+            } else {
+              alert("Please select a variable to annotate.");
+            }
+          }
+        },
+      });
+    }
+  };
+
+  /**
+   * @description handles adding the menu option to highlight unannotated variables
+   * @param editor
+   */
+  const addAnnotationVarHighlightOption = (editor: any) => {
+    if (editorRef.current) {
+      // Adds the "Highlight Unannotated Variables" option to the context menu.
+      // Checks if the cursor is on an actual variable or not.
+      editor.addAction({
+        // An unique identifier of the contributed action.
+        id: "highlight-annotation",
+
+        // A label of the action that will be presented to the user.
+        label: `Highlight Unannotated Variables ${annotHighlightedOn ? "Off" : "On"}`,
+
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+
+        // A precondition for this action.
+        precondition: null,
+
+        // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
+        keybindingContext: null,
+
+        contextMenuGroupId: "navigation",
+
+        contextMenuOrder: 1.5,
+
+        run: function (editor: monaco.editor.IStandaloneCodeEditor) {
+          setAnnotHighlightedOn((prevAnnotHighlightedOn) => !prevAnnotHighlightedOn);
+        },
+      });
+    }
+  };
+
+  /**
+   * @description handles adding the menu option to navigate to the first
+   * annotation (by line number) for a selected variable
+   * @param editor
+   */
+  const addNavigateEditAnnotationOption = (editor: any) => {
+    if (editorRef.current) {
+      editor.addAction({
+        // An unique identifier of the contributed action.
+        id: "Navigate to Edit Annotation",
+
+        // A label of the action that will be presented to the user.
+        label: `Navigate to Edit Annotation`,
+
+        // keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+
+        // A precondition for this action.
+        precondition: null,
+
+        // A rule to evaluate on top of the precondition in order to dispatch the keybindings.
+        keybindingContext: null,
+
+        contextMenuGroupId: "navigation",
+
+        contextMenuOrder: 1.5,
+
+        // Method that will be executed when the action is triggered.
+        // @param editor The editor instance is passed in as a convenience
+        run: function (ed: monaco.editor.IStandaloneCodeEditor) {
+          const position = ed.getPosition();
+          if (position) {
+            const word = ed.getModel()?.getWordAtPosition(position);
+
+            if (word) {
+              // Check if variable with id word.word exists at the given position range.
+              // If it does, use the stored variable info to create a hover.
+              let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
+              let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
+              let srcRange: SrcRange = new SrcRange(start, end);
+
+              // Check that user cursor is over an actual variable.
+              // this feels scuffed, could probably store the ST somewhere to reduce calls to ModelSemanticsChecker
+              // in the future.
+              let ST = ModelSemanticsChecker(ed, annotHighlightedOn, false);
+              let info = ST.hasVarAtLocation(word.word, srcRange);
+              if (info && info.varInfo.annotations.length > 0) {
+                let line = Number.MAX_VALUE;
+                for (const value of info.varInfo.annotationLineNum.values()) {
+                  line = Math.min(value.start.line, line);
+                }
+
+                const range = {
+                  startLineNumber: line,
+                  startColumn: 1,
+                  endLineNumber: line,
+                  endColumn: editor.getModel().getLineMaxColumn(line),
+                };
+
+                ed.setSelection(range);
+                ed.revealLineInCenter(line);
+              } else {
+                alert("Please select an annotated variable");
+              }
+            } else {
+              alert("Please select an annotated variable");
+            }
+          }
+        },
+      });
+    }
+  };
 
   /**
    * @description Loads the editor and sets the language, theme, and content
@@ -96,79 +361,91 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     if (editorRef.current) {
       let editor: any;
       // Load the custom language
-      monaco.languages.register({ id: 'antimony' });
-      monaco.languages.setMonarchTokensProvider('antimony', antimonyLanguage);
+      monaco.languages.register({ id: "antimony" });
+      monaco.languages.setMonarchTokensProvider("antimony", antimonyLanguage);
 
       // Load the custom theme
-      monaco.editor.defineTheme('antimonyTheme', antimonyTheme);
-      monaco.editor.setTheme('antimonyTheme');
-
+      monaco.editor.defineTheme("antimonyTheme", antimonyTheme);
+      monaco.editor.setTheme("antimonyTheme");
       // Retrieve content and file name from IndexedDB
-      database.transaction('files').objectStore('files').get(fileName).then((data) => {
-        if (data) {
-          // setOriginalContent(data.content);
-          setNewContent(data.content);
-          // setSelectedFile(data.name);
-          window.selectedFile = data.name;
-          editor.setValue(data.content);
-        }
-      });
+      database
+        .transaction("files")
+        .objectStore("files")
+        .get(fileName)
+        .then((data) => {
+          if (data) {
+            setNewContent(data.content);
+            window.selectedFile = data.name;
+            editor.setValue(data.content);
+          }
+        });
 
-      if (fileName.includes('.xml')) {
+      if (fileName.includes(".xml")) {
         // Create the editor
         editor = monaco.editor.create(editorRef.current, {
           bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
           value: content,
-          language: 'xml',
+          language: "xml",
+          automaticLayout: true,
         });
-        console.log('SBML Editor');
+
         // Set the antimonyString variable to the editor content
         window.sbmlString = editor.getValue();
       } else {
         editor = monaco.editor.create(editorRef.current, {
           bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
           value: content,
-          language: 'antimony',
+          language: "antimony",
+          automaticLayout: true,
         });
         window.antimonyActive = true;
-        console.log('Antimony Editor');
+
         // Set the antimonyString variable to the editor content
         window.antimonyString = editor.getValue();
       }
 
+      // Adds the create annotations option to the context menu
+      // Checks if the cursor is on an actual variable or not
+      addAnnotationOption(editor);
+
+      // Adds the "Highlight Unannotated Variables" option to the context menu.
+      // Checks if the cursor is on an actual variable or not.
+      addAnnotationVarHighlightOption(editor);
+
+      // Adds the "Navigate to Edit Annotation" option to the context menu
+      // checks if the cursor is on an actual variable or not.
+      addNavigateEditAnnotationOption(editor);
+
       // Set language configuration for bracket pair colorization
-      monaco.languages.setLanguageConfiguration('antimony', {
+      monaco.languages.setLanguageConfiguration("antimony", {
+        comments: {
+          lineComment: "//",
+        },
         brackets: [
-          ['{', '}'],
-          ['[', ']'],
-          ['(', ')'],
+          ["{", "}"],
+          ["[", "]"],
+          ["(", ")"],
         ],
       });
 
-      // setOriginalContent(editor.getValue());
-
-      // Delay the model parser to avoid parsing while the user is typing
-      let typingTimer: any;
-      const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
-        clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => {
-          ModelParser(editor, true);
-          ModelSemanticsChecker(editor, true);
-        }, 600);
-      };
-
-      // Parse the model whenever the user types
-      editor.onDidChangeModelContent(() => {
-        setNewContent(editor.getValue());
-        delayedModelParser(editor);
-      });
-
+      handleEditorContentChagne(editor);
+      handleCursorPositionChange(editor);
       getBiomodels(setLoading, setChosenModel);
       setEditorInstance(editor);
       setSelectedFile(fileName);
       return () => editor.dispose();
     }
-  }, [content, database, fileName]);
+  }, [annotHighlightedOn, content, database, fileName]);
+
+  /**
+   * @description reruns semantic checker in case something related to
+   * the editor changes, or the annotation highlight feature is selected.
+   */
+  useEffect(() => {
+    if (editorInstance) {
+      ModelSemanticsChecker(editorInstance, annotHighlightedOn, false);
+    }
+  }, [annotHighlightedOn, editorInstance]);
 
   /**
    * @description Adds the link action to the editor context menu
@@ -211,8 +488,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   useEffect(() => {
     if (database && editorInstance) {
       setNewContent(editorInstance.getValue());
-      const transaction = database.transaction('files', 'readwrite');
-      transaction.objectStore('files').put({
+      const transaction = database.transaction("files", "readwrite");
+      transaction.objectStore("files").put({
         name: selectedFile,
         content: newContent,
       });
@@ -224,10 +501,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
    */
   useEffect(() => {
     if (chosenModel) {
-      const dropdown = document.getElementById('biomddropdown');
+      const dropdown = document.getElementById("biomddropdown");
       dropdown!.style.display = "none";
       setLoading(true);
-      if (chosenModel === '') {
+      if (chosenModel === "") {
         setLoading(false);
         return;
       }
@@ -250,88 +527,61 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   }, [chosenModel]);
 
   /**
-   * @description Handles conversion from Antimony to SBML
+   * when the cursor position changes in the editor
+   * we use the callback function `handleSelectedPosition`
+   * to update state.
+   * @param editor
    */
-  const handleConversionAnt = () => {
-    try {
-      if (window.processAntimony) {
-        window.processAntimony();
-      } else {
-        console.error('processAntimony function not found in the global scope.');
+  const handleCursorPositionChange = (editor: any) => {
+    editor.onDidChangeCursorPosition(() => {
+      let position: monaco.Position = editor.getPosition();
+      if (position) {
+        handleSelectedPosition(new SrcPosition(position.lineNumber, position.column));
       }
-    } catch (err) {
-      console.log('Conversion error:', err);
-    }
+    });
   };
 
-  /**
-   * @description Handles conversion from SBML to Antimony
-   */
-  const handleConversionSBML = () => {
-    try {
-      if (window.processSBML) {
-        window.processSBML();
-      } else {
-        console.error('processSBML function not found in the global scope.');
-      }
-    } catch (err) {
-      console.log('Conversion error:', err);
-    }
-  };
-
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [isDropdownVisible, setDropdownVisible] = useState(false);
-
-  const handleButtonClick = () => {
-    if (dropdownRef.current) {
-      setDropdownVisible(!isDropdownVisible);
-    }
-  };
-
-  const handleOutsideClick = (event: MouseEvent) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-      setDropdownVisible(false);
-    }
-  };
-
-  useEffect(() => {
-    window.addEventListener('click', handleOutsideClick);
-
-    return () => {
-      window.removeEventListener('click', handleOutsideClick);
+  const handleEditorContentChagne = (editor: any) => {
+    // Delay the model parser to avoid parsing while the user is typing
+    let typingTimer: any;
+    const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => {
+        ModelSemanticsChecker(editor, annotHighlightedOn, true);
+      }, 600);
     };
-  }, []);
+
+    // Parse the model whenever the user types
+    editor.onDidChangeModelContent(() => {
+      setNewContent(editor.getValue());
+      delayedModelParser(editor);
+    });
+  };
 
   return (
     <>
-      <div className='menu'>
-        <input id="file-upload" type="file" multiple onChange={handleFileUpload} accept=".ant,.xml,.txt" />
-        <label htmlFor="file-upload" className='file-upload-label'>Load File(s)</label>
+      <div className="search-container">
         {/* <button className='button' onClick={save}> Save Changes </button> */}
-        {/* <button className='btn'>Navigate to Edit Annotations</button> */}
-        {/* <CustomButton name={'Insert Rate Law'} />
-        <CustomButton name={'Annotated Variable Highlight Off'} /> */}
-        <div className='menu-middle'>
-          <Loader loading={loading} />
-          <div>
-            <input id='biomodel-browse' type='text' placeholder='Search biomodels' />
-            <div id='biomddropdown'>
-              <ul />
-            </div>
-          </div>
-          <div className="dropdown" ref={dropdownRef}>
-            <button onClick={handleButtonClick} className="dropbtn">
-              Convert Antimony/SBML
-            </button>
-            <div id="myDropdown" className={`dropdown-content ${isDropdownVisible ? 'show' : ''}`}>
-              <button className='convert-button' onClick={handleConversionAnt}>Antimony → SBML</button>
-              <button className='convert-button' onClick={handleConversionSBML}>SBML → Antimony</button>
-            </div>
+        {/* <CustomButton name={'Insert Rate Law'} /> */}
+        <Loader loading={loading} />
+        <div>
+          <input id="biomodel-browse" type="text" placeholder="Search biomodels" />
+          <div id="biomddropdown">
+            <ul />
           </div>
         </div>
-        <button className='download-button' onClick={() => handleDownload(editorInstance, fileName)}>Save File to Downloads Folder</button>
       </div>
       <div className="code-editor" ref={editorRef}></div>
+      {isModalVisible && (
+        <div ref={modalRef}>
+          <CreateAnnotationModal
+            onClose={() => setModalVisible(false)}
+            annotationAddPosition={annotationAddPosition}
+            editorInstance={editorInstance}
+            varToAnnotate={varToAnnotate}
+          />
+        </div>
+      )}
     </>
   );
 };

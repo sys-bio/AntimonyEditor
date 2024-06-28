@@ -335,6 +335,9 @@ module.exports = function (webpackEnv) {
           babelRuntimeRegenerator,
         ]),
       ],
+      fallback: {
+        "stream": require.resolve("stream-browserify"),
+      }
     },
     module: {
       strictExportPresence: true,

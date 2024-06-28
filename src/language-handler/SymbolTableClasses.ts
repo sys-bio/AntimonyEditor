@@ -1,4 +1,4 @@
-import { SrcRange, varTypes } from "./Types";
+import { SrcPosition, SrcRange, varTypes } from "./Types";
 import { Variable } from "./Variable";
 
 
@@ -10,9 +10,20 @@ export class SymbolTable {
     // this variable is found to be declared.
     // this takes care of variable reassignment during ST buildup
     private varMap: Map<string, Variable>;
+    public endLine: number | undefined;
+    public annotationSet: Set<string>;
 
     constructor() {
         this.varMap = new Map();
+        this.annotationSet = new Set();
+    }
+
+    /**
+     * 
+     * @returns the variable map in the current scope
+     */
+    getVarMap(): Map<string, Variable> {
+        return this.varMap;
     }
 
     /**
@@ -44,12 +55,20 @@ export class SymbolTable {
  */
 export class GlobalST extends SymbolTable {
     private funcMap: Map<string, ParamAndNameTable>;
-    private modelMap: Map<string, ParamAndNameTable>
+    private modelMap: Map<string, ParamAndNameTable>;
 
     constructor() {
         super();
         this.funcMap = new Map();
         this.modelMap = new Map();
+    }
+
+    getFuncMap(): Map<string, ParamAndNameTable> {
+        return this.funcMap;
+    }
+
+    getModelMap(): Map<string, ParamAndNameTable> {
+        return this.modelMap;
     }
 
     /**
@@ -99,6 +118,42 @@ export class GlobalST extends SymbolTable {
     getModelST(modelName: string) {
         return this.modelMap.get(modelName);
     }
+
+    /**
+     * @description looks up a var with id that exists at srcRange
+     *              checks if this variable exists in a non function context.
+     * @param id 
+     * @param srcRange 
+     * @returns a record with field "varInfo" holding information about the variable, and 
+     *          the field "annotationPosition" that gives the position where an annotation for
+     *          this variable would be inserted. If the variable does not exist, undefined is returned.
+     */
+    hasVarAtLocation(id: string, srcRange: SrcRange) {
+        let varInfo: Variable | undefined = this.getVar(id);
+        if (varInfo && varInfo.refLocations.has(srcRange.toString())) {
+            let line = 0
+            if (this.endLine) {
+                line = this.endLine + 1;
+            }
+            // col is 0 since in global scope
+            return {varInfo: varInfo, annotationPositon: new SrcPosition(line, 0)};
+        }
+        
+        for (const [key, modelST] of this.modelMap) {
+            varInfo = modelST.getVar(id);
+            if (varInfo && varInfo.refLocations.has(srcRange.toString())) {
+                let line = 0;
+                if (modelST.endLine) {
+                    line = modelST.endLine;
+                }
+                // col is 2 for indent within a model, 
+                // TODO: don't hardcode this!
+                return {varInfo: varInfo, annotationPositon: new SrcPosition(line, 2)};
+            }
+        }
+
+        return undefined;
+    }
 }
 
 /**
@@ -134,22 +189,3 @@ export class ParamAndNameTable extends SymbolTable {
         this.paramSet.add(name);
     }
 }
-
-// these may be needed in the future if more info specific to 
-// models are needed
-// /**
-//  * Symbol table for a function
-//  */
-// export class FuncST extends ParamAndNameTable {
-// }
-
-// /**
-//  * Symbol table for a model
-//  * Note: treat model and mmodels as the same thing?
-//  * only thing that matters is params being non zero length
-//  * for mmodel
-//  * 
-//  * TODO: make a decision, make fields private or public???
-//  */
-// export class ModelST extends ParamAndNameTable {
-// }

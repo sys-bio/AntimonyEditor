@@ -1,4 +1,4 @@
-import {AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
+import {Annot_listContext, AnnotationContext, AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, New_annotContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { SymbolTable, ParamAndNameTable} from './SymbolTableClasses';
 import { Variable } from './Variable';
@@ -47,8 +47,13 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
                 const errorUnderline = this.getErrorUnderline(this.getSrcRange(params.children[i]), errorMessage, true);
                 this.addError(errorUnderline);
               } else {
-                const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(params.children[i]), undefined, false);
+                const idSrcRange: SrcRange = this.getSrcRange(params.children[i]);
+                const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, idSrcRange, undefined, false);
                 seenParams.set(paramId, paramInfo);
+
+                // keep track of all locations this param is referenced for hovers
+                paramInfo.refLocations.set(idSrcRange.toString(), idSrcRange);
+
                 // we need to know what the params are if we want to
                 // initialize this model as a variable somewhere.
                 this.globalST.getFunctionST(funcName)?.addParameter(paramId);
@@ -102,13 +107,13 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
             // only go over the ids, as we have id1,id2,id3,id4
             for (let i = 0; i < params.children.length; i += 2) {
               const paramId: string = params.children[i].text;
+              const paramIdSrcRange: SrcRange = this.getSrcRange(params.children[i]);
               if (seenParams.has(paramId)) {
                 // handle repeat params ids in parameter list!!
                 const errorMessage = duplicateParameterError(paramId);
-                const errorUnderline = this.getErrorUnderline(this.getSrcRange(params.children[i]), errorMessage, true);
+                const errorUnderline = this.getErrorUnderline(paramIdSrcRange, errorMessage, true);
                 this.addError(errorUnderline);
               } else {
-                let paramIdSrcRange: SrcRange = this.getSrcRange(params.children[i])
                 const paramInfo: Variable = new Variable(varTypes.Unknown, false, undefined, paramIdSrcRange, paramIdSrcRange, false);
                 seenParams.set(paramId, paramInfo);
                 // we need to know what the params are if we want to
@@ -121,10 +126,17 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           }
         }
 
+        // record end position for potential annotation insert
+        let lastLine: number | undefined = ctx._stop?.line;
+        let currST = this.globalST.getModelST(modName);
+        if (currST) {
+          currST.endLine = lastLine;
+        }
+
         // go through what is inside this model
         this.setScopeVisitChildren(modName, ctx, 'model');
       } else {
-        // redeclared function, error
+        // redeclared Model, error
         // should make a function to return errorUnderlines.
         const errorMessage = modelAlreadyExistsError(modName, modelST.getPosition());
         let errorUnderline: ErrorUnderline = this.getErrorUnderline(this.getSrcRange(ctx), errorMessage, true);
@@ -151,7 +163,8 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       return;
     }
 
-    let varInfo: Variable = new Variable(varTypes.Species, false, undefined, this.getSrcRange(ctx), undefined, false);
+    const varIdSrcRange: SrcRange = this.getSrcRange(ctx.NAME())
+    let varInfo: Variable = new Variable(varTypes.Species, false, undefined, varIdSrcRange, undefined, false);
 
     let speciesName: string = this.getVarName(ctx.NAME().text);
     // gets the $ location within the grammar def of "species : (NUMBER)? ('$')? NAME;"
@@ -165,7 +178,9 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       if (existingVarInfo) {
         if (existingVarInfo.canSetType(varTypes.Species)) {
           existingVarInfo.type = varTypes.Species;
-          existingVarInfo.idSrcRange = this.getSrcRange(ctx.NAME());
+          existingVarInfo.idSrcRange = varIdSrcRange;
+          // for hover info
+          existingVarInfo.refLocations.set(varIdSrcRange.toString(), varIdSrcRange);
         } else {
           const errorMessage = incompatibleTypesError(varTypes.Species, existingVarInfo);
           const errorUnderline: ErrorUnderline = this.getErrorUnderline(varInfo.idSrcRange, errorMessage, true);
@@ -178,6 +193,66 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     }
   }
 
+  // should be very similar to vsiit_assignment
+  // adding this so that the values of vars assigned in a decl_itm
+  // can be recorded as well.
+  visitDecl_item(ctx: Decl_itemContext) {
+    if (this.hasParseError(ctx)) {
+      return;
+    }
+
+    if (ctx.children) {
+      for (let i = 0; i < ctx.children.length; i++) {
+        this.visit(ctx.children[i]);
+      }
+
+     // now record the assigned variable as assigned.
+     const nmbi: NamemaybeinContext = ctx.children[0] as NamemaybeinContext;
+     const varName: string = nmbi.var_name().text;
+     const currSrcRange: SrcRange = this.getSrcRange(ctx);
+
+     const currST: SymbolTable | undefined = this.getCurrST();
+
+     // almost identical to visit_assignment
+     // the key difference is that here we NEED to 
+     // check if the assignment portion of the decl_item node 
+     // actually exists, since otherwise we cannot say that 
+     // this variable has been assigned to.
+     if (currST && ctx.decl_assignment()) {
+        let varInfo: Variable | undefined;
+        // because we visit the children first, it is
+        // gauranteed that the var is in the currST.
+        if ((varInfo = currST.getVar(varName)) !== undefined) {
+          if (varInfo.initSrcRange !== undefined) {
+            // warning case! reinitalization!
+            if (varInfo.initSrcRange) {
+              // adds warning to current id location
+              const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
+              const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
+              this.addError(errorUnderline1);
+
+              // adds warning to previous id initialization location
+              const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
+              const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
+              this.addError(errorUnderline2);
+            }
+          }
+          varInfo.initSrcRange = currSrcRange;
+          // TODO: might make sense to initialize every var to a overarrching type?
+          // just straight up setting to a Paramter type here feels unelegant.
+          
+          if (!isSubtTypeOf(varInfo.type, varTypes.Parameter) && isSubtTypeOf(varTypes.Parameter, varInfo.type)) {
+            varInfo.type = varTypes.Parameter;
+          }
+          // for hovers
+          varInfo.value = ctx.decl_assignment()?.sum().text;
+          const refSrcRange: SrcRange = this.getSrcRange(nmbi.var_name().NAME())
+          varInfo.refLocations.set(refSrcRange.toString(), refSrcRange);
+        }
+     }
+   }
+  }
+
   /**
    * 
    * @param ctx 
@@ -187,81 +262,91 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       return;
     }
 
-    // grammar def: declaration : decl_modifiers decl_item (',' decl_item)*;
-    if (ctx.children) {
-      // we visit the children first
-      // something like this is valid: "species B = 1, C = 2, D = 3;"
+    try {
+      // grammar def: declaration : decl_modifiers decl_item (',' decl_item)*;
+      if (ctx.children) {
+        // we visit the children first
+        // something like this is valid: "species B = 1, C = 2, D = 3;"
 
-      // visit children first for convenience, as we then have
-      // them inside the ST's for the following steps
-      for (let i = 0; i < ctx.children.length; i++) {
-        this.visit(ctx.children[i]);
-      }
-
-      // we are looping this way to only hit the Decl_itemContext nodes.
-      for (let i = 1; i < ctx.children.length; i+=2) {
-        const declItem: Decl_itemContext = ctx.children[i] as Decl_itemContext;
-        const varName: string = this.getVarName(declItem.namemaybein().var_name().text);
-        const currSrcRange: SrcRange = this.getSrcRange(declItem);
-        const currST: SymbolTable | undefined = this.getCurrST();
-
-        // check if we are using $ to apply const
-        let varIsConst: boolean = (varName.charAt(0) === '$');
-        if (varIsConst) {
-          currSrcRange.start.column += 1;
+        // visit children first for convenience, as we then have
+        // them inside the ST's for the following steps
+        for (let i = 0; i < ctx.children.length; i++) {
+          this.visit(ctx.children[i]);
         }
 
-        let varInfo: Variable | undefined;
-        if (currST) {
-          varInfo = currST.getVar(varName);
-        }
+        // we are looping this way to only hit the Decl_itemContext nodes.
+        for (let i = 1; i < ctx.children.length; i+=2) {
+          const declItem: Decl_itemContext = ctx.children[i] as Decl_itemContext;
+          const varName: string = this.getVarName(declItem.namemaybein().var_name().text);
+          const currIdSrcRange: SrcRange = this.getSrcRange(declItem.namemaybein().var_name().NAME());
+          const currAssignSrcRange: SrcRange = this.getSrcRange(declItem);//(declItem.namemaybein().var_name().NAME());
+          const currST: SymbolTable | undefined = this.getCurrST();
 
-        // gauranteed to pass this check as children visited first.
-        if (varInfo) {
-          // type overried takes precedence over value reassignement.
-          // should this continue being the case, or should both cases be reported?
-          // for now keep it as report both.
-
-          // take care of modifiers
-          let declModifiers: Decl_modifiersContext = ctx.decl_modifiers();
-          varInfo.substanceOnly = (declModifiers.SUB_MODIFIER() !== undefined) || varInfo.substanceOnly;
-          varInfo.isConst = (declModifiers.VAR_MODIFIER()?.text === varTypes.Const) || varInfo.isConst;
-          let typeString: string | undefined = declModifiers.TYPE_MODIFIER()?.text;
-          
-          if (typeString) {
-            const type: varTypes = getTypeFromString(typeString);
-
-            if (varInfo.canSetType(type)) {
-              varInfo.type = type;
-              varInfo.idSrcRange = currSrcRange;
-            } else {
-              // error! trying to overried previous type decl
-              const errorMessage = incompatibleTypesError(type, varInfo);
-              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage, true);
-              this.addError(errorUnderline);
-            }
+          // check if we are using $ to apply const
+          let varIsConst: boolean = (varName.charAt(0) === '$');
+          if (varIsConst) {
+            currAssignSrcRange.start.column += 1;
+            currIdSrcRange.start.column += 1;
           }
 
-          // check if initialize node exists
-          if (declItem.decl_assignment()) {
-            // check if it is initialized.
-            // as the children are visited first.
-            if (varInfo.initSrcRange !== undefined) {
-              // warning case! reinitalization!
-              if (varInfo.initSrcRange) {
-                const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
-                const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
-                this.addError(errorUnderline1);
+          let varInfo: Variable | undefined;
+          if (currST) {
+            varInfo = currST.getVar(varName);
+          }
 
-                const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
-                const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
-                this.addError(errorUnderline2);
+          // gauranteed to pass this check as children visited first.
+          if (varInfo) {
+            // for hover
+            varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
+            // type overried takes precedence over value reassignement.
+            // should this continue being the case, or should both cases be reported?
+            // for now keep it as report both.
+
+            // take care of modifiers
+            let declModifiers: Decl_modifiersContext = ctx.decl_modifiers();
+            varInfo.substanceOnly = (declModifiers.SUB_MODIFIER() !== undefined) || varInfo.substanceOnly;
+            varInfo.isConst = (declModifiers.VAR_MODIFIER()?.text === varTypes.Const) || varInfo.isConst;
+            let typeString: string | undefined = declModifiers.TYPE_MODIFIER()?.text;
+            
+            if (typeString) {
+              const type: varTypes = getTypeFromString(typeString);
+              
+              if (varInfo.canSetType(type)) {
+                varInfo.type = type;
+                varInfo.idSrcRange = currIdSrcRange;
+              } else {
+                // error! trying to overried previous type decl
+                const errorMessage = incompatibleTypesError(type, varInfo);
+                const errorUnderline: ErrorUnderline = this.getErrorUnderline(currIdSrcRange, errorMessage, true);
+                this.addError(errorUnderline);
               }
             }
-            varInfo.initSrcRange = currSrcRange;
+
+            // check if initialize node exists
+            if (declItem.decl_assignment()) {
+              // check if it is initialized.
+              // as the children are visited first.
+              if (varInfo.initSrcRange !== undefined) {
+                // warning case! reinitalization!
+                if (varInfo.initSrcRange && varInfo.initSrcRange.toString() !== currAssignSrcRange.toString()) {
+                  const errorMessage1: string = overriddenValueWarning(varName, currAssignSrcRange);
+                  const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
+                  this.addError(errorUnderline1);
+
+                  const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
+                  const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currAssignSrcRange, errorMessage2, false);
+                  this.addError(errorUnderline2);
+                }
+              }
+              varInfo.initSrcRange = currAssignSrcRange;
+            }
+            varInfo.refLocations.set(currIdSrcRange.toString(), currIdSrcRange);
           }
         }
       }
+    } catch (e) {
+      // console.log(e);
+      return;
     }
   }
 
@@ -290,17 +375,28 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           if (varInfo.initSrcRange !== undefined) {
             // warning case! reinitalization!
             if (varInfo.initSrcRange) {
+              // adds warning to current id location
               const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
               const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
               this.addError(errorUnderline1);
 
+              // adds warning to previous id initialization location
               const errorMessage2: string = overridingValueWarning(varName, varInfo.initSrcRange);
               const errorUnderline2: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage2, false);
               this.addError(errorUnderline2);
             }
           }
           varInfo.initSrcRange = currSrcRange;
-          varInfo.type = varTypes.Parameter;
+          // TODO: might make sense to initialize every var to a overarrching type?
+          // just straight up setting to a Paramter type here feels unelegant.
+          if (!isSubtTypeOf(varInfo.type, varTypes.Parameter) && isSubtTypeOf(varTypes.Parameter, varInfo.type)) {
+            varInfo.type = varTypes.Parameter;
+          }
+
+          // for hovers
+          varInfo.value = ctx.sum().text;
+          const refSrcRange: SrcRange = this.getSrcRange(nmbi.var_name().NAME())
+          varInfo.refLocations.set(refSrcRange.toString(), refSrcRange);
         }
       }
     }
@@ -347,9 +443,12 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       // check for case 2
       if (in_compCtx) {
         const id2: string = this.getVarName(in_compCtx.var_name().text);
+        const id2SrcRange: SrcRange = this.getSrcRange(in_compCtx.var_name());
         // check if the compartment is already defined.
         let id2VarInfo: Variable | undefined = currST.getVar(id2)
         if (id2VarInfo) {
+          id2VarInfo.refLocations.set(id2SrcRange.toString(), id2SrcRange);
+
           // exists, check if it is a compartment
           if (id2VarInfo.canSetType(varTypes.Compartment)) {
             id2VarInfo.type = varTypes.Compartment;
@@ -359,12 +458,12 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           } else {
             //error, trying to say some value is in a noncompartment type
             const errorMessage = incompatibleTypesError(varTypes.Compartment, id2VarInfo);
-            const errorUnderline = this.getErrorUnderline(this.getSrcRange(in_compCtx.var_name()), errorMessage, true);
+            const errorUnderline = this.getErrorUnderline(id2SrcRange, errorMessage, true);
             this.addError(errorUnderline);
           }
         } else {
           // does not exist in ST yet, add as uninitialized compartment (default value).
-          let id2VarInfo: Variable = new Variable(varTypes.Compartment, false, undefined, this.getSrcRange(in_compCtx.var_name()), undefined, false);
+          let id2VarInfo: Variable = new Variable(varTypes.Compartment, false, undefined, id2SrcRange, undefined, false);
           currST.setVar(id2, id2VarInfo);
           id1VarInfo.compartment = id2;
 
@@ -428,6 +527,10 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       if (reactionName && currST) {
         let varInfo: Variable | undefined = currST.getVar(id);
         if (varInfo) {
+          // here since this is a REACTION
+          // I am choosing to have the initSrcRange
+          // be just the id range, as opposed to the whole 
+          // assignment statement in regular assignment
           varInfo.initSrcRange = varInfo.idSrcRange;
         }
       }
@@ -459,21 +562,26 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
 
         // get the compartment id
         const compartmentId: string = inComp.var_name().text;
+        const compartmentIDsrcRange: SrcRange = this.getSrcRange(inComp.var_name());
         // check if compartment id already exists;
         let compartmentInfo: Variable | undefined = currST.getVar(compartmentId);
         let validCompartment: boolean = true;
         if (compartmentInfo !== undefined) {
+          // add location for hover
+          compartmentInfo.refLocations.set(compartmentIDsrcRange.toString(), compartmentIDsrcRange);
+
+          // back to type checking
           if (compartmentInfo.canSetType(varTypes.Compartment)) {
             compartmentInfo.type = varTypes.Compartment;
           } else {
             validCompartment = false;
             // type issue!
             const errorMessage = incompatibleTypesError(varTypes.Compartment, compartmentInfo);
-            this.addError(this.getErrorUnderline(this.getSrcRange(inComp.var_name()), errorMessage, true));
+            this.addError(this.getErrorUnderline(compartmentIDsrcRange, errorMessage, true));
           }
         } else {
           // compartment id does not exist as a variable yet
-          compartmentInfo = new Variable(varTypes.Unknown, false, undefined, this.getSrcRange(inComp.var_name()), undefined, false);
+          compartmentInfo = new Variable(varTypes.Unknown, false, undefined, compartmentIDsrcRange, undefined, false);
           compartmentInfo.type = varTypes.Compartment;
           currST.setVar(compartmentId, compartmentInfo);
         }
@@ -521,8 +629,8 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
 
     const eventName: Reaction_nameContext | undefined = ctx.reaction_name()
     let id = "";
-    if ( eventName) {
-      id =  eventName.namemaybein().text;
+    if (eventName) {
+      id = eventName.namemaybein().var_name().NAME().text;
       this.handleEventOrReactionName(id, eventName, varTypes.Event);
     }
 
@@ -556,6 +664,10 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       return;
     }
 
+    if (type === varTypes.Event) {
+      debugger;
+    }
+
     this.visit(name.namemaybein());
     const currST: SymbolTable | undefined = this.getCurrST();
     const idSrcRange: SrcRange = this.getSrcRange(name.namemaybein().var_name());
@@ -564,6 +676,8 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       const varInfo: Variable | undefined = currST.getVar(id);
 
       if (varInfo) {
+        varInfo.refLocations.set(idSrcRange.toString(), idSrcRange);
+
         if (isSubtTypeOf(type, varInfo.type)) {
           varInfo.type = type;
         } else {
@@ -594,8 +708,11 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     if (currST) {
       let existingVarInfo: Variable | undefined = currST.getVar(varName);
 
-      if (existingVarInfo) {
-        // already exists
+      if (existingVarInfo) {        
+        // update hover
+        existingVarInfo.refLocations.set(idSrcRange.toString(), idSrcRange);
+
+        // error check
         if (existingVarInfo.canSetType(varTypes.Parameter)) {
           existingVarInfo.type = varTypes.Parameter;
           existingVarInfo.idSrcRange = idSrcRange;
@@ -633,6 +750,80 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
           this.visit(ctx.children[i]);
         }
       }
+    }
+  }
+
+  //TODO: make a function for the "annotation already exists" warning.
+  visitAnnotation(ctx: AnnotationContext) {
+    if (this.hasParseError(ctx)) {
+      return;
+    }
+
+    const varName: string = ctx.var_name().text; // Get the species name
+    const annotationLink: string = ctx.ESCAPED_STRING().text; // Get the annotation
+    const idSrcRange: SrcRange = this.getSrcRange(ctx.var_name().NAME());
+    const annotationKeyword: string = ctx.ANNOT_KEYWORD().text;
+    
+    const currST: SymbolTable | undefined = this.getCurrST();
+    let varInfo: Variable | undefined = currST?.getVar(varName);
+    if (varInfo) {
+      if (!varInfo.annotationKeywordMap.has(annotationLink)) {
+        varInfo.annotationLineNum.set(annotationLink, this.getSrcRange(ctx));
+        varInfo.annotations.push(annotationLink);
+        varInfo.annotationKeywordMap.set(annotationLink, annotationKeyword);
+
+        // for adding links to monaco
+        this.globalST.annotationSet.add(annotationLink);
+      } else {
+        // case where there is only one annotation for each keyword used.
+        const currAnnotSrcRange = this.getSrcRange(ctx.ESCAPED_STRING());
+        const errorMessage: string = "this annotation already exists";
+        const errorUnderline: ErrorUnderline = this.getErrorUnderline(currAnnotSrcRange, errorMessage, false);
+        this.addError(errorUnderline);
+      }
+      // update ref locations for hover
+      varInfo.refLocations.set(idSrcRange.toString(), idSrcRange);
+    } else {
+      // var does not exist, so create one
+      const varInfo = new Variable(varTypes.Unknown, false, undefined, idSrcRange, undefined, false);
+      varInfo.annotationLineNum.set(annotationLink, this.getSrcRange(ctx));
+      varInfo.annotations.push(annotationLink);
+      varInfo.annotationKeywordMap.set(annotationLink, annotationKeyword);
+      
+      currST?.setVar(varName, varInfo);
+      
+      // for adding links to monaco
+      this.globalST.annotationSet.add(annotationLink);
+    }
+
+    try {
+      // go through possible list
+      let annotList: Annot_listContext | undefined = ctx.annot_list();
+      if (annotList?.children) {
+        for (let i = 0; i < annotList.children.length; i++) {
+          let singleAnnot = annotList.children[i] as New_annotContext;
+          const currAnnotLink = singleAnnot.ESCAPED_STRING().text;
+
+          if (varInfo) {
+            if (!varInfo.annotationKeywordMap.has(currAnnotLink)) {
+              varInfo.annotationLineNum.set(currAnnotLink, this.getSrcRange(ctx));
+              varInfo.annotations.push(currAnnotLink);
+              varInfo.annotationKeywordMap.set(currAnnotLink, annotationKeyword);
+
+              // for adding links to monaco
+              this.globalST.annotationSet.add(annotationLink);
+            } else {
+              const currAnnotSrcRange = this.getSrcRange(singleAnnot.ESCAPED_STRING());
+              const errorMessage: string = "this annotation already exists";
+              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currAnnotSrcRange, errorMessage, false);
+              this.addError(errorUnderline);
+            }
+          }
+        }
+      }
+    } catch(e) {
+      // do nothing
+      console.log("parse error in annotations, prob no need to fix");
     }
   }
 }

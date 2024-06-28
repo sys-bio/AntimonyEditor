@@ -3,13 +3,149 @@ import * as monaco from 'monaco-editor';
 import * as fs from 'fs';
 import { join } from 'path';
 import { isSubtTypeOf, varTypes } from '../language-handler/Types';
-import { getErrors, removeCarriageReturn } from '../language-handler/ModelSemanticChecker';
+import { AntimonyProgramAnalyzer } from '../language-handler/ModelSemanticChecker';
+import { searchOntology, searchRhea } from '../features/AnnotationSearch';
 
 // test('renders learn react link', () => {
 //   render(<App />);
 //   const linkElement = screen.getByText(/learn react/i);
 //   expect(linkElement).toBeInTheDocument();
 // });
+let target = {value: ''} as HTMLInputElement;
+let searchInput: KeyboardEvent = {
+    target: target,
+    altKey: false,
+    charCode: 0,
+    code: '',
+    ctrlKey: false,
+    isComposing: false,
+    key: '',
+    keyCode: 0,
+    location: 0,
+    metaKey: false,
+    repeat: false,
+    shiftKey: false,
+    getModifierState: function (keyArg: string): boolean {
+        throw new Error('Function not implemented.');
+    },
+    initKeyboardEvent: function (typeArg: string, bubblesArg?: boolean | undefined, cancelableArg?: boolean | undefined, viewArg?: Window | null | undefined, keyArg?: string | undefined, locationArg?: number | undefined, ctrlKey?: boolean | undefined, altKey?: boolean | undefined, shiftKey?: boolean | undefined, metaKey?: boolean | undefined): void {
+        throw new Error('Function not implemented.');
+    },
+    DOM_KEY_LOCATION_STANDARD: 0,
+    DOM_KEY_LOCATION_LEFT: 1,
+    DOM_KEY_LOCATION_RIGHT: 2,
+    DOM_KEY_LOCATION_NUMPAD: 3,
+    detail: 0,
+    view: null,
+    which: 0,
+    initUIEvent: function (typeArg: string, bubblesArg?: boolean | undefined, cancelableArg?: boolean | undefined, viewArg?: Window | null | undefined, detailArg?: number | undefined): void {
+        throw new Error('Function not implemented.');
+    },
+    bubbles: false,
+    cancelBubble: false,
+    cancelable: false,
+    composed: false,
+    currentTarget: null,
+    defaultPrevented: false,
+    eventPhase: 0,
+    isTrusted: false,
+    returnValue: false,
+    srcElement: null,
+    timeStamp: 0,
+    type: '',
+    composedPath: function (): EventTarget[] {
+        throw new Error('Function not implemented.');
+    },
+    initEvent: function (type: string, bubbles?: boolean | undefined, cancelable?: boolean | undefined): void {
+        throw new Error('Function not implemented.');
+    },
+    preventDefault: function (): void {
+        throw new Error('Function not implemented.');
+    },
+    stopImmediatePropagation: function (): void {
+        throw new Error('Function not implemented.');
+    },
+    stopPropagation: function (): void {
+        throw new Error('Function not implemented.');
+    },
+    NONE: 0,
+    CAPTURING_PHASE: 1,
+    AT_TARGET: 2,
+    BUBBLING_PHASE: 3
+}
+
+describe('search tests', function() {
+    it('test test test', async () => {
+        const result = await searchRhea({} as KeyboardEvent, 0);
+        assert.strictEqual(result, undefined);
+    })
+
+    it('no input text', async () => {
+        const result = await searchRhea(searchInput, 10);
+        assert.deepStrictEqual(result, []);
+    })
+
+    it('no input text 2', async () => {
+        (searchInput.target as HTMLInputElement).value = ''
+        const result = await searchRhea(searchInput, 1);
+        assert.deepStrictEqual(result, []);
+    })
+
+    // it('basic rhea query', async () => {
+    //     global.fetch = () => Promise.resolve({
+    //         ok: true,
+    //         json: () => Promise.resolve({ results: [
+    //             {id: '1', equation: 'kevin' },
+    //             {id: '2', equation: 'edison' },
+    //             {id: '3', equation: 'eva' },
+    //             {id: '4', equation: 'anish' },
+    //             {id: '5', equation: 'steve' }
+    //         ]}),
+    //         // body: new Readable,
+    //         // bodyUsed: true,
+    //         // headers: new Headers(),
+    //         // redirected: false,
+    //         // status: 200,
+    //         // statusText: 'OK',
+    //         // type: 'cors',
+    //         // url: '',
+    //     });
+
+    //     (searchInput.target as HTMLInputElement).value = 'Test'
+    //     const result = await searchRhea(searchInput, 1);
+    //     assert.deepStrictEqual(result, [
+    //         {description: "", id: '1', name: 'kevin', link: "https://www.rhea-db.org/rhea/1"},
+    //         {description: "", id: '2', name: 'edison', link: "https://www.rhea-db.org/rhea/2"},
+    //         {description: "", id: '3', name: 'eva', link: "https://www.rhea-db.org/rhea/3"},
+    //         {description: "", id: '4', name: 'anish', link: "https://www.rhea-db.org/rhea/4"},
+    //         {description: "", id: '5', name: 'steve', link: "https://www.rhea-db.org/rhea/5"}
+    //     ]);
+    // })
+
+    // it('basic ontology query', async () => {
+    //     global.fetch = () => Promise.resolve({
+    //         ok: true,
+    //         json: () => Promise.resolve({ results: {elements: [
+    //             {curie: '1', label: 'kevin', description: {value: "goat"}, iri: "link1", type: ["class", "entity"]},
+    //             {curie: '2', label: 'edison', description: {value: "slack variable"}, iri: "link2", type: ["class", "entity"]},
+    //             {curie: '3', label: 'eva' , description: {value: "god"}, iri: "link3", type: ["class", "entity"]},
+    //             {curie: '4', label: 'anish', description: {value: "smart"}, iri: "link4", type: ["class", "entity"]},
+    //             {curie: '5', label: 'steve', description: {value: "the steve"}, iri:"link5", type: ["class", "entity"]}
+    //         ]}}),
+    //     });
+
+    //     (searchInput.target as HTMLInputElement).value = 'Test'
+    //     const result = await searchOntology(searchInput, 1, "go");
+    //     assert.deepStrictEqual(result, [
+    //         {description: "goat", id: '1', name: 'kevin', link: "https://www.rhea-db.org/rhea/1"},
+    //         {description: "slack variable", id: '2', name: 'edison', link: "https://www.rhea-db.org/rhea/2"},
+    //         {description: "god", id: '3', name: 'eva', link: "https://www.rhea-db.org/rhea/3"},
+    //         {description: "smart", id: '4', name: 'anish', link: "https://www.rhea-db.org/rhea/4"},
+    //         {description: "the steve", id: '5', name: 'steve', link: "https://www.rhea-db.org/rhea/5"}
+    //     ]);
+    // })
+})
+
 
 jest.mock('monaco-editor', () => ({
   MarkerSeverity: {
@@ -63,13 +199,15 @@ describe('Type Tests', function() {
 // note that these tests only test for errors found by symbol tables, and not by the semantic visitor.
 describe('SymbolTableVisitor Error Tests', function() {
   it('Event errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'eventBasic.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [])
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'eventBasic.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
   })
   
   it('Math expression errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'mathExprBasic.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'mathExprBasic.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
       {
         startLineNumber: 5,
         startColumn: 10,
@@ -90,8 +228,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('func redeclaration errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatFuncDecl.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatFuncDecl.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 5,
             startColumn: 10,
@@ -120,8 +259,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('model redeclaration errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatModelDecl.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatModelDecl.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 6,
             startColumn: 1,
@@ -150,8 +290,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('assignment override warnings', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'assignmentOverride.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'assignmentOverride.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 1,
             startColumn: 1,
@@ -221,8 +362,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('type override errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'typeOverride.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'typeOverride.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 3,
             startColumn: 9,
@@ -267,8 +409,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('reaction statement errors', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionCompartment.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionCompartment.ant'), 'utf-8');
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 2,
             startColumn: 22,
@@ -321,8 +464,9 @@ describe('SymbolTableVisitor Error Tests', function() {
   })
 
   it('reaction no rate rule warning', function() {
-    const file1: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionNoRateRule.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file1, false), [
+    const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionNoRateRule.ant'), 'utf-8');
+    const antAnalyzer1 = new AntimonyProgramAnalyzer(file1);
+    assert.deepStrictEqual(antAnalyzer1.getErrors(false), [
         {
             startLineNumber: 1,
             startColumn: 1,
@@ -357,7 +501,8 @@ describe('SymbolTableVisitor Error Tests', function() {
         },
     ])
 
-    const file2: string = removeCarriageReturn(fs.readFileSync(join(__dirname, 'testAntFiles', 'uninitRateRuleRepeatError.ant'), 'utf-8'));
-    assert.deepStrictEqual(getErrors(file2, false), [])
+    const file2: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'uninitRateRuleRepeatError.ant'), 'utf-8');
+    const antAnalyzer2 = new AntimonyProgramAnalyzer(file2);
+    assert.deepStrictEqual(antAnalyzer2.getErrors(false), [])
   })
 })

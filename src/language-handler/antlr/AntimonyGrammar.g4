@@ -156,7 +156,8 @@ atom : NUMBER
     | '+' atom
     | '(' sum ')'
     | func_call
-    | '(' bool_exp ')';
+    | '(' bool_exp ')'
+    | NUMBER 'e' ('-' | '+') NUMBER;
 
 func_call : var_name '(' (parameters)? ')';
 
