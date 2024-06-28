@@ -22,14 +22,10 @@
 .file-btn {
   background-color: #1c1c1c;
   border-radius: 2px;
-  border-style: solid;
-  border-width: 5px;
-  border-color: #5090da;
   display: inline-block;
-  font-size: 1em;
   font-weight: normal !important;
   line-height: 1.2;
-  margin: 0 3px 0 0;
+  margin-left: 3px;
   padding: 2px 7px;
   position: relative;
   text-align: center;
@@ -42,4 +38,9 @@
   font-size: 16px;
   border: none;
   cursor: pointer;
+}
+
+.rename-input {
+  font-size: 16px;
+  margin: 2px 0;
 }

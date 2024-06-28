@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import "./HeaderMenu.css";
 
 /**
- * @description HeaderMenu interface
+ * @description HeaderMenuProps interface
  * @interface
- * @property {string} fileName - The current select file (TODO: Verify if fileName is the right type to be converted)
+ * @property {string} fileName - The current select file
  * @property {function} handleConversionAntimony - Handle the Antimony to SBML file conversion process
  * @property {function} handleConversionSBML - Handle the SBML to Antimony file conversion
  * @property {function} handleFileDownload - Handle the file download
  * @property {function} handleFileUpload - Handle the file upload
+ * @property {function} handleNewFile - Handle a new file
  */
 interface HeaderMenuProps {
   fileName: string;
@@ -16,6 +17,7 @@ interface HeaderMenuProps {
   handleConversionSBML: () => void;
   handleFileDownload: () => void;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  handleNewFile: (handleNewFile: string) => Promise<void>;
 }
 
 /**
@@ -25,6 +27,7 @@ interface HeaderMenuProps {
  * @param handleConversionSBML - HeaderMenuProp
  * @param handleFileDownload - HeaderMenuProp
  * @param handleFileUpload - HeaderMenuProp
+ * @param handleNewFile - HeaderMenuProp
  * @example - <HeaderMenu
  *              handleConversionAntimony={handleConversionAntimony}
  *              handleConversionSBML={handleConversionSBML}
@@ -39,13 +42,15 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   handleConversionSBML,
   handleFileDownload,
   handleFileUpload,
+  handleNewFile,
 }) => {
   const [dropdownVisible, setDropdownVisible] = useState("");
   const dropdownRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /**
-   * Handle clicking outside the dropdown
+   * @description Handle clicking outside the dropdown to close it.
+   * @param {MouseEvent} e - The mouse event triggered when clicking outside the dropdown.
    */
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -61,15 +66,34 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   }, [dropdownRef]);
 
   /**
-   * Handle using keyboard shortcut
+   * @description Handle menu option click to toggle the visibility of the dropdown menu.
+   * @param {string} menuOption - The menu option that was clicked.
+   */
+  const handleMenuOptionClick = (menuOption: string) => {
+    setDropdownVisible((prev) => (prev === menuOption ? "" : menuOption));
+  };
+
+  /**
+   * @description Handle menu option hover to change the visible dropdown menu.
+   * @param {string} menuOption - The menu option that is being hovered over.
+   */
+  const handleMenuOptionHover = (menuOption: string) => {
+    if (dropdownVisible) {
+      setDropdownVisible(menuOption);
+    }
+  };
+
+  /**
+   * @description Handle using keyboard shortcuts for opening new file and uploading files.
+   * @param {KeyboardEvent} event - The keyboard event triggered when a key is pressed.
    */
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      // Check if Ctrl+N is pressed
-      // if (event.ctrlKey && event.key === "n") {
-      //   event.preventDefault();
-      //   openNewFile();
-      // }
+      // Check if Alt+N is pressed
+      if (event.altKey && event.key === "n") {
+        event.preventDefault();
+        handleNewFile("untitled.ant");
+      }
 
       // Check if Ctrl+O is pressed
       if (event.ctrlKey && event.key === "o") {
@@ -82,17 +106,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
-
-  const handleMenuOptionClick = (menuOption: string) => {
-    setDropdownVisible((prev) => (prev === menuOption ? "" : menuOption));
-  };
-
-  const handleMenuOptionHover = (menuOption: string) => {
-    if (dropdownVisible) {
-      setDropdownVisible(menuOption);
-    }
-  };
+  }, [handleFileUpload, handleNewFile]);
 
   return (
     <header ref={dropdownRef}>
@@ -118,12 +132,18 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                 className="header-menu-dropdown"
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
               >
-                {/* <li>
-                  <div className="header-menu-command">
+                <li>
+                  <div
+                    className="header-menu-command"
+                    onClick={() => {
+                      setDropdownVisible("");
+                      handleNewFile("untitled.ant");
+                    }}
+                  >
                     <div>New File</div>
-                    <div>Ctrl+N</div>
+                    <div>Alt+N</div>
                   </div>
-                </li> */}
+                </li>
                 <li
                   onClick={() => {
                     setDropdownVisible("");
@@ -147,7 +167,13 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                 <li
                   onClick={() => {
                     setDropdownVisible("");
-                    handleConversionAntimony();
+                    if (fileName.endsWith(".ant")) {
+                      handleConversionAntimony();
+                    } else {
+                      alert(
+                        "Invalid file type.\nOnly Antimony (.ant) files can be converted to SBML (.xml)."
+                      );
+                    }
                   }}
                 >
                   <div className="header-menu-command">Convert Antimony → SBML</div>
@@ -155,7 +181,13 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                 <li
                   onClick={() => {
                     setDropdownVisible("");
-                    handleConversionSBML();
+                    if (fileName.endsWith(".xml")) {
+                      handleConversionSBML();
+                    } else {
+                      alert(
+                        "Invalid file type.\nOnly SBML (.xml) files can be converted to Antimony (.ant)."
+                      );
+                    }
                   }}
                 >
                   <div className="header-menu-command">Convert SBML → Antimony</div>

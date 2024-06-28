@@ -8,31 +8,57 @@ import ContextMenu from "../context-menu/ContextMenu";
  * @property {object[]} files - The files object
  * @property {string} files[].name - The name of the file
  * @property {string} files[].content - The content of the file
+ * @property {function} setFiles - The function to set the files
  * @property {function} onFileClick - The onFileClick function
  * @property {string} onFileClick[].content - The content of the file
  * @property {string} onFileClick[].fileName - The name of the file
+ * @property {string} onFileClick[].index - The index of the file
+ * @property {function} onDeleteFile - The onDeleteFile function that deletes the given file
+ * @property {number | null} selectedFileIndex - The index of the currently selected file
+ * @property {function} setSelectedFileIndex - The function to set the selectedFileIndex
+ * @property {string} selectedFileName - The name of the currently selected file
+ * @property {function} setSelectedFileName - The function to set the setSelectedFileName
+ *
  */
 interface FileExplorerProps {
   files: { name: string; content: string }[];
-  onFileClick: (fileContent: string, fileName: string) => void;
-  onDeleteFile: (fileName: string) => void;
+  setFiles: React.Dispatch<React.SetStateAction<{ name: string; content: string }[]>>;
+  onFileClick: (fileContent: string, fileName: string, index: number) => void;
+  onDeleteFile: (fileName: string, deleteFromFileExplorer: boolean) => Promise<void>;
+  selectedFileIndex: number | null;
+  setSelectedFileIndex: React.Dispatch<React.SetStateAction<number | null>>;
+  selectedFileName: string;
+  setSelectedFileName: React.Dispatch<React.SetStateAction<string>>;
 }
 
 /**
  * @description FileExplorer component
- * @param files - The files object
- * @param onFileClick - The onFileClick function
+ * @param files - FileExplorerProp
+ * @param setFiles - FileExplorerProp
+ * @param onFileClick - FileExplorerProp
+ * @param onDeleteFile - FileExplorerProp
+ * @param selectedFileIndex - FileExplorerProp
+ * @param setSelectedFileIndex - FileExplorerProp
+ * @param selectedFileName - FileExplorerProp
+ * @param setSelectedFileName - FileExplorerProp
  * @returns - FileExplorer component
  */
-const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDeleteFile }) => {
-  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
-    Number(window.localStorage.getItem("current_file_index") || null)
-  );
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+const FileExplorer: React.FC<FileExplorerProps> = ({
+  files,
+  setFiles,
+  onFileClick,
+  onDeleteFile,
+  selectedFileIndex,
+  setSelectedFileIndex,
+  selectedFileName,
+  setSelectedFileName,
+}) => {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [deletedFileIndex, setDeletedFileIndex] = useState(null);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
-  const [contextMenuProps, setContextMenuProps] = useState(null);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
+  const [renamingFileIndex, setRenamingFileIndex] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -41,12 +67,12 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
    * @param fileName - The name of the file
    */
   const handleFileButtonClick = (index: number, fileName: string) => {
-    setSelectedFileName(fileName);
-    onFileClick(files[index].content, fileName);
-    window.localStorage.setItem("current_file_index", index.toString());
-    window.localStorage.setItem("current_file_name", fileName);
+    onFileClick(files[index].content, fileName, index);
   };
 
+  /**
+   * @description Determine which index is selected
+   */
   useEffect(() => {
     // Check if selectedFileName is not null
     if (selectedFileName !== null) {
@@ -61,7 +87,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
       // No file is selected, you might want to reset selectedFileIndex here as well
       setSelectedFileIndex(null);
     }
-  }, [selectedFileName, files]); // Depend on selectedFileName and files
+  }, [selectedFileName, setSelectedFileIndex, files]);
 
   //updates states based on local storage information
   useEffect(() => {
@@ -81,7 +107,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
         }
       }
     }
-  }, [files]);
+  }, [files, setSelectedFileIndex, setSelectedFileName]);
 
   //updates local storage when selectedFileIndex changes
   useEffect(() => {
@@ -89,15 +115,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
       window.localStorage.setItem("current_file_index", String(selectedFileIndex));
     }
   }, [selectedFileIndex]);
-
-  //DELETE FILE BELOW
-
-  useEffect(() => {
-    if (files.length === 0) {
-      setSelectedFileIndex(null);
-      setSelectedFileName(null);
-    }
-  }, [files]);
 
   const handleFileRightClick = (e: any, index: any, fileName: any) => {
     e.preventDefault(); // Prevent the default context menu
@@ -126,14 +143,19 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
     };
   }, [showContextMenu]);
 
-  const handleContextMenuOptionClick = (option: string) => {
+  /**
+   * @description Determine what to do when selecting an option in the right click Context Menu
+   * @param option - The selected option
+   */
+  const handleContextMenuOptionClick = async (option: string) => {
     setShowContextMenu(false);
 
     if (option === "rename" && selectedFileName) {
-      // TODO: Implement rename
-      console.log("TODO: IMPLEMENT RENAME");
+      setIsRenaming(true);
+      setRenamingFileIndex(selectedFileIndex);
+      setNewFileName(selectedFileName);
     } else if (option === "delete" && selectedFileName) {
-      onDeleteFile(selectedFileName);
+      await onDeleteFile(selectedFileName, true);
       if (
         deletedFileIndex != null &&
         selectedFileIndex != null &&
@@ -144,18 +166,50 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, onFileClick, onDelet
     }
   };
 
+  const handleRenameComplete = async () => {
+    if (renamingFileIndex !== null && selectedFileName !== newFileName) {
+      const updatedFiles = files.map((file, index) => {
+        if (index === renamingFileIndex) {
+          return { ...file, name: newFileName };
+        }
+        return file;
+      });
+
+      await onDeleteFile(selectedFileName, false);
+      setFiles(updatedFiles);
+      setSelectedFileName(newFileName);
+      window.localStorage.setItem("current_file_name", newFileName);
+    }
+
+    setIsRenaming(false);
+    setNewFileName("");
+    setRenamingFileIndex(null);
+  };
+
   return (
     <div className="file-explorer">
       <ul>
         {files.map((file, index) => (
           <li key={index}>
-            <button
-              onClick={() => handleFileButtonClick(index, file.name)}
-              onContextMenu={(e) => handleFileRightClick(e, index, file.name)}
-              className={`file-btn ${selectedFileIndex === index ? "selected" : ""}`}
-            >
-              {file.name}
-            </button>
+            {isRenaming && renamingFileIndex === index ? (
+              <input
+                type="text"
+                value={newFileName}
+                onChange={(e) => setNewFileName(e.target.value)}
+                onBlur={handleRenameComplete}
+                autoComplete="off"
+                autoFocus
+                className="rename-input"
+              />
+            ) : (
+              <button
+                onClick={() => handleFileButtonClick(index, file.name)}
+                onContextMenu={(e) => handleFileRightClick(e, index, file.name)}
+                className={`file-btn ${selectedFileIndex === index ? "selected" : ""}`}
+              >
+                {file.name}
+              </button>
+            )}
           </li>
         ))}
       </ul>

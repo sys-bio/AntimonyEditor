@@ -37,16 +37,18 @@ const App: React.FC = () => {
   const [selectedFileContent, setSelectedFileContent] = useState<string>(
     window.localStorage.getItem("current_file") || "// Enter Antimony Model Here"
   );
-  const [selectedFileName, setSelectedFileName] = useState<string>("");
+  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
+    Number(window.localStorage.getItem("current_file_index") || null)
+  );
+  const [selectedFileName, setSelectedFileName] = useState<string>(
+    window.localStorage.getItem("current_file_name") || "untitled.ant"
+  );
   const [db, setDb] = useState<IDBPDatabase<MyDB> | null>();
   const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(
     null
   );
   const [fileExplorerKey, setFileExplorerKey] = useState<number>(0);
   const [sbmlResultListenerAdded, setSbmlResultListenerAdded] = useState<boolean>(false);
-  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
-    Number(window.localStorage.getItem("current_file_index") || null)
-  );
   const [selectedEditorPosition, setSelectedEditorPosition] = useState<SrcPosition>(
     new SrcPosition(1, 1)
   );
@@ -115,44 +117,27 @@ const App: React.FC = () => {
    * @description Handle the file click
    * @param fileContent - The content of the file
    * @param fileName - The name of the file
+   * @param index - The index of the file
    */
-  const handleFileClick = (fileContent: string, fileName: string) => {
-    // window.selectedFile = fileName;
+  const handleFileClick = (fileContent: string, fileName: string, index: number) => {
     setSelectedFileContent(fileContent);
     setSelectedFileName(fileName);
-
-    // Store the selected file's information in IndexedDB
-    // if (db) {
-    //   db.getAll("files").then((data) => {console.log("WOW"); console.log(data);});
-    //   db.put('files', { name: fileName, content: fileContent });
-    //   db.getAll("files").then((data) => {console.log(data); console.log("WOW");});
-    // }
+    window.localStorage.setItem("current_file_index", index.toString());
+    window.localStorage.setItem("current_file_name", fileName);
   };
 
-  const handleAntToSBML = async (fileContent: string, fileName: string) => {
-    setSelectedFileContent(fileContent);
-    setSelectedFileName(fileName);
-    window.selectedFile = fileName;
-    // Store the selected file's information in IndexedDB
-    if (db) {
-      setUploadedFiles((prevFiles) => {
-        window.removeEventListener("grabbedSBMLResult", sbmlResultHandler);
-        setSbmlResultListenerAdded(false);
-        let updatedFiles = [...prevFiles];
-        // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
-
-        // if (existingFileIndex !== -1) {
-        // } else {
-        // If the file doesn't exist, add it to the array
-        updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
-        db.put("files", { name: window.selectedFile, content: fileContent });
-        // }
-        window.addEventListener("grabbedSBMLResult", sbmlResultHandler, { once: true });
-        // Sort the files alphabetically and numerically based on their names
-        return updatedFiles.sort((a, b) =>
-          a.name.localeCompare(b.name, undefined, { numeric: true })
-        );
-      });
+  /**
+   * @description Handles conversion from Antimony to SBML
+   */
+  const handleConversionAntimony = () => {
+    try {
+      if (window.processAntimony) {
+        window.processAntimony();
+      } else {
+        console.error("processAntimony function not found in the global scope.");
+      }
+    } catch (err) {
+      console.error("Conversion error:", err);
     }
   };
 
@@ -170,30 +155,51 @@ const App: React.FC = () => {
     }
   }
 
-  const handleSBMLtoAntConversion = async (fileContent: string, fileName: string) => {
-    setSelectedFileContent(fileContent);
-    setSelectedFileName(fileName);
+  const handleAntToSBML = async (fileContent: string, fileName: string) => {
     window.selectedFile = fileName;
-    // Store the selected file's information in IndexedDB
-    if (db) {
-      setUploadedFiles((prevFiles) => {
-        window.removeEventListener("grabbedAntimonyResult", antimonyResultHandler);
-        setSbmlResultListenerAdded(false);
-        let updatedFiles = [...prevFiles];
-        // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
 
-        // if (existingFileIndex !== -1) {
-        //   // alert('File already exists');
-        // } else {
-        // If the file doesn't exist, add it to the array
-        updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
+    setUploadedFiles((prevFiles) => {
+      window.removeEventListener("grabbedSBMLResult", sbmlResultHandler);
+      setSbmlResultListenerAdded(false);
+      let updatedFiles = [...prevFiles];
+      // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
+
+      // if (existingFileIndex !== -1) {
+      // } else {
+      // If the file doesn't exist, add it to the array
+      updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
+
+      // Store the selected file's information in IndexedDB
+      // NOTE: db is always undefined here for some reason.
+      if (db) {
         db.put("files", { name: window.selectedFile, content: fileContent });
-        // }
-        // Sort the files alphabetically and numerically based on their names
-        return updatedFiles.sort((a, b) =>
-          a.name.localeCompare(b.name, undefined, { numeric: true })
-        );
-      });
+      }
+
+      window.addEventListener("grabbedSBMLResult", sbmlResultHandler, { once: true });
+
+      // Sort the files alphabetically and numerically based on their names
+      updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+      // Select the converted file
+      const convertedIndex = updatedFiles.findIndex((file) => file.name === fileName);
+      handleFileClick(fileContent, fileName, convertedIndex);
+
+      return updatedFiles;
+    });
+  };
+
+  /**
+   * @description Handles conversion from SBML to Antimony
+   */
+  const handleConversionSBML = () => {
+    try {
+      if (window.processSBML) {
+        window.processSBML();
+      } else {
+        console.error("processSBML function not found in the global scope.");
+      }
+    } catch (err) {
+      console.error("Conversion error:", err);
     }
   };
 
@@ -222,6 +228,40 @@ const App: React.FC = () => {
     }
   }
 
+  const handleSBMLtoAntConversion = async (fileContent: string, fileName: string) => {
+    window.selectedFile = fileName;
+
+    setUploadedFiles((prevFiles) => {
+      window.removeEventListener("grabbedAntimonyResult", antimonyResultHandler);
+      setSbmlResultListenerAdded(false);
+      let updatedFiles = [...prevFiles];
+      // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
+
+      // if (existingFileIndex !== -1) {
+      //   // alert('File already exists');
+      // } else {
+      // If the file doesn't exist, add it to the array
+      updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
+
+      // Store the selected file's information in IndexedDB
+      // NOTE: db is always undefined here for some reason.
+      if (db) {
+        db.put("files", { name: window.selectedFile, content: fileContent });
+      }
+
+      window.addEventListener("grabbedAntimonyResult", antimonyResultHandler, { once: true });
+
+      // Sort the files alphabetically and numerically based on their names
+      updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+      // Select the converted file
+      const convertedIndex = updatedFiles.findIndex((file) => file.name === fileName);
+      handleFileClick(fileContent, fileName, convertedIndex);
+
+      return updatedFiles;
+    });
+  };
+
   useEffect(() => {
     const loadData = async () => {
       const database = await openDB<MyDB>("antimony_editor_db", 1);
@@ -238,7 +278,7 @@ const App: React.FC = () => {
       } else {
         setSelectedFileIndex(null);
         setSelectedFileContent("// Enter Antimony Model Here");
-        setSelectedFileName("");
+        setSelectedFileName("untitled.ant");
         window.localStorage.removeItem("current_file_index");
       }
     };
@@ -246,72 +286,75 @@ const App: React.FC = () => {
     loadData();
   }, []);
 
-  //DELETE FUNCTIONALITY
-  const deleteFile = async (fileName: string) => {
+  /**
+   * @description Deletes the given file
+   * @param fileName - The name of the file to delete
+   * @param deleteFromFileExplorer - Represents whether to delete the file from the file explorer
+   */
+  const deleteFile = async (fileName: string, deleteFromFileExplorer: boolean) => {
     if (db) {
       await db.delete("files", fileName); // Delete from IndexedDB
-      const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
-      setUploadedFiles(updatedFiles); // Update state
 
-      // Check if the deleted file was the currently selected file
-      if (selectedFileName === fileName) {
-        setSelectedFileContent("// Enter Antimony Model Here");
-        setSelectedFileName("");
-        setSelectedFileIndex(null);
-        window.localStorage.removeItem("current_file_name");
-        window.localStorage.removeItem("current_file_index");
-        window.localStorage.setItem("current_file", "// Enter Antimony Model Here");
-      } else if (selectedFileIndex !== null) {
-        // Update the selectedFileIndex if the deleted file was not selected
-        const newIndex = updatedFiles.findIndex((file) => file.name === selectedFileName);
-        setSelectedFileIndex(newIndex !== -1 ? newIndex : null);
+      if (deleteFromFileExplorer) {
+        const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
+        setUploadedFiles(updatedFiles);
 
-        // Handle case where the current file index is no longer valid
-        if (newIndex === -1) {
-          setSelectedFileContent("// Enter Antimony Model Here");
-          setSelectedFileName("");
-          window.localStorage.removeItem("current_file_index");
-          window.localStorage.removeItem("current_file");
-          window.localStorage.setItem("current_file", "// Enter Antimony Model Here");
+        // NOTE: Currently, a file is selected before it is deleted.
+        //       Therefore, fileName === selectedFileName always holds in this method (for now).
+
+        if (selectedFileIndex === null || updatedFiles.length === 1) {
+          // If last file was deleted, create a new blank file.
+          handleNewFile("untitled.ant");
+        } else if (selectedFileIndex === 1) {
+          // If the selected file is deleted and was the first file, select the new first file.
+          handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
+        } else if (selectedFileIndex === updatedFiles.length) {
+          // If the selected file is deleted and was the last file, select the file before it.
+          const newIndex = selectedFileIndex - 1;
+          handleFileClick(updatedFiles[newIndex].content, updatedFiles[newIndex].name, newIndex);
+        } else {
+          // If the selected file is deleted, select the file now in its place.
+          handleFileClick(
+            updatedFiles[selectedFileIndex].content,
+            updatedFiles[selectedFileIndex].name,
+            selectedFileIndex
+          );
         }
       }
-      const files = await db.getAll("files");
-      const fileNames = files.map((file) => file.name);
     }
   };
 
+  /**
+   * @description Download the selected file into Downloads folder.
+   */
   const handleFileDownload = () => {
     handleDownload(editorInstance, selectedFileName);
   };
 
   /**
-   * @description Handles conversion from Antimony to SBML
+   * @description Open a new file.
+   * @param newFileName - The name of the new file
    */
-  const handleConversionAntimony = () => {
-    try {
-      if (window.processAntimony) {
-        window.processAntimony();
-      } else {
-        console.error("processAntimony function not found in the global scope.");
-      }
-    } catch (err) {
-      console.error("Conversion error:", err);
-    }
-  };
+  const handleNewFile = async (newFileName: string) => {
+    // Simulate opening a file
+    const newFileContent = "// Enter Antimony Model Here";
+    const file = new File([newFileContent], newFileName, { type: "text/plain" });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
 
-  /**
-   * @description Handles conversion from SBML to Antimony
-   */
-  const handleConversionSBML = () => {
-    try {
-      if (window.processSBML) {
-        window.processSBML();
-      } else {
-        console.error("processSBML function not found in the global scope.");
-      }
-    } catch (err) {
-      console.error("Conversion error:", err);
-    }
+    const event = {
+      target: {
+        files: dataTransfer.files,
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+
+    await handleFileUpload(event);
+
+    // Simulate clicking the file
+    const newFileIndex = uploadedFiles.findIndex(
+      (file: { name: string; content: string }) => file.name === newFileName
+    );
+    handleFileClick(newFileContent, newFileName, newFileIndex);
   };
 
   return (
@@ -322,6 +365,7 @@ const App: React.FC = () => {
         handleConversionSBML={handleConversionSBML}
         handleFileDownload={handleFileDownload}
         handleFileUpload={handleFileUpload}
+        handleNewFile={handleNewFile}
       />
       <div className="middle">
         <Split
@@ -335,9 +379,15 @@ const App: React.FC = () => {
               <div className="fileExplorerTitle">File Explorer</div>
             </div>
             <FileExplorer
+              key={fileExplorerKey}
               files={uploadedFiles}
+              setFiles={setUploadedFiles}
               onFileClick={handleFileClick}
               onDeleteFile={deleteFile}
+              selectedFileIndex={selectedFileIndex}
+              setSelectedFileIndex={setSelectedFileIndex}
+              selectedFileName={selectedFileName}
+              setSelectedFileName={setSelectedFileName}
             />
           </section>
           <section className="editor">
@@ -363,7 +413,7 @@ const App: React.FC = () => {
       <footer>
         <div className="footer-content">
           <a target="_blank" rel="noopener noreferrer" href="https://reproduciblebiomodels.org/">
-            Copyright © 2023 Center for Reproducible Biomedical Modeling
+            Copyright © 2024 Center for Reproducible Biomedical Modeling
           </a>
           <div className="selected-editor-position">
             Ln {selectedEditorPosition.line}, Col {selectedEditorPosition.column}
