@@ -52,6 +52,8 @@ const App: React.FC = () => {
   const [selectedEditorPosition, setSelectedEditorPosition] = useState<SrcPosition>(
     new SrcPosition(1, 1)
   );
+  // keep track in App so that the option persists across different files.
+  const [annotUnderlinedOn, setAnnotUnderlinedOn] = useState<boolean>(false);
 
   /**
    * @description Use the openDB function to open the database
@@ -397,6 +399,8 @@ const App: React.FC = () => {
                 content={selectedFileContent}
                 fileName={selectedFileName}
                 database={db}
+                annotUnderlinedOn={annotUnderlinedOn}
+                setAnnotUnderlinedOn={setAnnotUnderlinedOn}
                 editorInstance={editorInstance}
                 setEditorInstance={setEditorInstance}
                 selectedFilePosition={selectedEditorPosition}
