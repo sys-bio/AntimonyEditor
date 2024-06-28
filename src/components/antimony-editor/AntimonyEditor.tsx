@@ -66,7 +66,10 @@ declare global {
     antimonyResult: string; // Define the antimonyResult variable
     antimonyActive: boolean; // Define the antimonyActive variable
     fileName: string; // Define the fileName variable
+    modelId: string; // Define the modelId variable
     url: string; // Define the link variable
+    biomodelsUrl: string; // Define the biomodels link variable
+    biomodelsOptionSet: boolean; // Define the biomodelsOptionSet variable
     title: string; // Define the title variable
     authors: string[]; // Define the authors variable
     citation: string | null; // Define the citation variable
@@ -430,7 +433,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       getBiomodels(setLoading, setChosenModel);
       setEditorInstance(editor);
       setSelectedFile(fileName);
-
       return () => editor.dispose();
     }
   }, [annotHighlightedOn, content, database, fileName]);
@@ -444,6 +446,41 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       ModelSemanticsChecker(editorInstance, annotHighlightedOn, false);
     }
   }, [annotHighlightedOn, editorInstance]);
+
+  /**
+   * @description Adds the link action to the editor context menu
+   */
+  useEffect(() => {
+    if (editorInstance) {
+      let biomodelsUrl = editorInstance.getValue().split('BioModels: ')[1];
+      if (biomodelsUrl && biomodelsUrl.startsWith('http')) {
+        window.biomodelsUrl = biomodelsUrl.substring(0, biomodelsUrl.indexOf('\n'));
+      } else {
+        biomodelsUrl = editorInstance.getValue().split('model_entity_is ')[1];
+        if (biomodelsUrl) {
+          window.biomodelsUrl = biomodelsUrl.substring(1, biomodelsUrl.indexOf('"', 2));
+        } else {
+          window.biomodelsUrl = '';
+        }
+      }
+
+      if (!window.biomodelsOptionSet) {
+        window.biomodelsOptionSet = true;
+        monaco.editor.addEditorAction({
+          id: 'link',
+          label: 'Open in Biomodels',
+          contextMenuGroupId: 'navigation',
+          run: _ => {
+            if (window.biomodelsUrl) {
+              window.open(window.biomodelsUrl, '_blank');
+            } else {
+              alert('No BioModels link found in the model.');
+            }
+          }
+        });
+      }
+    }
+  }, [editorInstance]);
 
   /**
    * @description Saves the name and content of the file selected to IndexedDB
@@ -472,6 +509,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         return;
       }
       getModel(chosenModel).then((model) => {
+        window.modelId = model.modelId;
+        window.biomodelsUrl = "https://www.ebi.ac.uk/biomodels/" + window.modelId;
         window.title = model.title;
         window.authors = model.authors;
         window.url = model.url;
@@ -480,6 +519,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         window.journal = model.journal;
         window.fileName = model.modelId;
         window.sbmlString = model.sbmlData;
+        window.conversion = "biomodels";
         handleConversionSBML();
         setLoading(false);
       });
