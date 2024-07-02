@@ -6,13 +6,14 @@ import {
   RecognitionException,
   Recognizer,
 } from "antlr4ts";
-import { AntimonyGrammarLexer } from "./antlr/AntimonyGrammarLexer";
-import { AntimonyGrammarParser, RootContext } from "./antlr/AntimonyGrammarParser";
-import { GlobalST, ParamAndNameTable } from "./SymbolTableClasses";
-import { SymbolTableVisitor } from "./SymbolTableVisitor";
-import { SemanticVisitor } from "./SemanticVisitor";
-import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from "./Types";
-import { Variable } from "./Variable";
+import { AntimonyGrammarLexer } from ".././antlr/AntimonyGrammarLexer";
+import { AntimonyGrammarParser, RootContext } from ".././antlr/AntimonyGrammarParser";
+import { GlobalST, ParamAndNameTable } from ".././SymbolTableClasses";
+import { SymbolTableVisitor } from ".././SymbolTableVisitor";
+import { SemanticVisitor } from ".././SemanticVisitor";
+import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from ".././Types";
+import { Variable } from ".././Variable";
+import "./ModelSemanticChecker.css"
 
 /**
  * Defines a parse error, which includes a position (line, column) as well as the error message.
@@ -64,7 +65,8 @@ export const ModelSemanticsChecker = (
 
   // Get all unannotated variables (optional)
   if (annotHighlightOn) {
-    errors = errors.concat(antAnalyzer.getUnannotatedVariables());
+    const unannotatedDecorations = antAnalyzer.getUnannotatedDecorations();
+    editor.deltaDecorations([], unannotatedDecorations);
   }
 
   if (setGeneralHoverInfo) {
@@ -449,6 +451,30 @@ export class AntimonyProgramAnalyzer {
     }
 
     return errors;
+  }
+
+  /**
+   * Retrieves decorations for unannotated variables in a Monaco editor instance.
+   * Each decoration marks specific ranges where unannotated variables are referenced.
+   * @returns An array of Monaco editor decorations (`monaco.editor.IModelDeltaDecoration`).
+   */
+  getUnannotatedDecorations(): monaco.editor.IModelDeltaDecoration[] {
+      const unannotatedErrors: ErrorUnderline[] = this.getUnannotatedVariables();
+      const decorations: monaco.editor.IModelDeltaDecoration[] = unannotatedErrors.map(error => {
+          return {
+              range: new monaco.Range(
+                  error.startLineNumber,
+                  error.startColumn,
+                  error.endLineNumber,
+                  error.endColumn
+              ),
+              options: {
+                  inlineClassName: 'unannotated-variable', // Custom class for unannotated variables
+                  stickiness: monaco.editor.TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
+              }
+          };
+      });
+      return decorations;
   }
 
   /**

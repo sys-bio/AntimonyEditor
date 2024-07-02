@@ -3,7 +3,7 @@ import * as monaco from 'monaco-editor';
 import * as fs from 'fs';
 import { join } from 'path';
 import { isSubtTypeOf, varTypes } from '../language-handler/Types';
-import { AntimonyProgramAnalyzer } from '../language-handler/ModelSemanticChecker';
+import { AntimonyProgramAnalyzer } from '../language-handler/model-semantic-checker/ModelSemanticChecker';
 import { searchOntology, searchRhea } from '../features/AnnotationSearch';
 
 // test('renders learn react link', () => {

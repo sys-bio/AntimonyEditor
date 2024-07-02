@@ -7,7 +7,7 @@ import "./AntimonyEditor.css";
 import { getBiomodels, getModel } from "../../features/BrowseBiomodels";
 import Loader from "../Loader";
 import CreateAnnotationModal from "../create-annotation/CreateAnnotationModal";
-import ModelSemanticsChecker from "../../language-handler/ModelSemanticChecker";
+import ModelSemanticsChecker from "../../language-handler/model-semantic-checker/ModelSemanticChecker";
 import { IDBPDatabase, DBSchema } from "idb";
 import { SrcPosition, SrcRange } from "../../language-handler/Types";
 
