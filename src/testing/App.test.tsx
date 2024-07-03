@@ -200,13 +200,13 @@ describe('Type Tests', function() {
 describe('SymbolTableVisitor Error Tests', function() {
   it('Event errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'eventBasic.ant'), 'utf-8');
-    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
     assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
   })
   
   it('Math expression errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'mathExprBasic.ant'), 'utf-8');
-    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
     assert.deepStrictEqual(antAnalyzer.getErrors(false), [
       {
         startLineNumber: 5,
@@ -229,7 +229,7 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('func redeclaration errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatFuncDecl.ant'), 'utf-8');
-    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
     assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 5,
@@ -260,7 +260,7 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('model redeclaration errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'repeatModelDecl.ant'), 'utf-8');
-    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
     assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 6,
@@ -291,7 +291,7 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('assignment override warnings', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'assignmentOverride.ant'), 'utf-8');
-    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
     assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 1,
@@ -363,7 +363,7 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('type override errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'typeOverride.ant'), 'utf-8');
-    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
     assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 3,
@@ -410,7 +410,7 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('reaction statement errors', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionCompartment.ant'), 'utf-8');
-    const antAnalyzer = new AntimonyProgramAnalyzer(file1);
+    const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
     assert.deepStrictEqual(antAnalyzer.getErrors(false), [
         {
             startLineNumber: 2,
@@ -465,7 +465,7 @@ describe('SymbolTableVisitor Error Tests', function() {
 
   it('reaction no rate rule warning', function() {
     const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'reactionNoRateRule.ant'), 'utf-8');
-    const antAnalyzer1 = new AntimonyProgramAnalyzer(file1);
+    const antAnalyzer1 = new AntimonyProgramAnalyzer(file1, "");
     assert.deepStrictEqual(antAnalyzer1.getErrors(false), [
         {
             startLineNumber: 1,
@@ -502,7 +502,7 @@ describe('SymbolTableVisitor Error Tests', function() {
     ])
 
     const file2: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'uninitRateRuleRepeatError.ant'), 'utf-8');
-    const antAnalyzer2 = new AntimonyProgramAnalyzer(file2);
+    const antAnalyzer2 = new AntimonyProgramAnalyzer(file2, "");
     assert.deepStrictEqual(antAnalyzer2.getErrors(false), [])
   })
 })

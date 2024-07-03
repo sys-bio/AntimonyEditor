@@ -55,6 +55,15 @@ const App: React.FC = () => {
   // keep track in App so that the option persists across different files.
   const [annotUnderlinedOn, setAnnotUnderlinedOn] = useState<boolean>(false);
 
+  // Set highlight color for unannotated variables
+  const [highlightColor, setHighlightColor] = useState<string>("red");
+  // List of colors to set for highlight of unannotated variables
+  const colors = [
+    { name: "Red", color: "red" },
+    { name: "Green", color: "green" },
+    { name: "Yellow", color: "yellow" },
+  ];
+
   /**
    * @description Use the openDB function to open the database
    */
@@ -368,6 +377,8 @@ const App: React.FC = () => {
         handleFileDownload={handleFileDownload}
         handleFileUpload={handleFileUpload}
         handleNewFile={handleNewFile}
+        setHighlightColor={setHighlightColor}
+        colors={colors}
       />
       <div className="middle">
         <Split
@@ -406,6 +417,7 @@ const App: React.FC = () => {
                 selectedFilePosition={selectedEditorPosition}
                 handleSelectedPosition={handleSelectedPosition}
                 handleConversionSBML={handleConversionSBML}
+                highlightColor={highlightColor}
               />
             ) : (
               // You can provide a loading message or handle the absence of the database as needed

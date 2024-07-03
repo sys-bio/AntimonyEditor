@@ -1,3 +1,6 @@
-.unannotated-variable {
-  background-color: #FF0000;
+.custom-highlight-red {
+    background: red;
+}
+.custom-highlight-green {
+    background: green;
 }

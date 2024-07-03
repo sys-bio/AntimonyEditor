@@ -55,18 +55,23 @@ class ErrorListener implements ANTLRErrorListener<any> {
 export const ModelSemanticsChecker = (
   editor: monaco.editor.IStandaloneCodeEditor,
   annotHighlightOn: boolean,
-  setGeneralHoverInfo: boolean
-): GlobalST => {
-  // const errors: ErrorUnderline[] = getErrors(removeCarriageReturn(editor.getValue()), true);
-  const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue());
+  setGeneralHoverInfo: boolean,
+  highlightColor: string,
+  existingDecorations: string[]
+): { symbolTable: GlobalST; decorations: string[] } => {
+  const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue(), highlightColor);
 
   // Get all errors
   let errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
 
   // Get all unannotated variables (optional)
+  let newDecorations: string[] = [];
   if (annotHighlightOn) {
-    const unannotatedDecorations = antAnalyzer.getUnannotatedDecorations();
-    editor.deltaDecorations([], unannotatedDecorations);
+    const unannotatedDecorations = antAnalyzer.getUnannotatedDecorations(highlightColor);
+    newDecorations = editor.deltaDecorations(existingDecorations, unannotatedDecorations); // Replace existing decorations
+  } else {
+    // Remove existing decorations if annotHighlightOn is false
+    editor.deltaDecorations(existingDecorations, []);
   }
 
   if (setGeneralHoverInfo) {
@@ -88,7 +93,7 @@ export const ModelSemanticsChecker = (
     monaco.editor.setModelMarkers(model, "owner", errors);
   }
 
-  return antAnalyzer.getProgramST();
+  return { symbolTable: antAnalyzer.getProgramST(), decorations: newDecorations }; // Return the new decorations and symbol table
 };
 
 /**
@@ -102,12 +107,14 @@ export class AntimonyProgramAnalyzer {
   private semanticVisitor: SemanticVisitor;
   private globalST: GlobalST;
   private hoverKeyWordColor: Map<string, string>;
+  private highlightColor: string;
 
-  constructor(antimonyCode: string) {
+  constructor(antimonyCode: string, highlightColor: string) {
     // we remove carriage returns in the string since
     // these only exist in new lines on windows OS, and interfere with the
     // grammar parse.
     antimonyCode = this.removeCarriageReturn(antimonyCode);
+    this.highlightColor = highlightColor;
     let inputStream = new ANTLRInputStream(antimonyCode);
     let lexer = new AntimonyGrammarLexer(inputStream);
     let tokenStream = new CommonTokenStream(lexer);
@@ -458,23 +465,28 @@ export class AntimonyProgramAnalyzer {
    * Each decoration marks specific ranges where unannotated variables are referenced.
    * @returns An array of Monaco editor decorations (`monaco.editor.IModelDeltaDecoration`).
    */
-  getUnannotatedDecorations(): monaco.editor.IModelDeltaDecoration[] {
-      const unannotatedErrors: ErrorUnderline[] = this.getUnannotatedVariables();
-      const decorations: monaco.editor.IModelDeltaDecoration[] = unannotatedErrors.map(error => {
-          return {
-              range: new monaco.Range(
-                  error.startLineNumber,
-                  error.startColumn,
-                  error.endLineNumber,
-                  error.endColumn
-              ),
-              options: {
-                  inlineClassName: 'unannotated-variable', // Custom class for unannotated variables
-                  stickiness: monaco.editor.TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
+  getUnannotatedDecorations(highlightColor: string): monaco.editor.IModelDeltaDecoration[] {
+    const unannotatedErrors: ErrorUnderline[] = this.getUnannotatedVariables();
+    const decorations: monaco.editor.IModelDeltaDecoration[] = unannotatedErrors.map(error => {
+      return {
+        range: new monaco.Range(
+          error.startLineNumber,
+          error.startColumn,
+          error.endLineNumber,
+          error.endColumn
+        ),
+        options: {
+                inlineClassNameAffectsLetterSpacing: true,
+                inlineClassName: '',
+                beforeContentClassName: '',
+                afterContentClassName: '',
+                linesDecorationsClassName: '',
+                className: `custom-highlight-${this.highlightColor}`, // Dynamic class name
+                stickiness: monaco.editor.TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
               }
-          };
-      });
-      return decorations;
+      };
+    });
+    return decorations;
   }
 
   /**

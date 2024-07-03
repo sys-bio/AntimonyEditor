@@ -11,15 +11,10 @@ header {
   width: 100%;
 }
 
-.title {
-  color: white;
-  font-weight: bold;
-  font-size: 1em;
-}
-
 .header-menu {
   list-style: none;
   display: flex;
+  align-items: center;
   margin: 0;
   padding: 0;
 }
@@ -46,7 +41,7 @@ header {
   list-style: none;
   position: absolute;
   padding: 5px;
-  margin: 5px 0px 0px -10px; /* Align dropdown with menu button*/
+  margin: 5px 0px 0px -10px; /* Align dropdown with menu button */
   z-index: 10000;
 }
 
@@ -54,6 +49,7 @@ header {
   border-radius: 5px;
   cursor: pointer;
   width: 250px;
+  position: relative;
 }
 
 .header-menu-dropdown li:hover {
@@ -75,6 +71,59 @@ header {
   cursor: pointer;
 }
 
+.sub-menu-dropdown {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: absolute;
+  top: 0;
+  left: 100%;
+  background-color: #333;
+  z-index: 1000;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.sub-menu-dropdown li {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.sub-menu-dropdown li:hover {
+  background-color: #007acc;
+}
+
+.title {
+  color: white;
+  font-weight: bold;
+  font-size: 1em;
+}
+
+.menu-text {
+  display: inline-block; /* Ensures elements stay inline */
+  margin-right: 5px; /* Adjust margin as needed */
+}
+
+.arrow-icon {
+  margin-left: 5px; /* Adjust margin as needed */
+  color: #888; /* Example color */
+}
+
+.color-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.color-square {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #ccc;
+  margin-left: 10px;
+  border-radius: 2px;
+}
+
 #file-upload {
   display: none;
 }
+
