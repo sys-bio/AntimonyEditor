@@ -20,6 +20,7 @@ interface AntimonyEditorProps {
   selectedFilePosition: SrcPosition;
   handleSelectedPosition: (position: SrcPosition) => void;
   handleConversionSBML: () => void;
+  setHighlightColor: (color: string) => void
   highlightColor: string;
 }
 
@@ -54,19 +55,21 @@ declare global {
   }
 }
 
-const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({
-                                                                                            content,
-                                                                                            fileName,
-                                                                                            database,
-                                                                                            annotUnderlinedOn,
-                                                                                            setAnnotUnderlinedOn,
-                                                                                            editorInstance,
-                                                                                            setEditorInstance,
-                                                                                            selectedFilePosition,
-                                                                                            handleSelectedPosition,
-                                                                                            handleConversionSBML,
-                                                                                            highlightColor
-                                                                                          }) => {
+const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> =
+    ({
+      content,
+      fileName,
+      database,
+      annotUnderlinedOn,
+      setAnnotUnderlinedOn,
+      editorInstance,
+      setEditorInstance,
+      selectedFilePosition,
+      handleSelectedPosition,
+      handleConversionSBML,
+      highlightColor,
+      setHighlightColor
+    }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -77,7 +80,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const [annotationAddPosition, setAnnotationAddPosition] = useState<SrcPosition | null>(null);
   const [varToAnnotate, setVarToAnnotate] = useState<{ id: string; name: string | undefined } | null>(null);
   const [decorations, setDecorations] = useState<string[]>([]);
-  const [previousHighlightColor, setPreviousHighlightColor] = useState<string>("");
 
   const addAnnotationOption = (editor: any) => {
     if (editorRef.current) {
@@ -126,7 +128,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     if (editorRef.current) {
       editor.addAction({
         id: "underline-annotation",
-        label: `Underline Unannotated Variables ${annotUnderlinedOn ? "Off" : "On"}`,
+        label: `Highlight Unannotated Variables ${annotUnderlinedOn ? "Off" : "On"}`,
         keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
         precondition: null,
         keybindingContext: null,
@@ -134,6 +136,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         contextMenuOrder: 1.5,
         run: function (editor: monaco.editor.IStandaloneCodeEditor) {
           setAnnotUnderlinedOn((prevAnnotUnderlinedOn) => !prevAnnotUnderlinedOn);
+          setHighlightColor("aqua");
         },
       });
     }
@@ -243,16 +246,17 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
   useEffect(() => {
     if (editorInstance) {
-      // Remove previous decorations with old highlight color
-      const decorationsToRemove = decorations.filter(dec => dec.includes(previousHighlightColor));
-      editorInstance.deltaDecorations(decorationsToRemove, []);
-
-      // Get new decorations with the updated highlight color
-      const { decorations: newDecorations } = ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, []);
-
-      // Apply the new decorations
+      if(!annotUnderlinedOn && highlightColor !== "") {
+        setHighlightColor("");
+      }
+      const { symbolTable, decorations: newDecorations } = ModelSemanticsChecker(
+          editorInstance,
+          annotUnderlinedOn,
+          false,
+          highlightColor,
+          decorations
+      );
       setDecorations(newDecorations);
-      setPreviousHighlightColor(highlightColor);
     }
   }, [highlightColor]);
 
@@ -336,15 +340,16 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   };
 
   const handleEditorContentChange = (editor: any) => {
+    // Delay the model parser to avoid parsing while the user is typing
     let typingTimer: any;
     const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
       clearTimeout(typingTimer);
       typingTimer = setTimeout(() => {
-        const { decorations: newDecorations } = ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
-        setDecorations(newDecorations);
+        ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
       }, 600);
     };
 
+    // Parse the model whenever the user types
     editor.onDidChangeModelContent(() => {
       setNewContent(editor.getValue());
       delayedModelParser(editor);

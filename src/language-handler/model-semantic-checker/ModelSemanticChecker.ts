@@ -1,5 +1,4 @@
 import * as monaco from "monaco-editor";
-import React, { useState, useEffect } from 'react';
 import {
   ANTLRErrorListener,
   ANTLRInputStream,
@@ -30,12 +29,12 @@ class ErrorListener implements ANTLRErrorListener<any> {
   private errors: parseErrors[] = [];
 
   syntaxError<T>(
-    recognizer: Recognizer<T, any>,
-    offendingSymbol: T,
-    line: number,
-    charPositionInLine: number,
-    msg: string,
-    e: RecognitionException | undefined
+      recognizer: Recognizer<T, any>,
+      offendingSymbol: T,
+      line: number,
+      charPositionInLine: number,
+      msg: string,
+      e: RecognitionException | undefined
   ): void {
     this.errors.push({ line: line, column: charPositionInLine, msg: msg });
   }
@@ -53,49 +52,50 @@ class ErrorListener implements ANTLRErrorListener<any> {
  * @param decorations
  * @returns {GlobalST} the complete symbol table representing the program in the monaco editor.
  */
-export const ModelSemanticsChecker = (
-    editor: monaco.editor.IStandaloneCodeEditor,
-    annotHighlightOn: boolean,
-    setGeneralHoverInfo: boolean,
-    highlightColor: string,
-    existingDecorations: string[]
-): { symbolTable: GlobalST; decorations: string[] } => {
-  const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue(), highlightColor);
+  export const ModelSemanticsChecker = (
+      editor: monaco.editor.IStandaloneCodeEditor,
+      annotHighlightOn: boolean,
+      setGeneralHoverInfo: boolean,
+      highlightColor: string,
+      existingDecorations: string[]
+  ): { symbolTable: GlobalST; decorations: string[] } => {
 
-  // Get all errors
-  let errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
-
-  // Get all unannotated variables (optional)
-  let newDecorations: string[] = [];
-  if (annotHighlightOn) {
-    const unannotatedDecorations = antAnalyzer.getUnannotatedDecorations();
-    newDecorations = editor.deltaDecorations([], unannotatedDecorations); // Replace existing decorations
-  } else {
-    // Remove existing decorations before applying new ones
+    // Clear old decorations
     editor.deltaDecorations(existingDecorations, []);
-  }
 
-  if (setGeneralHoverInfo) {
-    const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
-    if (hoverInfo) {
-      editor.onDidDispose(() => {
-        hoverInfo.dispose();
-      });
-      editor.onDidChangeModelContent(() => {
-        hoverInfo.dispose();
-      });
+    const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue(), highlightColor);
+
+    // Get all errors
+    let errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
+
+    // Get all unannotated variables (optional)
+    let newDecorations: string[] = [];
+    if (annotHighlightOn) {
+      const unannotatedDecorations = antAnalyzer.getUnannotatedDecorations();
+      newDecorations = editor.deltaDecorations([], unannotatedDecorations); // Add new decorations
     }
-  }
 
-  // Add error (and optional annotated) squiggles
-  let model: monaco.editor.ITextModel | null = editor.getModel();
-  if (model !== null) {
-    monaco.editor.removeAllMarkers("owner");
-    monaco.editor.setModelMarkers(model, "owner", errors);
-  }
+    if (setGeneralHoverInfo) {
+      const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
+      if (hoverInfo) {
+        editor.onDidDispose(() => {
+          hoverInfo.dispose();
+        });
+        editor.onDidChangeModelContent(() => {
+          hoverInfo.dispose();
+        });
+      }
+    }
 
-  return { symbolTable: antAnalyzer.getProgramST(), decorations: newDecorations }; // Return the new decorations and symbol table
-};
+    // Add error (and optional annotated) squiggles
+    let model: monaco.editor.ITextModel | null = editor.getModel();
+    if (model !== null) {
+      monaco.editor.removeAllMarkers("owner");
+      monaco.editor.setModelMarkers(model, "owner", errors);
+    }
+
+    return { symbolTable: antAnalyzer.getProgramST(), decorations: newDecorations }; // Return the new decorations and symbol table
+  };
 
 /**
  *
@@ -193,8 +193,8 @@ export class AntimonyProgramAnalyzer {
           let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
           let srcRange: SrcRange = new SrcRange(start, end);
           let varInfo: Variable | undefined = this.globalST.hasVarAtLocation(
-            word.word,
-            srcRange
+              word.word,
+              srcRange
           )?.varInfo;
 
           if (varInfo) {
@@ -205,11 +205,11 @@ export class AntimonyProgramAnalyzer {
             } else {
               if (varInfo.isConst) {
                 valueOfHover += `<span style="color:${this.hoverKeyWordColor.get(
-                  varTypes.Const
+                    varTypes.Const
                 )};">const</span> <br/> `;
               } else if (isSubtTypeOf(varInfo.type, varTypes.Variable)) {
                 valueOfHover += `<span style="color:${this.hoverKeyWordColor.get(
-                  varTypes.Variable
+                    varTypes.Variable
                 )};">var</span> <br/> `;
               }
 
@@ -218,7 +218,7 @@ export class AntimonyProgramAnalyzer {
               }
 
               valueOfHover += `(<span style="color:${this.hoverKeyWordColor.get(varInfo.type)};">${
-                varInfo.type
+                  varInfo.type
               }</span>) ${word.word} <br/> `;
 
               if (varInfo.value) {
@@ -227,7 +227,7 @@ export class AntimonyProgramAnalyzer {
 
               if (varInfo.compartment) {
                 valueOfHover += `In <span style="color:${this.hoverKeyWordColor.get(
-                  varTypes.Compartment
+                    varTypes.Compartment
                 )};">${varTypes.Compartment}</span>: ${varInfo.compartment} <br/> `;
               }
 
@@ -319,9 +319,9 @@ export class AntimonyProgramAnalyzer {
    * @returns comment if it exists, empty string otherwise
    */
   private getAnnotationComment(
-    annotation: string,
-    varInfo: Variable | undefined,
-    model: monaco.editor.ITextModel
+      annotation: string,
+      varInfo: Variable | undefined,
+      model: monaco.editor.ITextModel
   ): string {
     let lineInfo: SrcRange | undefined = varInfo?.annotationLineNum.get(annotation);
     let comment: string = "";
@@ -364,7 +364,7 @@ export class AntimonyProgramAnalyzer {
         let paramVarInfo: Variable | undefined = modelST.getVar(paramId);
         if (paramVarInfo) {
           hover += `<span style="color:${this.hoverKeyWordColor.get(paramVarInfo.type)};">${
-            paramVarInfo.type
+              paramVarInfo.type
           }</span>: ${paramId}`;
           if (i !== modelST.params.length - 1) {
             hover += `, `;
@@ -407,10 +407,10 @@ export class AntimonyProgramAnalyzer {
     // Get unannotated variables
     for (const varInfo of this.globalST.getVarMap().values()) {
       if (
-        varInfo.annotations.length === 0 &&
-        (varInfo.type === varTypes.Compartment ||
-          varInfo.type === varTypes.Species ||
-          varInfo.type === varTypes.Reaction)
+          varInfo.annotations.length === 0 &&
+          (varInfo.type === varTypes.Compartment ||
+              varInfo.type === varTypes.Species ||
+              varInfo.type === varTypes.Reaction)
       ) {
         unannotated.push(varInfo);
       }
@@ -419,10 +419,10 @@ export class AntimonyProgramAnalyzer {
     for (const modelMap of this.globalST.getModelMap().values()) {
       for (const varInfo of modelMap.getVarMap().values()) {
         if (
-          varInfo.annotations.length === 0 &&
-          (varInfo.type === varTypes.Compartment ||
-            varInfo.type === varTypes.Species ||
-            varInfo.type === varTypes.Reaction)
+            varInfo.annotations.length === 0 &&
+            (varInfo.type === varTypes.Compartment ||
+                varInfo.type === varTypes.Species ||
+                varInfo.type === varTypes.Reaction)
         ) {
           unannotated.push(varInfo);
         }
@@ -432,10 +432,10 @@ export class AntimonyProgramAnalyzer {
     for (const funcMap of this.globalST.getFuncMap().values()) {
       for (const varInfo of funcMap.getVarMap().values()) {
         if (
-          varInfo.annotations.length === 0 &&
-          (varInfo.type === varTypes.Compartment ||
-            varInfo.type === varTypes.Species ||
-            varInfo.type === varTypes.Reaction)
+            varInfo.annotations.length === 0 &&
+            (varInfo.type === varTypes.Compartment ||
+                varInfo.type === varTypes.Species ||
+                varInfo.type === varTypes.Reaction)
         ) {
           unannotated.push(varInfo);
         }
@@ -468,24 +468,23 @@ export class AntimonyProgramAnalyzer {
    */
   getUnannotatedDecorations(): monaco.editor.IModelDeltaDecoration[] {
     const unannotatedErrors: ErrorUnderline[] = this.getUnannotatedVariables();
-    const decorations: monaco.editor.IModelDeltaDecoration[] = unannotatedErrors.map(error => {
-//     console.log("THIS HIGHLIGHT COLOR -> " + this.highlightColor);
-    let colorClass = 'custom-highlight-' + this.highlightColor;
+    const decorations: monaco.editor.IModelDeltaDecoration[] = unannotatedErrors.map(variable => {
+      let colorClass = 'custom-highlight-' + this.highlightColor;
       return {
         range: new monaco.Range(
-          error.startLineNumber,
-          error.startColumn,
-          error.endLineNumber,
-          error.endColumn
+            variable.startLineNumber,
+            variable.startColumn,
+            variable.endLineNumber,
+            variable.endColumn
         ),
         options: {
-            inlineClassNameAffectsLetterSpacing: true,
-            inlineClassName: '',
-            className: colorClass, // Dynamic class name
-            stickiness: monaco.editor.TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
-          }
+          inlineClassNameAffectsLetterSpacing: true,
+          inlineClassName: "",
+          className: colorClass, // Dynamic class name
+          stickiness: monaco.editor.TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
+        }
       };
-    });
+    }).flat();
     return decorations;
   }
 
