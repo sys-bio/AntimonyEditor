@@ -55,18 +55,18 @@ declare global {
 }
 
 const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> = ({
-  content,
-  fileName,
-  database,
-  annotUnderlinedOn,
-  setAnnotUnderlinedOn,
-  editorInstance,
-  setEditorInstance,
-  selectedFilePosition,
-  handleSelectedPosition,
-  handleConversionSBML,
-  highlightColor
-}) => {
+                                                                                            content,
+                                                                                            fileName,
+                                                                                            database,
+                                                                                            annotUnderlinedOn,
+                                                                                            setAnnotUnderlinedOn,
+                                                                                            editorInstance,
+                                                                                            setEditorInstance,
+                                                                                            selectedFilePosition,
+                                                                                            handleSelectedPosition,
+                                                                                            handleConversionSBML,
+                                                                                            highlightColor
+                                                                                          }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -77,6 +77,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   const [annotationAddPosition, setAnnotationAddPosition] = useState<SrcPosition | null>(null);
   const [varToAnnotate, setVarToAnnotate] = useState<{ id: string; name: string | undefined } | null>(null);
   const [decorations, setDecorations] = useState<string[]>([]);
+  const [previousHighlightColor, setPreviousHighlightColor] = useState<string>("");
 
   const addAnnotationOption = (editor: any) => {
     if (editorRef.current) {
@@ -86,8 +87,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         keybindings: [
           monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10,
           monaco.KeyMod.chord(
-            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
-            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM
+              monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
+              monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM
           ),
         ],
         precondition: null,
@@ -242,10 +243,18 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
   useEffect(() => {
     if (editorInstance) {
-      const { decorations: newDecorations } = ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, decorations);
+      // Remove previous decorations with old highlight color
+      const decorationsToRemove = decorations.filter(dec => dec.includes(previousHighlightColor));
+      editorInstance.deltaDecorations(decorationsToRemove, []);
+
+      // Get new decorations with the updated highlight color
+      const { decorations: newDecorations } = ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, []);
+
+      // Apply the new decorations
       setDecorations(newDecorations);
+      setPreviousHighlightColor(highlightColor);
     }
-  }, [annotUnderlinedOn, editorInstance, highlightColor]);
+  }, [highlightColor]);
 
   useEffect(() => {
     if (editorInstance) {
@@ -343,28 +352,28 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
   };
 
   return (
-    <>
-      <div className="search-container">
-        <Loader loading={loading} />
-        <div>
-          <input id="biomodel-browse" type="text" placeholder="Search biomodels" />
-          <div id="biomddropdown">
-            <ul />
+      <>
+        <div className="search-container">
+          <Loader loading={loading} />
+          <div>
+            <input id="biomodel-browse" type="text" placeholder="Search biomodels" />
+            <div id="biomddropdown">
+              <ul />
+            </div>
           </div>
         </div>
-      </div>
-      <div className="code-editor" ref={editorRef}></div>
-      {isModalVisible && (
-        <div ref={modalRef}>
-          <CreateAnnotationModal
-            onClose={() => setModalVisible(false)}
-            annotationAddPosition={annotationAddPosition}
-            editorInstance={editorInstance}
-            varToAnnotate={varToAnnotate}
-          />
-        </div>
-      )}
-    </>
+        <div className="code-editor" ref={editorRef}></div>
+        {isModalVisible && (
+            <div ref={modalRef}>
+              <CreateAnnotationModal
+                  onClose={() => setModalVisible(false)}
+                  annotationAddPosition={annotationAddPosition}
+                  editorInstance={editorInstance}
+                  varToAnnotate={varToAnnotate}
+              />
+            </div>
+        )}
+      </>
   );
 };
 

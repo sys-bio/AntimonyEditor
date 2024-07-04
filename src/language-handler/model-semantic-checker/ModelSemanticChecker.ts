@@ -1,4 +1,5 @@
 import * as monaco from "monaco-editor";
+import React, { useState, useEffect } from 'react';
 import {
   ANTLRErrorListener,
   ANTLRInputStream,
@@ -53,11 +54,11 @@ class ErrorListener implements ANTLRErrorListener<any> {
  * @returns {GlobalST} the complete symbol table representing the program in the monaco editor.
  */
 export const ModelSemanticsChecker = (
-  editor: monaco.editor.IStandaloneCodeEditor,
-  annotHighlightOn: boolean,
-  setGeneralHoverInfo: boolean,
-  highlightColor: string,
-  existingDecorations: string[]
+    editor: monaco.editor.IStandaloneCodeEditor,
+    annotHighlightOn: boolean,
+    setGeneralHoverInfo: boolean,
+    highlightColor: string,
+    existingDecorations: string[]
 ): { symbolTable: GlobalST; decorations: string[] } => {
   const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue(), highlightColor);
 
@@ -67,10 +68,10 @@ export const ModelSemanticsChecker = (
   // Get all unannotated variables (optional)
   let newDecorations: string[] = [];
   if (annotHighlightOn) {
-    const unannotatedDecorations = antAnalyzer.getUnannotatedDecorations(highlightColor);
-    newDecorations = editor.deltaDecorations(existingDecorations, unannotatedDecorations); // Replace existing decorations
+    const unannotatedDecorations = antAnalyzer.getUnannotatedDecorations();
+    newDecorations = editor.deltaDecorations([], unannotatedDecorations); // Replace existing decorations
   } else {
-    // Remove existing decorations if annotHighlightOn is false
+    // Remove existing decorations before applying new ones
     editor.deltaDecorations(existingDecorations, []);
   }
 
@@ -465,9 +466,11 @@ export class AntimonyProgramAnalyzer {
    * Each decoration marks specific ranges where unannotated variables are referenced.
    * @returns An array of Monaco editor decorations (`monaco.editor.IModelDeltaDecoration`).
    */
-  getUnannotatedDecorations(highlightColor: string): monaco.editor.IModelDeltaDecoration[] {
+  getUnannotatedDecorations(): monaco.editor.IModelDeltaDecoration[] {
     const unannotatedErrors: ErrorUnderline[] = this.getUnannotatedVariables();
     const decorations: monaco.editor.IModelDeltaDecoration[] = unannotatedErrors.map(error => {
+//     console.log("THIS HIGHLIGHT COLOR -> " + this.highlightColor);
+    let colorClass = 'custom-highlight-' + this.highlightColor;
       return {
         range: new monaco.Range(
           error.startLineNumber,
@@ -476,14 +479,11 @@ export class AntimonyProgramAnalyzer {
           error.endColumn
         ),
         options: {
-                inlineClassNameAffectsLetterSpacing: true,
-                inlineClassName: '',
-                beforeContentClassName: '',
-                afterContentClassName: '',
-                linesDecorationsClassName: '',
-                className: `custom-highlight-${this.highlightColor}`, // Dynamic class name
-                stickiness: monaco.editor.TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
-              }
+            inlineClassNameAffectsLetterSpacing: true,
+            inlineClassName: '',
+            className: colorClass, // Dynamic class name
+            stickiness: monaco.editor.TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
+          }
       };
     });
     return decorations;

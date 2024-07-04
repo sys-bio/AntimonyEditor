@@ -56,12 +56,13 @@ const App: React.FC = () => {
   const [annotUnderlinedOn, setAnnotUnderlinedOn] = useState<boolean>(false);
 
   // Set highlight color for unannotated variables
-  const [highlightColor, setHighlightColor] = useState<string>("red");
+  const [highlightColor, setHighlightColor] = useState<string>("blue");
   // List of colors to set for highlight of unannotated variables
   const colors = [
     { name: "Red", color: "red" },
     { name: "Green", color: "green" },
     { name: "Yellow", color: "yellow" },
+    { name: "Blue", color: "blue" },
   ];
 
   /**

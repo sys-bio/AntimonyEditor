@@ -1,6 +1,15 @@
-.custom-highlight-red {
-    background: red;
+.custom-highlight-red{
+  background: red;
 }
-.custom-highlight-green {
-    background: green;
+
+.custom-highlight-green{
+  background: green;
+}
+
+.custom-highlight-yellow{
+  background: yellow;
+}
+
+.custom-highlight-blue{
+  background: blue;
 }
