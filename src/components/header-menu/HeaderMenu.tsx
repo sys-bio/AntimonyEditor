@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./HeaderMenu.css";
 
+/**
+ * @description HeaderMenuProps interface
+ * @interface
+ * @property {string} fileName - The current select file
+ * @property {function} handleConversionAntimony - Handle the Antimony to SBML file conversion process
+ * @property {function} handleConversionSBML - Handle the SBML to Antimony file conversion
+ * @property {function} handleFileDownload - Handle the file download
+ * @property {function} handleFileUpload - Handle the file upload
+ * @property {function} handleNewFile - Handle a new file
+ */
 interface HeaderMenuProps {
   fileName: string;
   handleConversionAntimony: () => void;
@@ -12,6 +22,22 @@ interface HeaderMenuProps {
   colors: { name: string; color: string}[];
 }
 
+/**
+ * @description HeaderMenu component
+ * @param fileName - HeaderMenuProp
+ * @param handleConversionAntimony - HeaderMenuProp
+ * @param handleConversionSBML - HeaderMenuProp
+ * @param handleFileDownload - HeaderMenuProp
+ * @param handleFileUpload - HeaderMenuProp
+ * @param handleNewFile - HeaderMenuProp
+ * @example - <HeaderMenu
+ *              handleConversionAntimony={handleConversionAntimony}
+ *              handleConversionSBML={handleConversionSBML}
+ *              handleFileDownload={handleFileDownload}
+ *              handleFileUpload={handleFileUpload}
+ *            />
+ * @returns - HeaderMenu component
+ */
 const HeaderMenu: React.FC<HeaderMenuProps> = ({
   fileName,
   handleConversionAntimony,
@@ -28,6 +54,10 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   const dropdownRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * @description Handle clicking outside the dropdown to close it.
+   * @param {MouseEvent} e - The mouse event triggered when clicking outside the dropdown.
+   */
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -43,51 +73,87 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
     };
   }, [dropdownRef]);
 
+  /**
+   * @description Handle menu option click to toggle the visibility of the dropdown menu.
+   * @param {string} menuOption - The menu option that was clicked.
+   */
   const handleMenuOptionClick = (menuOption: string) => {
     setDropdownVisible((prev) => (prev === menuOption ? "" : menuOption));
     setSubDropdownVisible("");
     setColorDropdownVisible("");
   };
 
+  /**
+   * @description Handle menu option hover to change the visible dropdown menu.
+   * @param {string} menuOption - The menu option that is being hovered over.
+   */
   const handleMenuOptionHover = (menuOption: string) => {
     if (dropdownVisible) {
       setDropdownVisible(menuOption);
     }
   };
-
+  /**
+   * Handle submenu option hover to change the visible submenu dropdown.
+   *
+   * @param {string} menuOption - The submenu option that is being hovered over.
+   */
   const handleSubMenuOptionHover = (menuOption: string) => {
     setSubDropdownVisible(menuOption);
   };
 
+  /**
+   * Handle submenu option leave to hide the visible submenu dropdown.
+   *
+   * @param {string} menuOption - The submenu option that is being hovered over.
+   */
   const handleSubMenuOptionLeave = (menuOption: string) => {
     if (subDropdownVisible === menuOption) {
       setSubDropdownVisible("");
     }
   };
 
+  /**
+   * Handle color option hover to change the visible color dropdown.
+   *
+   * @param {string} menuOption - The color option that is being hovered over.
+   */
   const handleColorOptionHover = (menuOption: string) => {
     setColorDropdownVisible(menuOption);
   };
 
+  /**
+   * Handle color option leave to hide the visible color dropdown.
+   *
+   * @param {string} menuOption - The color option that is being hovered over.
+   */
   const handleColorOptionLeave = (menuOption: string) => {
     if (colorDropdownVisible === menuOption) {
       setColorDropdownVisible("");
     }
   };
 
+  /**
+   * Handle hiding all dropdowns by resetting their visibility states.
+   */
   const handleAllDropdownsHidden = () => {
     setColorDropdownVisible("");
     setSubDropdownVisible("");
     setDropdownVisible("");
   };
 
+  /**
+   * @description Handle using keyboard shortcuts for opening new file and uploading files.
+   * @param {KeyboardEvent} event - The keyboard event triggered when a key is pressed.
+   */
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
+      // Check if Alt+N is pressed
       if (event.altKey && event.key === "n") {
         event.preventDefault();
         handleNewFile("untitled.ant");
       }
 
+      // Check if Ctrl+O is pressed
       if (event.ctrlKey && event.key === "o") {
         event.preventDefault();
         fileInputRef.current?.click();
