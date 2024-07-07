@@ -535,14 +535,25 @@ export class AntimonyProgramAnalyzer {
     return input.replaceAll("\r", "");
   }
 }
+
+/**
+ * Adds a dynamically created CSS rule to the document's head.
+ * Creates a <style> element and appends it to the document head,
+ * then inserts the given CSS rule into the style sheet.
+ *
+ * @param css The CSS rule to be added dynamically.
+ */
 export function addDynamicStyleRule(css: string): void {
   const style = document.createElement('style');
   style.type = 'text/css';
   document.head.appendChild(style);
-  if (style.sheet) {  // Check if the sheet is null
+
+  // Check if the style sheet exists and insert the CSS rule.
+  if (style.sheet) {
     style.sheet.insertRule(css, style.sheet.cssRules.length);
   }
 }
+
 /**
  * Error checks an antimony program, and returns all of the errors in an array.
  * @param antimonyCode string that is antimony program code to be error checked
