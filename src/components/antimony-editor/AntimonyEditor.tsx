@@ -180,7 +180,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         id: "underline-annotation",
 
         // A label of the action that will be presented to the user.
-        label: `Underline Unannotated Variables ${annotUnderlinedOn ? "Off" : "On"}`,
+        label: `Highlight Unannotated Variables ${annotUnderlinedOn ? "Off" : "On"}`,
 
         keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
 
