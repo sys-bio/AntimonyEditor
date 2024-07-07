@@ -6,7 +6,7 @@ import "./AntimonyEditor.css";
 import { getBiomodels, getModel } from "../../features/BrowseBiomodels";
 import Loader from "../Loader";
 import CreateAnnotationModal from "../create-annotation/CreateAnnotationModal";
-import ModelSemanticsChecker from "../../language-handler/model-semantic-checker/ModelSemanticChecker";
+import ModelSemanticsChecker from "../../language-handler/ModelSemanticChecker";
 import { IDBPDatabase, DBSchema } from "idb";
 import { SrcPosition, SrcRange } from "../../language-handler/Types";
 
@@ -136,7 +136,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         contextMenuOrder: 1.5,
         run: function (editor: monaco.editor.IStandaloneCodeEditor) {
           setAnnotUnderlinedOn((prevAnnotUnderlinedOn) => !prevAnnotUnderlinedOn);
-          setHighlightColor("aqua");
         },
       });
     }
@@ -246,9 +245,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
   useEffect(() => {
     if (editorInstance) {
-      if(!annotUnderlinedOn && highlightColor !== "") {
-        setHighlightColor("");
-      }
       const { symbolTable, decorations: newDecorations } = ModelSemanticsChecker(
           editorInstance,
           annotUnderlinedOn,

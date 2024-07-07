@@ -6,14 +6,13 @@ import {
   RecognitionException,
   Recognizer,
 } from "antlr4ts";
-import { AntimonyGrammarLexer } from ".././antlr/AntimonyGrammarLexer";
-import { AntimonyGrammarParser, RootContext } from ".././antlr/AntimonyGrammarParser";
-import { GlobalST, ParamAndNameTable } from ".././SymbolTableClasses";
-import { SymbolTableVisitor } from ".././SymbolTableVisitor";
-import { SemanticVisitor } from ".././SemanticVisitor";
-import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from ".././Types";
-import { Variable } from ".././Variable";
-import "./ModelSemanticChecker.css"
+import { AntimonyGrammarLexer } from "./antlr/AntimonyGrammarLexer";
+import { AntimonyGrammarParser, RootContext } from "./antlr/AntimonyGrammarParser";
+import { GlobalST, ParamAndNameTable } from "./SymbolTableClasses";
+import { SymbolTableVisitor } from "./SymbolTableVisitor";
+import { SemanticVisitor } from "./SemanticVisitor";
+import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from "./Types";
+import { Variable } from "./Variable";
 
 /**
  * Defines a parse error, which includes a position (line, column) as well as the error message.
@@ -469,7 +468,11 @@ export class AntimonyProgramAnalyzer {
   getUnannotatedDecorations(): monaco.editor.IModelDeltaDecoration[] {
     const unannotatedErrors: ErrorUnderline[] = this.getUnannotatedVariables();
     const decorations: monaco.editor.IModelDeltaDecoration[] = unannotatedErrors.map(variable => {
-      let colorClass = 'custom-highlight-' + this.highlightColor;
+      let colorClass = 'custom-highlight';
+
+      // Dynamically inject CSS for the decoration
+      addDynamicStyleRule(`.${colorClass} { background-color: ${this.highlightColor}; color: black; }`);
+
       return {
         range: new monaco.Range(
             variable.startLineNumber,
@@ -479,8 +482,7 @@ export class AntimonyProgramAnalyzer {
         ),
         options: {
           inlineClassNameAffectsLetterSpacing: true,
-          inlineClassName: "",
-          className: colorClass, // Dynamic class name
+          className: colorClass,
           stickiness: monaco.editor.TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
         }
       };
@@ -533,7 +535,14 @@ export class AntimonyProgramAnalyzer {
     return input.replaceAll("\r", "");
   }
 }
-
+export function addDynamicStyleRule(css: string): void {
+  const style = document.createElement('style');
+  style.type = 'text/css';
+  document.head.appendChild(style);
+  if (style.sheet) {  // Check if the sheet is null
+    style.sheet.insertRule(css, style.sheet.cssRules.length);
+  }
+}
 /**
  * Error checks an antimony program, and returns all of the errors in an array.
  * @param antimonyCode string that is antimony program code to be error checked
@@ -603,3 +612,4 @@ export function removeCarriageReturn(input: string): string {
 }
 
 export default ModelSemanticsChecker;
+
