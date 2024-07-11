@@ -18,6 +18,8 @@ interface HeaderMenuProps {
   handleFileDownload: () => void;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleNewFile: (handleNewFile: string) => Promise<void>;
+  setHighlightColor: (color: string) => void
+  colors: { name: string; color: string}[];
 }
 
 /**
@@ -43,8 +45,12 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   handleFileDownload,
   handleFileUpload,
   handleNewFile,
+  setHighlightColor,
+  colors
 }) => {
   const [dropdownVisible, setDropdownVisible] = useState("");
+  const [subDropdownVisible, setSubDropdownVisible] = useState("");
+  const [colorDropdownVisible, setColorDropdownVisible] = useState("");
   const dropdownRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,6 +62,8 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
     function handleOutsideClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownVisible("");
+        setSubDropdownVisible("");
+        setColorDropdownVisible("");
       }
     }
 
@@ -71,6 +79,8 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
    */
   const handleMenuOptionClick = (menuOption: string) => {
     setDropdownVisible((prev) => (prev === menuOption ? "" : menuOption));
+    setSubDropdownVisible("");
+    setColorDropdownVisible("");
   };
 
   /**
@@ -81,6 +91,54 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
     if (dropdownVisible) {
       setDropdownVisible(menuOption);
     }
+  };
+  /**
+   * Handle submenu option hover to change the visible submenu dropdown.
+   *
+   * @param {string} menuOption - The submenu option that is being hovered over.
+   */
+  const handleSubMenuOptionHover = (menuOption: string) => {
+    setSubDropdownVisible(menuOption);
+  };
+
+  /**
+   * Handle submenu option leave to hide the visible submenu dropdown.
+   *
+   * @param {string} menuOption - The submenu option that is being hovered over.
+   */
+  const handleSubMenuOptionLeave = (menuOption: string) => {
+    if (subDropdownVisible === menuOption) {
+      setSubDropdownVisible("");
+    }
+  };
+
+  /**
+   * Handle color option hover to change the visible color dropdown.
+   *
+   * @param {string} menuOption - The color option that is being hovered over.
+   */
+  const handleColorOptionHover = (menuOption: string) => {
+    setColorDropdownVisible(menuOption);
+  };
+
+  /**
+   * Handle color option leave to hide the visible color dropdown.
+   *
+   * @param {string} menuOption - The color option that is being hovered over.
+   */
+  const handleColorOptionLeave = (menuOption: string) => {
+    if (colorDropdownVisible === menuOption) {
+      setColorDropdownVisible("");
+    }
+  };
+
+  /**
+   * Handle hiding all dropdowns by resetting their visibility states.
+   */
+  const handleAllDropdownsHidden = () => {
+    setColorDropdownVisible("");
+    setSubDropdownVisible("");
+    setDropdownVisible("");
   };
 
   /**
@@ -191,6 +249,60 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                   }}
                 >
                   <div className="header-menu-command">Convert SBML → Antimony</div>
+                </li>
+              </ul>
+            )}
+          </li>
+          <li
+            className={`header-menu-item ${dropdownVisible === "settings" && "header-menu-selected"}`}
+            onClick={() => handleMenuOptionClick("settings")}
+            onMouseEnter={() => handleMenuOptionHover("settings")}
+          >
+            Settings
+            {dropdownVisible === "settings" && (
+              <ul
+                className="header-menu-dropdown"
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              >
+                <li
+                  onMouseEnter={() => handleSubMenuOptionHover("color")}
+                  onMouseLeave={() => handleSubMenuOptionLeave("color")}
+                >
+                  <div className="header-menu-command">
+                    <div className="menu-text">Color</div>
+                    <div className="arrow-icon">&#9658;</div>
+                  </div>
+                  {subDropdownVisible === "color" && (
+                    <ul className="sub-menu-dropdown"
+                      onMouseEnter={() => handleSubMenuOptionHover("color")}
+                      onMouseLeave={() => handleSubMenuOptionLeave("color")}
+                    >
+                      <li
+                        onMouseEnter={() => handleColorOptionHover("highlight")}
+                        onMouseLeave={() => handleColorOptionLeave("highlight")}
+                      >
+                        <div className="header-menu-command">
+                          <div className="menu-text">Highlight</div>
+                          <div className="arrow-icon">&#9658;</div>
+                        </div>
+                        {colorDropdownVisible === "highlight" && (
+                          <ul className="sub-menu-dropdown">
+                            {colors.map((color, index) => (
+                              <li
+                                key={index}
+                                onClick={() => {setHighlightColor(color.color);
+                                                handleAllDropdownsHidden()}}>
+                                <div className="color-option">
+                                  {color.name}
+                                  <div className="color-square" style={{ backgroundColor: color.color }}></div>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    </ul>
+                  )}
                 </li>
               </ul>
             )}
