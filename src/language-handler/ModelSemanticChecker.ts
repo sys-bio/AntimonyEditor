@@ -198,7 +198,6 @@ export class AntimonyProgramAnalyzer {
               word.word,
               srcRange
           )?.varInfo;
-
           if (varInfo) {
             if (varInfo.type === varTypes.Model) {
               valueOfHover += this.getModelHover(word.word);
@@ -257,7 +256,7 @@ export class AntimonyProgramAnalyzer {
             // add valueOfHover and valueOfAnnotation to hoverContents
             hoverContents.push({ supportHtml: true, value: valueOfHover });
             hoverContents.push({ supportHtml: true, value: valueOfAnnotation });
-            document.addEventListener("click", this.handleTrashIconClick.bind(this));
+            document.addEventListener("click", (e) => {this.handleTrashIconClick(e, model)});
           } else {
             // // check if it is an annotation string.
             // let line: string = model.getLineContent(position.lineNumber);
@@ -327,12 +326,15 @@ export class AntimonyProgramAnalyzer {
    *
    * @param event The MouseEvent object representing the click event.
    */
-  handleTrashIconClick(event: MouseEvent) {
+  private handleTrashIconClick(event: MouseEvent, model: editor.ITextModel) {
     const target = event.target as HTMLElement;
     if (target) {
       const annotation = target.getAttribute("data-annotation");
       if (annotation) {
-        this.deleteAnnotation(annotation, target);
+        this.deleteAnnotation(annotation, target, model);
+        event.stopPropagation();
+        event.preventDefault();
+        event.stopImmediatePropagation();
       }
     }
   }
@@ -343,10 +345,32 @@ export class AntimonyProgramAnalyzer {
    * @param annotation The annotation string to be deleted.
    * @param target The HTMLElement representing the trash icon element that triggered the deletion.
    */
-  deleteAnnotation(annotation: string, target: HTMLElement) {
+  private deleteAnnotation(annotation: string, target: HTMLElement, model: editor.ITextModel) {
     annotation = "\"" + annotation + "\""; // Formatting annotation for deletion process
     let varInfo = this.globalST.getVar(this.currentWord); // Retrieving variable information
-    if (varInfo) {
+    let annotationLineNum = varInfo?.annotationLineNum.get(annotation);
+    console.log(varInfo);
+
+    if (varInfo && annotationLineNum) {
+      const totalLines = model.getLineCount();
+      if (annotationLineNum.start.line > totalLines || annotationLineNum.start.line < 1) {
+        console.error(`Invalid line number: ${annotationLineNum.start.line}`);
+        return;
+      }
+
+      // Adjust the endLine and endColumn to correctly handle the last line
+      const isLastLine = annotationLineNum.start.line === totalLines;
+      const endLine = isLastLine ? annotationLineNum.start.line : annotationLineNum.start.line + 1;
+      const endColumn = isLastLine ? model.getLineMaxColumn(annotationLineNum.start.line) : 1;
+
+      const range = new monaco.Range(annotationLineNum.start.line, 1, endLine, endColumn);
+      const op = {
+        range: range,
+        text: "" // Empty string to delete the line
+      };
+
+      model.pushEditOperations([], [op], () => null);
+
       // Check if the variable has annotations
       if (varInfo.annotations.includes(annotation)) {
         // Remove the annotation from the annotations array
@@ -354,15 +378,34 @@ export class AntimonyProgramAnalyzer {
         // Delete mapping entries related to the annotation
         varInfo.annotationKeywordMap.delete(annotation);
         varInfo.annotationLineNum.delete(annotation);
-        // Update the variable information in the global symbol table
         this.globalST.setVar(this.currentWord, varInfo);
+
+        // Update line numbers for subsequent annotations
+        this.updateAnnotationLineNumbers(varInfo, annotationLineNum.start.line);
       }
     }
+
     // Remove the annotation's UI element from the DOM
     const annotationElement = target.parentElement;
     if (annotationElement) {
       annotationElement.remove();
     }
+  }
+
+  /**
+   * Updates the line numbers of all annotations after the specified line number.
+   * @param varInfo Variable info for the variable being annotated.
+   * @param deletedLineNum The line number of the deleted annotation.
+   */
+  private updateAnnotationLineNumbers(varInfo: Variable, deletedLineNum: number) {
+    varInfo.annotationLineNum.forEach((lineInfo, annotation) => {
+      if (lineInfo.start.line > deletedLineNum) {
+        lineInfo.start.line--;
+        lineInfo.end.line--;
+        varInfo.annotationLineNum.set(annotation, lineInfo);
+      }
+    });
+    this.globalST.setVar(this.currentWord, varInfo);
   }
 
   /**
