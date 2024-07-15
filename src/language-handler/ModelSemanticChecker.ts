@@ -13,6 +13,7 @@ import { SymbolTableVisitor } from "./SymbolTableVisitor";
 import { SemanticVisitor } from "./SemanticVisitor";
 import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from "./Types";
 import { Variable } from "./Variable";
+import {editor} from "monaco-editor";
 
 /**
  * Defines a parse error, which includes a position (line, column) as well as the error message.
@@ -51,50 +52,50 @@ class ErrorListener implements ANTLRErrorListener<any> {
  * @param decorations
  * @returns {GlobalST} the complete symbol table representing the program in the monaco editor.
  */
-  export const ModelSemanticsChecker = (
-      editor: monaco.editor.IStandaloneCodeEditor,
-      annotHighlightOn: boolean,
-      setGeneralHoverInfo: boolean,
-      highlightColor: string,
-      existingDecorations: string[]
-  ): { symbolTable: GlobalST; decorations: string[] } => {
+export const ModelSemanticsChecker = (
+    editor: monaco.editor.IStandaloneCodeEditor,
+    annotHighlightOn: boolean,
+    setGeneralHoverInfo: boolean,
+    highlightColor: string,
+    existingDecorations: string[]
+): { symbolTable: GlobalST; decorations: string[] } => {
 
-    // Clear old decorations
-    editor.deltaDecorations(existingDecorations, []);
+  // Clear old decorations
+  editor.deltaDecorations(existingDecorations, []);
 
-    const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue(), highlightColor);
+  const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue(), highlightColor);
 
-    // Get all errors
-    let errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
+  // Get all errors
+  let errors: ErrorUnderline[] = antAnalyzer.getErrors(true);
 
-    // Get all unannotated variables (optional)
-    let newDecorations: string[] = [];
-    if (annotHighlightOn) {
-      const unannotatedDecorations = antAnalyzer.getUnannotatedDecorations();
-      newDecorations = editor.deltaDecorations([], unannotatedDecorations); // Add new decorations
+  // Get all unannotated variables (optional)
+  let newDecorations: string[] = [];
+  if (annotHighlightOn) {
+    const unannotatedDecorations = antAnalyzer.getUnannotatedDecorations();
+    newDecorations = editor.deltaDecorations([], unannotatedDecorations); // Add new decorations
+  }
+
+  if (setGeneralHoverInfo) {
+    const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
+    if (hoverInfo) {
+      editor.onDidDispose(() => {
+        hoverInfo.dispose();
+      });
+      editor.onDidChangeModelContent(() => {
+        hoverInfo.dispose();
+      });
     }
+  }
 
-    if (setGeneralHoverInfo) {
-      const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
-      if (hoverInfo) {
-        editor.onDidDispose(() => {
-          hoverInfo.dispose();
-        });
-        editor.onDidChangeModelContent(() => {
-          hoverInfo.dispose();
-        });
-      }
-    }
+  // Add error (and optional annotated) squiggles
+  let model: monaco.editor.ITextModel | null = editor.getModel();
+  if (model !== null) {
+    monaco.editor.removeAllMarkers("owner");
+    monaco.editor.setModelMarkers(model, "owner", errors);
+  }
 
-    // Add error (and optional annotated) squiggles
-    let model: monaco.editor.ITextModel | null = editor.getModel();
-    if (model !== null) {
-      monaco.editor.removeAllMarkers("owner");
-      monaco.editor.setModelMarkers(model, "owner", errors);
-    }
-
-    return { symbolTable: antAnalyzer.getProgramST(), decorations: newDecorations }; // Return the new decorations and symbol table
-  };
+  return { symbolTable: antAnalyzer.getProgramST(), decorations: newDecorations }; // Return the new decorations and symbol table
+};
 
 /**
  *
@@ -108,12 +109,14 @@ export class AntimonyProgramAnalyzer {
   private globalST: GlobalST;
   private hoverKeyWordColor: Map<string, string>;
   private highlightColor: string;
+  private currentWord: string;
 
   constructor(antimonyCode: string, highlightColor: string) {
     // we remove carriage returns in the string since
     // these only exist in new lines on windows OS, and interfere with the
     // grammar parse.
     antimonyCode = this.removeCarriageReturn(antimonyCode);
+    this.currentWord = "";
     this.highlightColor = highlightColor;
     let inputStream = new ANTLRInputStream(antimonyCode);
     let lexer = new AntimonyGrammarLexer(inputStream);
@@ -178,9 +181,9 @@ export class AntimonyProgramAnalyzer {
         let valueOfHover: string = "";
         let valueOfAnnotation: string = "";
         const word = model.getWordAtPosition(position);
-
         // Check if word exists
         if (word) {
+          this.currentWord = word.word;
           // set range for hover
           let hoverLine = position.lineNumber;
           let hoverColumnStart = word.startColumn;
@@ -195,7 +198,6 @@ export class AntimonyProgramAnalyzer {
               word.word,
               srcRange
           )?.varInfo;
-
           if (varInfo) {
             if (varInfo.type === varTypes.Model) {
               valueOfHover += this.getModelHover(word.word);
@@ -238,15 +240,23 @@ export class AntimonyProgramAnalyzer {
                 let keyword: string | undefined = varInfo?.annotationKeywordMap.get(annotation);
                 let link: string = annotation.replace(/"/g, "");
 
-                valueOfAnnotation += `<span><span style="color:#d33682;">${keyword} </span>
-                                      <a href=${annotation.replace(/"/g, "")}>${link}</a> 
-                                      <span style="color:#76b947;">${comment}</span></span><br/> `;
+                valueOfAnnotation +=
+                    `<span>
+                        <span style="color:#d33682;">${keyword} </span>
+                        <a href=${annotation.replace(/"/g, "")}>${link}</a>
+                        <span style="color:#76b947;">${comment}</span>
+                        <span 
+                          class="trash-icon" 
+                          data-annotation=${annotation}>🗑️</span>
+                        </span>
+                    </span><br/>`;
               });
             }
 
             // add valueOfHover and valueOfAnnotation to hoverContents
             hoverContents.push({ supportHtml: true, value: valueOfHover });
             hoverContents.push({ supportHtml: true, value: valueOfAnnotation });
+            document.addEventListener("click", (e) => {this.handleTrashIconClick(e, model)});
           } else {
             // // check if it is an annotation string.
             // let line: string = model.getLineContent(position.lineNumber);
@@ -308,6 +318,94 @@ export class AntimonyProgramAnalyzer {
       },
     });
     return hoverInfo;
+  }
+
+  /**
+   * Handles the click event on a trash icon to delete an annotation associated with the icon.
+   * Retrieves the annotation data from the target element and deletes it from the UI and data structures.
+   *
+   * @param event The MouseEvent object representing the click event.
+   */
+  private handleTrashIconClick(event: MouseEvent, model: editor.ITextModel) {
+    const target = event.target as HTMLElement;
+    if (target) {
+      const annotation = target.getAttribute("data-annotation");
+      if (annotation) {
+        this.deleteAnnotation(annotation, target, model);
+        event.stopPropagation();
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }
+  }
+
+  /**
+   * Deletes the specified annotation from the data structures and removes its corresponding UI element.
+   *
+   * @param annotation The annotation string to be deleted.
+   * @param target The HTMLElement representing the trash icon element that triggered the deletion.
+   */
+  private deleteAnnotation(annotation: string, target: HTMLElement, model: editor.ITextModel) {
+    annotation = "\"" + annotation + "\""; // Formatting annotation for deletion process
+    let varInfo = this.globalST.getVar(this.currentWord); // Retrieving variable information
+    let annotationLineNum = varInfo?.annotationLineNum.get(annotation);
+    console.log(varInfo);
+
+    if (varInfo && annotationLineNum) {
+      const totalLines = model.getLineCount();
+      if (annotationLineNum.start.line > totalLines || annotationLineNum.start.line < 1) {
+        console.error(`Invalid line number: ${annotationLineNum.start.line}`);
+        return;
+      }
+
+      // Adjust the endLine and endColumn to correctly handle the last line
+      const isLastLine = annotationLineNum.start.line === totalLines;
+      const endLine = isLastLine ? annotationLineNum.start.line : annotationLineNum.start.line + 1;
+      const endColumn = isLastLine ? model.getLineMaxColumn(annotationLineNum.start.line) : 1;
+
+      const range = new monaco.Range(annotationLineNum.start.line, 1, endLine, endColumn);
+      const op = {
+        range: range,
+        text: "" // Empty string to delete the line
+      };
+
+      model.pushEditOperations([], [op], () => null);
+
+      // Check if the variable has annotations
+      if (varInfo.annotations.includes(annotation)) {
+        // Remove the annotation from the annotations array
+        varInfo.annotations = varInfo.annotations.filter((ann) => ann !== annotation);
+        // Delete mapping entries related to the annotation
+        varInfo.annotationKeywordMap.delete(annotation);
+        varInfo.annotationLineNum.delete(annotation);
+        this.globalST.setVar(this.currentWord, varInfo);
+
+        // Update line numbers for subsequent annotations
+        this.updateAnnotationLineNumbers(varInfo, annotationLineNum.start.line);
+      }
+    }
+
+    // Remove the annotation's UI element from the DOM
+    const annotationElement = target.parentElement;
+    if (annotationElement) {
+      annotationElement.remove();
+    }
+  }
+
+  /**
+   * Updates the line numbers of all annotations after the specified line number.
+   * @param varInfo Variable info for the variable being annotated.
+   * @param deletedLineNum The line number of the deleted annotation.
+   */
+  private updateAnnotationLineNumbers(varInfo: Variable, deletedLineNum: number) {
+    varInfo.annotationLineNum.forEach((lineInfo, annotation) => {
+      if (lineInfo.start.line > deletedLineNum) {
+        lineInfo.start.line--;
+        lineInfo.end.line--;
+        varInfo.annotationLineNum.set(annotation, lineInfo);
+      }
+    });
+    this.globalST.setVar(this.currentWord, varInfo);
   }
 
   /**
