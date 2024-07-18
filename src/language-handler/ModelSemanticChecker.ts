@@ -14,6 +14,7 @@ import { SemanticVisitor } from "./SemanticVisitor";
 import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from "./Types";
 import { Variable } from "./Variable";
 import {editor} from "monaco-editor";
+import {match} from "node:assert";
 
 /**
  * Defines a parse error, which includes a position (line, column) as well as the error message.
@@ -109,14 +110,12 @@ export class AntimonyProgramAnalyzer {
   private globalST: GlobalST;
   private hoverKeyWordColor: Map<string, string>;
   private highlightColor: string;
-  private currentWord: string;
 
   constructor(antimonyCode: string, highlightColor: string) {
     // we remove carriage returns in the string since
     // these only exist in new lines on windows OS, and interfere with the
     // grammar parse.
     antimonyCode = this.removeCarriageReturn(antimonyCode);
-    this.currentWord = "";
     this.highlightColor = highlightColor;
     let inputStream = new ANTLRInputStream(antimonyCode);
     let lexer = new AntimonyGrammarLexer(inputStream);
@@ -183,7 +182,6 @@ export class AntimonyProgramAnalyzer {
         const word = model.getWordAtPosition(position);
         // Check if word exists
         if (word) {
-          this.currentWord = word.word;
           // set range for hover
           let hoverLine = position.lineNumber;
           let hoverColumnStart = word.startColumn;
@@ -194,7 +192,7 @@ export class AntimonyProgramAnalyzer {
           let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
           let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
           let srcRange: SrcRange = new SrcRange(start, end);
-          let varInfo: Variable | undefined = this.globalST.hasVarAtLocation(
+          let varInfo = this.globalST.hasVarAtLocation(
               word.word,
               srcRange
           )?.varInfo;
@@ -231,6 +229,7 @@ export class AntimonyProgramAnalyzer {
                     varTypes.Compartment
                 )};">${varTypes.Compartment}</span>: ${varInfo.compartment} <br/> `;
               }
+              // console.log(varInfo)
 
               varInfo.annotations.forEach((annotation) => {
                 // get any additional comment on the same line as the annotation
@@ -239,7 +238,6 @@ export class AntimonyProgramAnalyzer {
                 // the annotation keyword, ie "identity", "part", etc
                 let keyword: string | undefined = varInfo?.annotationKeywordMap.get(annotation);
                 let link: string = annotation.replace(/"/g, "");
-
                 valueOfAnnotation +=
                     `<span>
                         <span style="color:#d33682;">${keyword} </span>
@@ -256,7 +254,9 @@ export class AntimonyProgramAnalyzer {
             // add valueOfHover and valueOfAnnotation to hoverContents
             hoverContents.push({ supportHtml: true, value: valueOfHover });
             hoverContents.push({ supportHtml: true, value: valueOfAnnotation });
-            document.addEventListener("click", (e) => {this.handleTrashIconClick(e, model)});
+            document.addEventListener("click", (e) => {
+              this.handleTrashIconClick(e, model, word.word, srcRange);
+            });
           } else {
             // // check if it is an annotation string.
             // let line: string = model.getLineContent(position.lineNumber);
@@ -326,88 +326,108 @@ export class AntimonyProgramAnalyzer {
    *
    * @param event The MouseEvent object representing the click event.
    */
-  private handleTrashIconClick(event: MouseEvent, model: editor.ITextModel) {
+  private handleTrashIconClick(event: MouseEvent, model: editor.ITextModel, word: string, srcRange: SrcRange | undefined) {;
     const target = event.target as HTMLElement;
     if (target) {
-      const annotation = target.getAttribute("data-annotation");
+      let annotation = target.getAttribute("data-annotation");
       if (annotation) {
-        this.deleteAnnotation(annotation, target, model);
-        event.stopPropagation();
-        event.preventDefault();
-        event.stopImmediatePropagation();
+        this.deleteAnnotation(annotation, target, model, word, srcRange);
       }
     }
   }
 
   /**
-   * Deletes the specified annotation from the data structures and removes its corresponding UI element.
+   * This method handles the removal of a specified annotation from the editor. It adjusts the
+   * document's text to delete the annotation and potentially modify or consolidate lines to
+   * prevent format disruptions in the source code. This function also updates the internal
+   * data structures to reflect the removal of the annotation, ensures that all related UI
+   * elements are updated accordingly, and maintains the integrity of remaining annotations.
    *
-   * @param annotation The annotation string to be deleted.
-   * @param target The HTMLElement representing the trash icon element that triggered the deletion.
+   * The process includes recalculating line and column positions for any remaining annotations
+   * to ensure accurate display and interaction within the editor.
+   *
+   * @param annotation The specific annotation identifier as a string, which is to be removed.
+   * @param target The HTMLElement that represents the clickable trash icon, which initiated
+   *               the deletion process.
+   * @param model The Monaco editor's text model, which is used for reading and modifying the
+   *              text within the editor.
+   * @param word The word or identifier associated with the annotation being deleted, used to
+   *             update or reference the relevant variable information.
+   * @param srcRange An optional source range specifying the location of the word within the
+   *                 editor, which may affect how the text and annotations are managed around
+   *                 the deleted annotation.
    */
-  private deleteAnnotation(annotation: string, target: HTMLElement, model: editor.ITextModel) {
-    annotation = "\"" + annotation + "\""; // Formatting annotation for deletion process
-    let varInfo = this.globalST.getVar(this.currentWord); // Retrieving variable information
-    let annotationLineNum = varInfo?.annotationLineNum.get(annotation);
-    console.log(varInfo);
+  private deleteAnnotation(annotation: string, target: HTMLElement, model: editor.ITextModel, word: string, srcRange: SrcRange | undefined) {
+    annotation = "\"" + annotation + "\"";
+    if (srcRange) {
+      // Get annotation location to delete from content menu
+      let varInfo = this.globalST.hasVarAtLocation(word, srcRange)?.varInfo;
+      let annotationLineNum = varInfo?.annotationLineNum.get(annotation);
 
-    if (varInfo && annotationLineNum) {
-      const totalLines = model.getLineCount();
-      if (annotationLineNum.start.line > totalLines || annotationLineNum.start.line < 1) {
-        console.error(`Invalid line number: ${annotationLineNum.start.line}`);
-        return;
-      }
+      if (varInfo && annotationLineNum) {
+        // Find the remaining annotation list which excludes the deleted annotation
+        const keyWord = varInfo.annotationKeywordMap.get(annotation);
+        const annotationRange = varInfo.annotationLineNum.get(annotation);
+        let remainingAnnotations = varInfo.annotations.filter(ann => {
+          const annKeyWord = varInfo?.annotationKeywordMap.get(ann);
+          const annRange = varInfo?.annotationLineNum.get(ann);
+          return annKeyWord === keyWord
+              && ann !== annotation
+              && annRange?.start.line === annotationRange?.start.line
+              && annRange?.end.line === annotationRange?.end.line;
+        });
 
-      // Adjust the endLine and endColumn to correctly handle the last line
-      const isLastLine = annotationLineNum.start.line === totalLines;
-      const endLine = isLastLine ? annotationLineNum.start.line : annotationLineNum.start.line + 1;
-      const endColumn = isLastLine ? model.getLineMaxColumn(annotationLineNum.start.line) : 1;
+        if (keyWord === undefined) {
+          console.error('Error: keyWord is undefined.');
+          return;
+        }
 
-      const range = new monaco.Range(annotationLineNum.start.line, 1, endLine, endColumn);
-      const op = {
-        range: range,
-        text: "" // Empty string to delete the line
-      };
+        // Create the new text to replace the deleted text
+        const varNameAndKeyWord = "  " + word + " " + keyWord + " ";
+        const indent = ' '.repeat(word.length + keyWord.length + 4);
+        let resultString = remainingAnnotations.join(',\n' + indent);
+        resultString = remainingAnnotations.length === 0 ? "" : varNameAndKeyWord + resultString + "\n";
 
-      model.pushEditOperations([], [op], () => null);
+        // Calculate the accurate range to delete the specific annotation line
+        const startLine = annotationLineNum.start.line
+        const startColumn = 1; // Assuming the annotation starts at the beginning of the line
+        const endLine = annotationLineNum.end.line;
+        const endColumn = model.getLineMaxColumn(endLine);
 
-      // Check if the variable has annotations
-      if (varInfo.annotations.includes(annotation)) {
-        // Remove the annotation from the annotations array
-        varInfo.annotations = varInfo.annotations.filter((ann) => ann !== annotation);
-        // Delete mapping entries related to the annotation
+        // Update varInfo mappings
         varInfo.annotationKeywordMap.delete(annotation);
         varInfo.annotationLineNum.delete(annotation);
-        this.globalST.setVar(this.currentWord, varInfo);
+        varInfo.annotations = varInfo.annotations.filter((ann) => ann !== annotation);
 
-        // Update line numbers for subsequent annotations
-        this.updateAnnotationLineNumbers(varInfo, annotationLineNum.start.line);
+        // Update line number of each annotation in remaining annotation since there are some annotations deleted, the range
+        // is changed as well
+        varInfo.annotationLineNum.forEach((value, key, map) => {
+          //TODO: column probably is not correct because what if we delete the last line, the column would be changed? MAYBE?
+            if (varInfo?.annotations.length == undefined) {
+              console.log("Length of annotation is undefined")
+            } else if (remainingAnnotations.includes(key)) {
+              map.set(key, new SrcRange(value.start, new SrcPosition(value.end.line - 1, value.end.column)))
+            }
+        })
+
+        // Replace
+        const range = new monaco.Range(startLine, startColumn, endLine, endColumn);
+        const op = {
+          range: range,
+          text: resultString
+        };
+
+        model.pushEditOperations([], [op], () => null);
       }
-    }
-
-    // Remove the annotation's UI element from the DOM
-    const annotationElement = target.parentElement;
-    if (annotationElement) {
-      annotationElement.remove();
+      // Remove the annotation's UI element from the DOM
+      const annotationElement = target.parentElement;
+      if (annotationElement) {
+        annotationElement.remove();
+      }
+      // Update the Monaco editor model content to reflect changes
+      model.setValue(model.getValue());
     }
   }
-
-  /**
-   * Updates the line numbers of all annotations after the specified line number.
-   * @param varInfo Variable info for the variable being annotated.
-   * @param deletedLineNum The line number of the deleted annotation.
-   */
-  private updateAnnotationLineNumbers(varInfo: Variable, deletedLineNum: number) {
-    varInfo.annotationLineNum.forEach((lineInfo, annotation) => {
-      if (lineInfo.start.line > deletedLineNum) {
-        lineInfo.start.line--;
-        lineInfo.end.line--;
-        varInfo.annotationLineNum.set(annotation, lineInfo);
-      }
-    });
-    this.globalST.setVar(this.currentWord, varInfo);
-  }
-
   /**
    * grabs any comment on the line of a single line annotation
    * @param annotation the annotation hyperlink string
