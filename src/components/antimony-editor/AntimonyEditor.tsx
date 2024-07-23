@@ -485,6 +485,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           setNewContent(editor.getValue());
           delayedModelParser(editor);
         });
+        ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
       };
 
       return (
@@ -516,4 +517,3 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     };
 
 export default AntimonyEditor;
-
