@@ -90,7 +90,6 @@ function processSBML() {
       jsFree = (strPtr) => libantimony._free(strPtr);
 
       sbmlCode = sbmlString;
-      console.log(sbmlCode);
       clearPreviousLoads();
       var ptrSBMLCode = jsAllocateUTF8(sbmlCode);
       var load_int = loadSBMLString(sbmlCode);
@@ -105,7 +104,6 @@ function processSBML() {
             window.conversion = "standard";
         }
         window.antimonyResult = antResult;
-        console.log(window.antimonyResult);
         window.dispatchEvent(event);
       } else {
         var errStr = getLastError();

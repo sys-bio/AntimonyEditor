@@ -174,6 +174,10 @@ export class AntimonyProgramAnalyzer {
   getGeneralHoverInfo() {
     let hoverInfo = monaco.languages.registerHoverProvider("antimony", {
       provideHover: (model, position) => {
+        if (model.isDisposed()) {
+          console.error("Model is disposed. Cannot provide hover.");
+          return null;
+        }
         let hoverContents: monaco.IMarkdownString[] = [];
         let valueOfHover: string = "";
         let valueOfAnnotation: string = "";
@@ -308,6 +312,10 @@ export class AntimonyProgramAnalyzer {
    */
   private deleteAnnotation(annotation: string, target: HTMLElement, model: editor.ITextModel, word: string, srcRange: SrcRange | undefined, event: MouseEvent) {
     annotation = "\"" + annotation + "\"";
+    if (model.isDisposed()) {
+      console.error("Model is disposed. Cannot provide deleting.");
+      return null;
+    }
     event.stopPropagation();
     if (srcRange) {
       // Get annotation location to delete from content menu
@@ -338,6 +346,7 @@ export class AntimonyProgramAnalyzer {
 
         // Replace
         const range = new monaco.Range(startLine, startColumn, endLine, endColumn);
+        console.log(range)
         const op = {
           range: range,
           text: resultString
@@ -355,15 +364,9 @@ export class AntimonyProgramAnalyzer {
 
       // Update the Monaco editor model content to reflect changes
       model.setValue(model.getValue());
+
     }
   }
-  /**
-   * Gets the remaining annotations that are not deleted.
-   *
-   * @param varInfo The variable information containing all annotations.
-   * @param annotation The annotation that is being deleted.
-   * @returns The list of remaining annotations after deletion.
-   */
   private getRemainingAnnotations(varInfo: Variable, annotation: string): string[] {
     const annotationRange = varInfo.annotationLineNum.get(annotation);
     return varInfo.annotations.filter(ann => {
@@ -376,13 +379,6 @@ export class AntimonyProgramAnalyzer {
     });
   }
 
-  /**
-   * Gets the range for the annotation to be deleted.
-   *
-   * @param annLineNum The source range of the annotation to be deleted.
-   * @param model The Monaco editor text model.
-   * @returns An object containing the start and end line and column of the range.
-   */
   private getAnnotationRange(annLineNum: SrcRange, model: editor.ITextModel) {
     const startLine = annLineNum.start.line;
     const startColumn = 1; // Assuming the annotation starts at the beginning of the line
@@ -391,14 +387,6 @@ export class AntimonyProgramAnalyzer {
     return { startLine, startColumn, endLine, endColumn };
   }
 
-  /**
-   * Creates the new text to replace the deleted annotation.
-   *
-   * @param remainingAnnotations The list of annotations that are not deleted.
-   * @param keyWord The keyword associated with the annotations.
-   * @param word The variable name associated with the annotations.
-   * @returns The newly formatted string after deletion.
-   */
   private createNewText(remainingAnnotations: string[], keyWord: string, word: string): string {
     const varNameAndKeyWord = "  " + word + " " + keyWord + " ";
     const indent = ' '.repeat(word.length + keyWord.length + 4);
@@ -407,14 +395,6 @@ export class AntimonyProgramAnalyzer {
     return resultString;
   }
 
-  /**
-   * Updates the variable information mappings after deleting an annotation.
-   *
-   * @param varInfo The variable information containing all annotations.
-   * @param annotation The annotation that is being deleted.
-   * @param remainingAnnotations The list of annotations that are not deleted.
-   * @param startLine The starting line of the annotation that is deleted.
-   */
   private updateVarInfoMappings(varInfo: Variable, annotation: string, remainingAnnotations: string[], startLine: number) {
     varInfo.annotationKeywordMap.delete(annotation);
     varInfo.annotationLineNum.delete(annotation);
@@ -425,13 +405,6 @@ export class AntimonyProgramAnalyzer {
     }
   }
 
-  /**
-   * Adjusts the line numbers of the remaining annotations after deleting an annotation.
-   *
-   * @param varInfo The variable information containing all annotations.
-   * @param remainingAnnotations The list of annotations that are not deleted.
-   * @param endLineOfDeletedAnnotation The ending line of the annotation that was deleted.
-   */
   private adjustAnnotationLineNumbers(varInfo: Variable, remainingAnnotations: string[], endLineOfDeletedAnnotation: number) {
     varInfo.annotationLineNum.forEach((value, key, map) => {
       const startLineOfCurrentAnnotation = value.start.line;
@@ -458,12 +431,6 @@ export class AntimonyProgramAnalyzer {
     });
   }
 
-  /**
-   * Deletes multiple ranges in the editor model.
-   *
-   * @param model The Monaco editor text model.
-   * @param ranges The list of ranges to be deleted.
-   */
   private deleteMultipleRanges(model: monaco.editor.ITextModel, ranges: SrcRange[]) {
     const operations = ranges.map(range => ({
       range: new monaco.Range(range.start.line, range.start.column, range.end.line, range.end.column),
@@ -631,6 +598,7 @@ export class AntimonyProgramAnalyzer {
    */
   getUnannotatedDecorations(): monaco.editor.IModelDeltaDecoration[] {
     const unannotatedErrors: ErrorUnderline[] = this.getUnannotatedVariables();
+    console.log(unannotatedErrors)
     const decorations: monaco.editor.IModelDeltaDecoration[] = unannotatedErrors.map(variable => {
       let colorClass = 'custom-highlight';
 
