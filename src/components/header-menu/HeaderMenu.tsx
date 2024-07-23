@@ -282,7 +282,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                         onMouseLeave={() => handleColorOptionLeave("highlight")}
                       >
                         <div className="header-menu-command">
-                          <div className="menu-text">Highlight</div>
+                          <div className="menu-text">Unannotated Highlight</div>
                           <div className="arrow-icon">&#9658;</div>
                         </div>
                         {colorDropdownVisible === "highlight" && (
