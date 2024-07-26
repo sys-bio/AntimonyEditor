@@ -768,7 +768,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     let varInfo: Variable | undefined = currST?.getVar(varName);
     if (varInfo) {
       if (!varInfo.annotationKeywordMap.has(annotationLink)) {
-        varInfo.annotationLineNum.set(annotationLink, this.getSrcRange(ctx));
+        varInfo.annotationLineRange.set(annotationLink, this.getSrcRange(ctx));
         varInfo.annotations.push(annotationLink);
         varInfo.annotationKeywordMap.set(annotationLink, annotationKeyword);
 
@@ -786,7 +786,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     } else {
       // var does not exist, so create one
       const varInfo = new Variable(varTypes.Unknown, false, undefined, idSrcRange, undefined, false);
-      varInfo.annotationLineNum.set(annotationLink, this.getSrcRange(ctx));
+      varInfo.annotationLineRange.set(annotationLink, this.getSrcRange(ctx));
       varInfo.annotations.push(annotationLink);
       varInfo.annotationKeywordMap.set(annotationLink, annotationKeyword);
       
@@ -806,7 +806,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
 
           if (varInfo) {
             if (!varInfo.annotationKeywordMap.has(currAnnotLink)) {
-              varInfo.annotationLineNum.set(currAnnotLink, this.getSrcRange(ctx));
+              varInfo.annotationLineRange.set(currAnnotLink, this.getSrcRange(ctx));
               varInfo.annotations.push(currAnnotLink);
               varInfo.annotationKeywordMap.set(currAnnotLink, annotationKeyword);
 

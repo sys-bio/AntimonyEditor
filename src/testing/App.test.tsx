@@ -5,6 +5,7 @@ import { join } from 'path';
 import { isSubtTypeOf, varTypes } from '../language-handler/Types';
 import { AntimonyProgramAnalyzer } from '../language-handler/ModelSemanticChecker';
 import { searchOntology, searchRhea } from '../features/AnnotationSearch';
+import {editor} from "monaco-editor";
 
 // test('renders learn react link', () => {
 //   render(<App />);

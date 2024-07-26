@@ -97,6 +97,35 @@ export const ModelSemanticsChecker = (
 };
 
 /**
+ * Creates a debounced function that delays the invocation of the provided function until after the specified delay
+ * has elapsed since the last time the debounced function was invoked.
+ *
+ * @template T - The type of the function to be debounced.
+ * @param {T} func - The function to debounce.
+ * @param {number} delay - The number of milliseconds to delay.
+ * @returns {(this: unknown, ...args: Parameters<T>) => void} - Returns the new debounced function.
+ *
+ * @example
+ * // Create a debounced function with a 300ms delay
+ * const debouncedFunction = debounce(() => console.log('Hello, World!'), 300);
+ *
+ * // Call the debounced function multiple times in quick succession
+ * debouncedFunction();
+ * debouncedFunction();
+ * debouncedFunction();
+ *
+ * // The original function will only be called once, 300ms after the last call to the debounced function.
+ */
+let debounceTimeout: NodeJS.Timeout;
+const debounce = <T extends (...args: any[]) => void>(func: T, delay: number) => {
+  return function (this: unknown, ...args: Parameters<T>): void {
+    const context = this;
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => func.apply(context, args), delay);
+  };
+};
+
+/**
  *
  */
 export class AntimonyProgramAnalyzer {
@@ -172,28 +201,20 @@ export class AntimonyProgramAnalyzer {
    * @returns
    */
   getGeneralHoverInfo() {
-    let hoverInfo = monaco.languages.registerHoverProvider("antimony", {
+    const hoverProvider = monaco.languages.registerHoverProvider("antimony", {
       provideHover: (model, position) => {
-        if (model.isDisposed()) {
-          console.error("Model is disposed. Cannot provide hover.");
-          return null;
-        }
-        let hoverContents: monaco.IMarkdownString[] = [];
-        let valueOfHover: string = "";
-        let valueOfAnnotation: string = "";
+        let hoverContents = [];
+        let valueOfHover = "";
+        let valueOfAnnotation = "";
         const word = model.getWordAtPosition(position);
-        // Check if word exists
         if (word) {
-          // set range for hover
           let hoverLine = position.lineNumber;
           let hoverColumnStart = word.startColumn;
           let hoverColumnEnd = word.endColumn;
 
-          // check if variable with id word.word exists at the given position range.
-          // if it does use the stored variable info to create a hover.
-          let start: SrcPosition = new SrcPosition(position.lineNumber, word.startColumn);
-          let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
-          let srcRange: SrcRange = new SrcRange(start, end);
+          let start = new SrcPosition(position.lineNumber, word.startColumn);
+          let end = new SrcPosition(position.lineNumber, word.endColumn);
+          let srcRange = new SrcRange(start, end);
           let varInfo = this.globalST.hasVarAtLocation(word.word, srcRange)?.varInfo;
           if (varInfo) {
             if (varInfo.type === varTypes.Model) {
@@ -202,40 +223,30 @@ export class AntimonyProgramAnalyzer {
               valueOfHover += this.getFuncHover(word.word);
             } else {
               if (varInfo.isConst) {
-                valueOfHover += `<span style="color:${this.hoverKeyWordColor.get(
-                    varTypes.Const
-                )};">const</span> <br/> `;
+                valueOfHover += `<span style="color:${this.hoverKeyWordColor.get(varTypes.Const)};">const</span> <br/> `;
               } else if (isSubtTypeOf(varInfo.type, varTypes.Variable)) {
-                valueOfHover += `<span style="color:${this.hoverKeyWordColor.get(
-                    varTypes.Variable
-                )};">var</span> <br/> `;
+                valueOfHover += `<span style="color:${this.hoverKeyWordColor.get(varTypes.Variable)};">var</span> <br/> `;
               }
 
               if (varInfo.displayName) {
                 valueOfHover += `<span style="color:#f2ab7c;">${varInfo.displayName}</span> <br/> `;
               }
 
-              valueOfHover += `(<span style="color:${this.hoverKeyWordColor.get(varInfo.type)};">${
-                  varInfo.type
-              }</span>) ${word.word} <br/> `;
+              valueOfHover += `(<span style="color:${this.hoverKeyWordColor.get(varInfo.type)};">${varInfo.type}</span>) ${word.word} <br/> `;
 
               if (varInfo.value) {
                 valueOfHover += `Initialized Value: <span style="color:#DEF9CB;">${varInfo.value}</span> <br/> `;
               }
 
               if (varInfo.compartment) {
-                valueOfHover += `In <span style="color:${this.hoverKeyWordColor.get(
-                    varTypes.Compartment
-                )};">${varTypes.Compartment}</span>: ${varInfo.compartment} <br/> `;
+                valueOfHover += `In <span style="color:${this.hoverKeyWordColor.get(varTypes.Compartment)};">${varTypes.Compartment}</span>: ${varInfo.compartment} <br/> `;
               }
 
               varInfo.annotations.forEach((annotation) => {
-                // get any additional comment on the same line as the annotation
-                let comment: string = this.getAnnotationComment(annotation, varInfo, model);
+                let comment = this.getAnnotationComment(annotation, varInfo, model);
 
-                // the annotation keyword, ie "identity", "part", etc
-                let keyword: string | undefined = varInfo?.annotationKeywordMap.get(annotation);
-                let link: string = annotation.replace(/"/g, "");
+                let keyword = varInfo?.annotationKeywordMap.get(annotation);
+                let link = annotation.replace(/"/g, "");
                 valueOfAnnotation += `<span>
                         <span style="color:#d33682;">${keyword} </span>
                         <a href=${annotation.replace(/"/g, "")}>${link}</a>
@@ -247,31 +258,22 @@ export class AntimonyProgramAnalyzer {
                     </span><br/>`;
               });
             }
-
-            // add valueOfHover and valueOfAnnotation to hoverContents
             hoverContents.push({ supportHtml: true, value: valueOfHover });
             hoverContents.push({ supportHtml: true, value: valueOfAnnotation });
-
-            // Add event listener to handle trash icon click once
-            if (!this.isTrashIconClickListenerAdded) {
-              document.addEventListener("click", (e) => {
-                this.handleTrashIconClick(e, model, word.word, srcRange);
-              });
-              this.isTrashIconClickListenerAdded = true;
-            }
+            document.addEventListener("click", debounce((e) => {
+              this.handleTrashIconClick(e, model, position);
+            }, 300)); // Adjust delay as needed
+            return {
+              range: new monaco.Range(hoverLine, hoverColumnStart, hoverLine, hoverColumnEnd),
+              contents: hoverContents,
+            };
           }
-
-          return {
-            range: new monaco.Range(hoverLine, hoverColumnStart, hoverLine, hoverColumnEnd),
-            contents: hoverContents,
-          };
         }
       },
     });
-    return hoverInfo;
-  }
 
-  private isTrashIconClickListenerAdded = false;
+    return hoverProvider;
+  }
 
   /**
    * Handles the click event on a trash icon to delete an annotation associated with the icon.
@@ -279,14 +281,46 @@ export class AntimonyProgramAnalyzer {
    *
    * @param event The MouseEvent object representing the click event.
    */
-  private handleTrashIconClick(event: MouseEvent, model: editor.ITextModel, word: string, srcRange: SrcRange | undefined) {
+  private handleTrashIconClick(event: MouseEvent, model: editor.ITextModel, position: monaco.Position) {
+    event.preventDefault();
+    event.stopPropagation();
+
     const target = event.target as HTMLElement;
     if (target) {
       let annotation = target.getAttribute("data-annotation");
       if (annotation) {
-        this.deleteAnnotation(annotation, target, model, word, srcRange, event);
+        this.deleteAnnotation(annotation, target, model, position);
+        // Show the popup message
+        this.showPopupMessage(event.clientX, event.clientY, "Rehover to delete another annotation");
       }
     }
+  }
+
+  /**
+   * Displays a popup message at the specified position.
+   *
+   * @param x The x-coordinate of the popup position.
+   * @param y The y-coordinate of the popup position.
+   * @param message The message to display in the popup.
+   */
+  private showPopupMessage(x: number, y: number, message: string) {
+    const popup = document.createElement("div");
+    popup.innerText = message;
+    popup.style.position = "absolute";
+    popup.style.left = `${x}px`;
+    popup.style.top = `${y}px`;
+    popup.style.backgroundColor = "#464646";
+    popup.style.color = "white";
+    popup.style.padding = "5px";
+    popup.style.borderRadius = "8px";
+    popup.style.zIndex = "1000";
+    popup.style.font = "12px";
+    document.body.appendChild(popup);
+
+    // Hide the popup after a short delay
+    setTimeout(() => {
+      document.body.removeChild(popup);
+    }, 3000);
   }
 
   /**
@@ -310,62 +344,41 @@ export class AntimonyProgramAnalyzer {
    *                 editor, which may affect how the text and annotations are managed around
    *                 the deleted annotation.
    */
-  private deleteAnnotation(annotation: string, target: HTMLElement, model: editor.ITextModel, word: string, srcRange: SrcRange | undefined, event: MouseEvent) {
+  private deleteAnnotation(annotation: string, target: HTMLElement, model: editor.ITextModel, position: monaco.Position) {
     annotation = "\"" + annotation + "\"";
-    if (model.isDisposed()) {
-      console.error("Model is disposed. Cannot provide deleting.");
-      return null;
-    }
-    event.stopPropagation();
-    if (srcRange) {
-      // Get annotation location to delete from content menu
-      let varInfo = this.globalST.hasVarAtLocation(word, srcRange)?.varInfo;
-      let annLineNum = varInfo?.annotationLineNum.get(annotation);
-
+    const word = model.getWordAtPosition(position);
+    if (word) {
+      let start = new SrcPosition(position.lineNumber, word.startColumn);
+      let end = new SrcPosition(position.lineNumber, word.endColumn);
+      let srcRange = new SrcRange(start, end);
+      let varInfo = this.globalST.hasVarAtLocation(word.word, srcRange)?.varInfo;
+      let annLineNum = varInfo?.annotationLineRange.get(annotation);
       if (varInfo && annLineNum) {
-        // Find the remaining annotation list which excludes the deleted annotation
         const remainingAnnotations = this.getRemainingAnnotations(varInfo, annotation);
-
-        // Calculate the accurate range to delete the specific annotation line
-        const { startLine, startColumn, endLine, endColumn } = this.getAnnotationRange(annLineNum, model);
+        const {startLine, startColumn, endLine, endColumn} = this.getAnnotationRange(annLineNum, model);
         const keyWord = varInfo.annotationKeywordMap.get(annotation);
         if (keyWord === undefined) {
           console.error('Error: keyWord is undefined.');
           return;
         }
-
-        // Create the new text to replace the deleted text
-        const resultString = this.createNewText(remainingAnnotations, keyWord, word);
-
-        // Update varInfo mappings
-        this.updateVarInfoMappings(varInfo, annotation, remainingAnnotations, startLine);
-
-        // Update line number of each annotation in remaining annotation since there are some annotations deleted, the range
-        // is changed as well
-        this.adjustAnnotationLineNumbers(varInfo, remainingAnnotations, endLine);
-
-        // Replace
+        const resultString = this.createNewText(remainingAnnotations, keyWord, word.word);
         const range = new monaco.Range(startLine, startColumn, endLine, endColumn);
-        console.log(range)
-        const op = {
+        const replacementOperation = {
           range: range,
           text: resultString
         };
-
-        model.pushEditOperations([], [op], () => null);
-        //this.deleteMultipleRanges(model, [new SrcRange(new SrcPosition(endLine, endColumn), new SrcPosition(endLine + 1, 1))])
+        console.log(range)
+        model.pushEditOperations([], [replacementOperation], () => null);
+        if (resultString === "") {
+          this.deleteMultipleRanges(model, [new SrcRange(new SrcPosition(endLine, endColumn), new SrcPosition(endLine + 1, 1))])
+        }
       }
-
-      // Remove the annotation's UI element from the DOM
       const annotationElement = target.parentElement;
       if (annotationElement) {
         annotationElement.remove();
       }
-
-      // Update the Monaco editor model content to reflect changes
-      model.setValue(model.getValue());
-
     }
+
   }
   /**
    * Retrieves the remaining annotations for a given variable, excluding a specified annotation.
@@ -376,16 +389,17 @@ export class AntimonyProgramAnalyzer {
    * @returns An array of remaining annotations.
    */
   private getRemainingAnnotations(varInfo: Variable, annotation: string): string[] {
-    const annotationRange = varInfo.annotationLineNum.get(annotation);
+    const annotationRange = varInfo.annotationLineRange.get(annotation);
     return varInfo.annotations.filter(ann => {
       const annKeyWord = varInfo.annotationKeywordMap.get(ann);
-      const annRange = varInfo.annotationLineNum.get(ann);
+      const annRange = varInfo.annotationLineRange.get(ann);
       return annKeyWord === varInfo.annotationKeywordMap.get(annotation)
           && ann !== annotation
           && annRange?.start.line === annotationRange?.start.line
           && annRange?.end.line === annotationRange?.end.line;
     });
   }
+
 
   /**
    * Calculates the start and end positions of an annotation range within the text model.
@@ -418,57 +432,6 @@ export class AntimonyProgramAnalyzer {
     return resultString;
   }
 
-  /**
-   * Updates the variable information mappings to reflect the removal of an annotation.
-   *
-   * @param varInfo The variable information object.
-   * @param annotation The annotation to be removed.
-   * @param remainingAnnotations An array of remaining annotations.
-   * @param startLine The starting line number of the annotation.
-   */
-  private updateVarInfoMappings(varInfo: Variable, annotation: string, remainingAnnotations: string[], startLine: number) {
-    varInfo.annotationKeywordMap.delete(annotation);
-    varInfo.annotationLineNum.delete(annotation);
-    varInfo.annotations = varInfo.annotations.filter((ann) => ann !== annotation);
-    const bigLoc = startLine + ":" + varInfo.idSrcRange.start.column + " - " + startLine + ":" + varInfo.idSrcRange.end.column;
-    if (remainingAnnotations.length === 0) {
-      varInfo.refLocations.delete(bigLoc);
-    }
-  }
-
-  /**
-   * Adjusts the line numbers of remaining annotations after one has been deleted.
-   *
-   * @param varInfo The variable information object.
-   * @param remainingAnnotations An array of remaining annotations.
-   * @param endLineOfDeletedAnnotation The ending line number of the deleted annotation.
-   */
-  private adjustAnnotationLineNumbers(varInfo: Variable, remainingAnnotations: string[], endLineOfDeletedAnnotation: number) {
-    varInfo.annotationLineNum.forEach((value, key, map) => {
-      const startLineOfCurrentAnnotation = value.start.line;
-      if (varInfo?.annotations.length == undefined) {
-        console.log("Length of annotation is undefined");
-        // When moving one annotation in one keyword up, we need to move the end line of other annotations in that keyword up
-      } else if (remainingAnnotations.includes(key)) {
-        map.set(key, new SrcRange(value.start, new SrcPosition(value.end.line - 1, value.end.column)));
-        // Move start line and end line of annotations of other keywords up
-      } else if (startLineOfCurrentAnnotation > endLineOfDeletedAnnotation) {
-        map.set(key, new SrcRange(new SrcPosition(value.start.line - 1, value.start.column),
-            new SrcPosition(value.end.line - 1, value.end.column)));
-        // Delete the old refLocation of keyword from map
-        const oldRefLocation = startLineOfCurrentAnnotation + ":" + varInfo.idSrcRange.start.column + " - " +
-            startLineOfCurrentAnnotation + ":" + varInfo.idSrcRange.end.column;
-        varInfo.refLocations.delete(oldRefLocation);
-        const newRefLocation = (value.start.line - 1) + ":" + varInfo.idSrcRange.start.column + " - " +
-            ((value.start.line - 1)) + ":" + varInfo.idSrcRange.end.column;
-        varInfo.refLocations.set(newRefLocation, new SrcRange(
-            new SrcPosition(value.start.line - 1, varInfo.idSrcRange.start.column),
-            new SrcPosition(value.start.line - 1, varInfo.idSrcRange.start.column)
-        ));
-      }
-    });
-  }
-
   private deleteMultipleRanges(model: monaco.editor.ITextModel, ranges: SrcRange[]) {
     const operations = ranges.map(range => ({
       range: new monaco.Range(range.start.line, range.start.column, range.end.line, range.end.column),
@@ -491,7 +454,7 @@ export class AntimonyProgramAnalyzer {
       varInfo: Variable | undefined,
       model: monaco.editor.ITextModel
   ): string {
-    let lineInfo: SrcRange | undefined = varInfo?.annotationLineNum.get(annotation);
+    let lineInfo: SrcRange | undefined = varInfo?.annotationLineRange.get(annotation);
     let comment: string = "";
 
     if (lineInfo) {
@@ -636,7 +599,6 @@ export class AntimonyProgramAnalyzer {
    */
   getUnannotatedDecorations(): monaco.editor.IModelDeltaDecoration[] {
     const unannotatedErrors: ErrorUnderline[] = this.getUnannotatedVariables();
-    console.log(unannotatedErrors)
     const decorations: monaco.editor.IModelDeltaDecoration[] = unannotatedErrors.map(variable => {
       let colorClass = 'custom-highlight';
 

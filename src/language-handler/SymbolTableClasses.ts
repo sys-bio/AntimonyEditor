@@ -151,7 +151,6 @@ export class GlobalST extends SymbolTable {
                 return {varInfo: varInfo, annotationPositon: new SrcPosition(line, 2)};
             }
         }
-
         return undefined;
     }
 }

@@ -247,7 +247,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
                   if (info && info.varInfo.annotations.length > 0) {
                     // Find the line number of the first annotation.
                     let line = Number.MAX_VALUE;
-                    for (const value of info.varInfo.annotationLineNum.values()) {
+                    for (const value of info.varInfo.annotationLineRange.values()) {
                       line = Math.min(value.start.line, line);
                     }
 
