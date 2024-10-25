@@ -218,7 +218,14 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
    * @description Handle selecting a database
    */
   const handleSelectDatabase = (database: Database) => {
-    let autoPopulate = databaseSearchAutoPopulatedTerm(varToAnnotate);
+    let autoPopulate = "";
+    if (varToAnnotate) {
+      if (varToAnnotate && varToAnnotate.name) {
+        autoPopulate = removeUnderScores(varToAnnotate.name);
+      } else {
+        autoPopulate = removeUnderScores(varToAnnotate.id);
+      }
+    }
 
     setStep(2);
     setSearchTerm(autoPopulate);
@@ -226,31 +233,14 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
     setAnnotationSearchResults([]);
   };
 
+
   /**
-   * handles getting the string that will autopopulate a database search bar
-   * 
-   * The logic is as follows:
-   * 
-   * Every variable has an ID, and also may have an actual 'name' string assigned to it. 
-   * We prioritize this 'name' if it exists as it is typically more descriptive of the variable itself.
-   * If no 'name' exists, we use the ID. 
-   * 
-   * In both cases, to make this initial search string friendlier to the database search engine we replace
-   * all '_' with ' '. 
-   * 
-   * @param varToAnnotate target of annotation search
-   * @returns the string with which to populate the data base search bar.
+   * Given a string, will return a modified version as shown below
+   * "__A__B_C__" => "A B C"
+   * @param str 
    */
-  const databaseSearchAutoPopulatedTerm = (varToAnnotate: VarToAnnotate | null) => {
-    let autoPopulate = "";
-    if (varToAnnotate) {
-      if (varToAnnotate && varToAnnotate.name) {
-        autoPopulate = varToAnnotate.name.replaceAll('_',' ');
-      } else {
-        autoPopulate = varToAnnotate.id.replaceAll('_',' ');
-      }
-    }
-    return autoPopulate;
+  const removeUnderScores = (str: string) => {
+    return str.replace(/^_+|_+$/g, '').replace(/_+/g, ' ');
   }
 
   /**
