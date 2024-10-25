@@ -17,8 +17,13 @@ interface CreateAnnotationModalProps {
   onClose: () => void;
   annotationAddPosition: SrcPosition | null;
   editorInstance: monaco.editor.IStandaloneCodeEditor | null;
-  varToAnnotate: {id: string, name: string | undefined} | null;
+  varToAnnotate: VarToAnnotate | null;
 }
+
+type VarToAnnotate = {
+  id: string;
+  name: string | undefined;
+};
 
 /**
  * @description Holds relevant information for a single annotation search result
@@ -208,22 +213,45 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
   };
 
   /**
+   * Handles the case where for annotation a data base has been selected
+   * Here we want to be able to start querying the chosen database. 
    * @description Handle selecting a database
    */
   const handleSelectDatabase = (database: Database) => {
-    let autoPopulate = "";
-    if (varToAnnotate) {
-      if (varToAnnotate.name) {
-        autoPopulate = varToAnnotate.name;
-      } else {
-        autoPopulate = varToAnnotate.id;
-      }
-    }
+    let autoPopulate = databaseSearchAutoPopulatedTerm(varToAnnotate);
+
     setStep(2);
     setSearchTerm(autoPopulate);
     setChosenDatabase(database);
     setAnnotationSearchResults([]);
   };
+
+  /**
+   * handles getting the string that will autopopulate a database search bar
+   * 
+   * The logic is as follows:
+   * 
+   * Every variable has an ID, and also may have an actual 'name' string assigned to it. 
+   * We prioritize this 'name' if it exists as it is typically more descriptive of the variable itself.
+   * If no 'name' exists, we use the ID. 
+   * 
+   * In both cases, to make this initial search string friendlier to the database search engine we replace
+   * all '_' with ' '. 
+   * 
+   * @param varToAnnotate target of annotation search
+   * @returns the string with which to populate the data base search bar.
+   */
+  const databaseSearchAutoPopulatedTerm = (varToAnnotate: VarToAnnotate | null) => {
+    let autoPopulate = "";
+    if (varToAnnotate) {
+      if (varToAnnotate && varToAnnotate.name) {
+        autoPopulate = varToAnnotate.name.replaceAll('_',' ');
+      } else {
+        autoPopulate = varToAnnotate.id.replaceAll('_',' ');
+      }
+    }
+    return autoPopulate;
+  }
 
   /**
    * @description Reset to Step 1
