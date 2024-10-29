@@ -17,8 +17,13 @@ interface CreateAnnotationModalProps {
   onClose: () => void;
   annotationAddPosition: SrcPosition | null;
   editorInstance: monaco.editor.IStandaloneCodeEditor | null;
-  varToAnnotate: {id: string, name: string | undefined} | null;
+  varToAnnotate: VarToAnnotate | null;
 }
+
+type VarToAnnotate = {
+  id: string;
+  name: string | undefined;
+};
 
 /**
  * @description Holds relevant information for a single annotation search result
@@ -208,22 +213,35 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
   };
 
   /**
+   * Handles the case where for annotation a data base has been selected
+   * Here we want to be able to start querying the chosen database. 
    * @description Handle selecting a database
    */
   const handleSelectDatabase = (database: Database) => {
     let autoPopulate = "";
     if (varToAnnotate) {
-      if (varToAnnotate.name) {
-        autoPopulate = varToAnnotate.name;
+      if (varToAnnotate && varToAnnotate.name) {
+        autoPopulate = removeUnderScores(varToAnnotate.name);
       } else {
-        autoPopulate = varToAnnotate.id;
+        autoPopulate = removeUnderScores(varToAnnotate.id);
       }
     }
+
     setStep(2);
     setSearchTerm(autoPopulate);
     setChosenDatabase(database);
     setAnnotationSearchResults([]);
   };
+
+
+  /**
+   * Given a string, will return a modified version as shown below
+   * "__A__B_C__" => "A B C"
+   * @param str 
+   */
+  const removeUnderScores = (str: string) => {
+    return str.replace(/^_+|_+$/g, '').replace(/_+/g, ' ');
+  }
 
   /**
    * @description Reset to Step 1

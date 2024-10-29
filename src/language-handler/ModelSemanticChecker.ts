@@ -408,7 +408,7 @@ export class AntimonyProgramAnalyzer {
   private adjustAnnotationLineNumbers(varInfo: Variable, remainingAnnotations: string[], endLineOfDeletedAnnotation: number) {
     varInfo.annotationLineNum.forEach((value, key, map) => {
       const startLineOfCurrentAnnotation = value.start.line;
-      if (varInfo?.annotations.length == undefined) {
+      if (varInfo?.annotations.length === undefined) {
         console.log("Length of annotation is undefined");
         // When moving one annotation in one keyword up, we need to move the end line of other annotations in that keyword up
       } else if (remainingAnnotations.includes(key)) {
