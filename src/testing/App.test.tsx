@@ -75,7 +75,7 @@ let searchInput: KeyboardEvent = {
 }
 
 describe('search tests', function() {
-    it('test test test', async () => {
+    it('empty input test', async () => {
         const result = await searchRhea({} as KeyboardEvent, 0);
         assert.strictEqual(result, undefined);
     })
@@ -155,6 +155,14 @@ jest.mock('monaco-editor', () => ({
       Error: 8,
   },
 }));
+
+describe('grammar tests', function() {
+    it('predefined constants no error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'predefinedConstants.ant'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
+    })
+})
   
 describe('Type Tests', function() {
   it('isSubTypeOf tests', function() {

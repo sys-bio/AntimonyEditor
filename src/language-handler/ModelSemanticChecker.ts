@@ -12,7 +12,7 @@ import { GlobalST, ParamAndNameTable } from "./SymbolTableClasses";
 import { SymbolTableVisitor } from "./SymbolTableVisitor";
 import { SemanticVisitor } from "./SemanticVisitor";
 import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from "./Types";
-import { Variable } from "./Variable";
+import { predefinedConstants, Variable } from "./Variable";
 import { editor } from "monaco-editor";
 
 /**
@@ -195,12 +195,18 @@ export class AntimonyProgramAnalyzer {
           let end: SrcPosition = new SrcPosition(position.lineNumber, word.endColumn);
           let srcRange: SrcRange = new SrcRange(start, end);
           let varInfo = this.globalST.hasVarAtLocation(word.word, srcRange)?.varInfo;
+
           if (varInfo) {
             if (varInfo.type === varTypes.Model) {
               valueOfHover += this.getModelHover(word.word);
             } else if (varInfo.type === varTypes.Function) {
               valueOfHover += this.getFuncHover(word.word);
+            } else if (predefinedConstants.has(word.word)) {
+              valueOfHover += `<span> Predefined constant </span>`;
             } else {
+              // we only add hover right now if 
+              // it is not a predefined constant.
+              
               if (varInfo.isConst) {
                 valueOfHover += `<span style="color:${this.hoverKeyWordColor.get(
                     varTypes.Const

@@ -1,5 +1,5 @@
 import { SrcPosition, SrcRange, varTypes } from "./Types";
-import { Variable } from "./Variable";
+import { predefinedConstants, Variable } from "./Variable";
 
 
 /**
@@ -61,6 +61,15 @@ export class GlobalST extends SymbolTable {
         super();
         this.funcMap = new Map();
         this.modelMap = new Map();
+
+        for (const predefConst of predefinedConstants) {
+            // have a dummy srcRange for predef constants
+            let srcRange: SrcRange = new SrcRange(new SrcPosition(0,0), new SrcPosition(0,0));
+            this.setVar(
+                predefConst, 
+                new Variable(varTypes.Parameter, true, undefined, srcRange, undefined, false)
+            )
+        }
     }
 
     getFuncMap(): Map<string, ParamAndNameTable> {

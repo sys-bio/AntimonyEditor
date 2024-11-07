@@ -664,10 +664,6 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       return;
     }
 
-    if (type === varTypes.Event) {
-      debugger;
-    }
-
     this.visit(name.namemaybein());
     const currST: SymbolTable | undefined = this.getCurrST();
     const idSrcRange: SrcRange = this.getSrcRange(name.namemaybein().var_name());
