@@ -3,7 +3,7 @@ import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { SymbolTable, ParamAndNameTable} from './SymbolTableClasses';
 import { Variable } from './Variable';
 import { ErrorUnderline, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
-import { duplicateParameterError, functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning } from './SemanticErrors';
+import { duplicateParameterError, functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning, predefConstantValueAssignmentError } from './SemanticErrors';
 import { ErrorVisitor } from './ErrorVisitor';
 import { AntimonyGrammarVisitor } from './antlr/AntimonyGrammarVisitor';
 
@@ -223,6 +223,15 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         // because we visit the children first, it is
         // gauranteed that the var is in the currST.
         if ((varInfo = currST.getVar(varName)) !== undefined) {
+
+          // check for predef constant, should not allow reassignment of values here
+          if (varInfo.type === varTypes.PredefConstant) {
+            const errorMessage: string = predefConstantValueAssignmentError(varName);
+            const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage, true);
+            this.addError(errorUnderline);
+            return;
+          }
+
           if (varInfo.initSrcRange !== undefined) {
             // warning case! reinitalization!
             if (varInfo.initSrcRange) {
@@ -373,6 +382,15 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         // gauranteed that the var is in the currST.
         if ((varInfo = currST.getVar(varName)) !== undefined) {
           if (varInfo.initSrcRange !== undefined) {
+
+            // check if this is a predefined constant
+            if (varInfo.type === varTypes.PredefConstant) {
+              const errorMessage: string = predefConstantValueAssignmentError(varName);
+              const errorUnderline: ErrorUnderline = this.getErrorUnderline(currSrcRange, errorMessage, true);
+              this.addError(errorUnderline);
+              return;
+            }
+
             // warning case! reinitalization!
             if (varInfo.initSrcRange) {
               // adds warning to current id location
@@ -712,7 +730,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
         if (existingVarInfo.canSetType(varTypes.Parameter)) {
           existingVarInfo.type = varTypes.Parameter;
           existingVarInfo.idSrcRange = idSrcRange;
-        } else if (!isSubtTypeOf(existingVarInfo.type, varTypes.Parameter)) {
+        } else if (!isSubtTypeOf(existingVarInfo.type, varTypes.Parameter) && existingVarInfo.type !== varTypes.PredefConstant) {
           const errorMessage = incompatibleTypesError(varTypes.Parameter, existingVarInfo);
           const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
           this.addError(errorUnderline);

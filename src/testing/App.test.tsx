@@ -158,9 +158,119 @@ jest.mock('monaco-editor', () => ({
 
 describe('grammar tests', function() {
     it('predefined constants no error', function() {
-        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'predefinedConstants.ant'), 'utf-8');
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'predefConstantNoError.ant'), 'utf-8');
         const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
         assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
+    })
+
+    it('predefined constants reassign value error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'predefConstantValueAssignError.ant'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [
+             {
+                "endColumn": 7,
+                "endLineNumber": 1,
+                "message": "Cannot assign value to pi as it is a predefined constant",
+                "severity": 8,
+                "startColumn": 1,
+                "startLineNumber": 1,
+            },
+            {
+                "endColumn": 13,
+                "endLineNumber": 2,
+                "message": "Cannot assign value to avogadro as it is a predefined constant",
+                "severity": 8,
+                "startColumn": 1,
+                "startLineNumber": 2,
+            },
+            {
+                "endColumn": 21,
+                "endLineNumber": 3,
+                "message": "Cannot assign value to NaN as it is a predefined constant",
+                "severity": 8,
+                "startColumn": 9,
+                "startLineNumber": 3,
+            },
+            {
+                "endColumn": 12,
+                "endLineNumber": 3,
+                "message": "Unabled to set type to 'species' because it is a predefined constant",
+                "severity": 8,
+                "startColumn": 9,
+                "startLineNumber": 3,
+            },
+            {
+                "endColumn": 0,
+                "endLineNumber": 0,
+                "message": "Value assignment to 'NaN' is being overridden by a later assignment on line 3:9",
+                "severity": 4,
+                "startColumn": 0,
+                "startLineNumber": 0,
+            },
+            {
+                "endColumn": 21,
+                "endLineNumber": 3,
+                "message": "Attempting to override predefined constant 'NaN'",
+                "severity": 4,
+                "startColumn": 9,
+                "startLineNumber": 3,
+            },
+        ])
+    })
+
+    it('predefined constants reassign type error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'predefConstantTypeAssignError.ant'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [
+            {
+                "endColumn": 11,
+                "endLineNumber": 1,
+                "message": "Unabled to set type to 'species' because it is a predefined constant",
+                "severity": 8,
+                "startColumn": 9,
+                "startLineNumber": 1,
+            },
+            {
+                "endColumn": 16,
+                "endLineNumber": 2,
+                "message": "Cannot assign value to inf as it is a predefined constant",
+                "severity": 8,
+                "startColumn": 9,
+                "startLineNumber": 2,
+            },
+            {
+                "endColumn": 12,
+                "endLineNumber": 2,
+                "message": "Unabled to set type to 'species' because it is a predefined constant",
+                "severity": 8,
+                "startColumn": 9,
+                "startLineNumber": 2,
+            },
+            {
+                "endColumn": 0,
+                "endLineNumber": 0,
+                "message": "Value assignment to 'inf' is being overridden by a later assignment on line 2:9",
+                "severity": 4,
+                "startColumn": 0,
+                "startLineNumber": 0,
+            },
+            {
+                "endColumn": 16,
+                "endLineNumber": 2,
+                "message": "Attempting to override predefined constant 'inf'",
+                "severity": 4,
+                "startColumn": 9,
+                "startLineNumber": 2,
+            },
+            {
+                "endColumn": 21,
+                "endLineNumber": 3,
+                "message": "Unabled to set type to 'compartment' because it is a predefined constant",
+                "severity": 8,
+                "startColumn": 13,
+                "startLineNumber": 3,
+            },
+        ])
     })
 })
   

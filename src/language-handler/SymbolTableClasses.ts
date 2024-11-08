@@ -67,7 +67,7 @@ export class GlobalST extends SymbolTable {
             let srcRange: SrcRange = new SrcRange(new SrcPosition(0,0), new SrcPosition(0,0));
             this.setVar(
                 predefConst, 
-                new Variable(varTypes.Parameter, true, undefined, srcRange, undefined, false)
+                new Variable(varTypes.PredefConstant, true, undefined, srcRange, srcRange, false)
             )
         }
     }

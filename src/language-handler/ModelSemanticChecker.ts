@@ -202,7 +202,7 @@ export class AntimonyProgramAnalyzer {
             } else if (varInfo.type === varTypes.Function) {
               valueOfHover += this.getFuncHover(word.word);
             } else if (predefinedConstants.has(word.word)) {
-              valueOfHover += `<span> Predefined constant </span>`;
+              valueOfHover += `<span> '${word.word}' is a predefined constant </span>`;
             } else {
               // we only add hover right now if 
               // it is not a predefined constant.
