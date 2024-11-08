@@ -202,7 +202,7 @@ export class AntimonyProgramAnalyzer {
             } else if (varInfo.type === varTypes.Function) {
               valueOfHover += this.getFuncHover(word.word);
             } else if (predefinedConstants.has(word.word)) {
-              valueOfHover += `<span> '${word.word}' is a predefined constant </span>`;
+              valueOfHover += this.getPredefVarOrConstHover(word.word);
             } else {
               // we only add hover right now if 
               // it is not a predefined constant.
@@ -484,6 +484,20 @@ export class AntimonyProgramAnalyzer {
       return false;
     }
     return url.protocol === "http:" || url.protocol === "https:";
+  }
+
+  /**
+   * Given the id of either a predefined Antimony constant
+   * or variable, returns the associated hover string.
+   * @param id 
+   * @returns hover string
+   */
+  private getPredefVarOrConstHover(id: string) {
+    let predefType: string = 'constant';
+    if (id === 'time') {
+      predefType = 'variable';
+    } 
+    return `<span> '${id}' is a predefined ${predefType} </span>`;
   }
 
   /**

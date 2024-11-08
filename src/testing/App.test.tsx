@@ -199,22 +199,6 @@ describe('grammar tests', function() {
                 "startColumn": 9,
                 "startLineNumber": 3,
             },
-            {
-                "endColumn": 0,
-                "endLineNumber": 0,
-                "message": "Value assignment to 'NaN' is being overridden by a later assignment on line 3:9",
-                "severity": 4,
-                "startColumn": 0,
-                "startLineNumber": 0,
-            },
-            {
-                "endColumn": 21,
-                "endLineNumber": 3,
-                "message": "Attempting to override predefined constant 'NaN'",
-                "severity": 4,
-                "startColumn": 9,
-                "startLineNumber": 3,
-            },
         ])
     })
 
@@ -243,22 +227,6 @@ describe('grammar tests', function() {
                 "endLineNumber": 2,
                 "message": "Unabled to set type to 'species' because it is a predefined constant",
                 "severity": 8,
-                "startColumn": 9,
-                "startLineNumber": 2,
-            },
-            {
-                "endColumn": 0,
-                "endLineNumber": 0,
-                "message": "Value assignment to 'inf' is being overridden by a later assignment on line 2:9",
-                "severity": 4,
-                "startColumn": 0,
-                "startLineNumber": 0,
-            },
-            {
-                "endColumn": 16,
-                "endLineNumber": 2,
-                "message": "Attempting to override predefined constant 'inf'",
-                "severity": 4,
                 "startColumn": 9,
                 "startLineNumber": 2,
             },

@@ -1,7 +1,7 @@
 import {Annot_listContext, AnnotationContext, AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, New_annotContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { SymbolTable, ParamAndNameTable} from './SymbolTableClasses';
-import { Variable } from './Variable';
+import { predefinedConstants, Variable } from './Variable';
 import { ErrorUnderline, SrcRange, getTypeFromString, isSubtTypeOf, varTypes } from './Types';
 import { duplicateParameterError, functionAlreadyExistsError, incompatibleTypesError, modelAlreadyExistsError, overriddenValueWarning, overridingValueWarning, predefConstantValueAssignmentError } from './SemanticErrors';
 import { ErrorVisitor } from './ErrorVisitor';
@@ -234,7 +234,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
 
           if (varInfo.initSrcRange !== undefined) {
             // warning case! reinitalization!
-            if (varInfo.initSrcRange) {
+            if (varInfo.initSrcRange && !predefinedConstants.has(varName)) {
               // adds warning to current id location
               const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
               const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
@@ -337,7 +337,10 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
               // as the children are visited first.
               if (varInfo.initSrcRange !== undefined) {
                 // warning case! reinitalization!
-                if (varInfo.initSrcRange && varInfo.initSrcRange.toString() !== currAssignSrcRange.toString()) {
+                if (varInfo.initSrcRange 
+                  && varInfo.initSrcRange.toString() !== currAssignSrcRange.toString() 
+                  && !predefinedConstants.has(varName)
+                ) {
                   const errorMessage1: string = overriddenValueWarning(varName, currAssignSrcRange);
                   const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);
                   this.addError(errorUnderline1);
@@ -392,7 +395,7 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
             }
 
             // warning case! reinitalization!
-            if (varInfo.initSrcRange) {
+            if (varInfo.initSrcRange && !predefinedConstants.has(varName)) {
               // adds warning to current id location
               const errorMessage1: string = overriddenValueWarning(varName, currSrcRange);
               const errorUnderline1: ErrorUnderline = this.getErrorUnderline(varInfo.initSrcRange, errorMessage1, false);

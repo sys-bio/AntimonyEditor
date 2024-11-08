@@ -139,7 +139,7 @@ export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisi
       const varInfo = currST.getVar(varName);
       if (this.currNameAndScope?.scope !== 'function' && varInfo && varInfo.initSrcRange === undefined) {
         if (varInfo.type === varTypes.Parameter) {
-          // need to check if this is a predefined-constatnt which does not require initializatino
+          // need to check if this is a predefined-constatnt which does not require initialization
           if (!predefinedConstants.has(varName)) {
             // error, needs initialized value
             //Parameter 'k' missing value assignment
