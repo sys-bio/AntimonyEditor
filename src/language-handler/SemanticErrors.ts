@@ -12,7 +12,7 @@ import { predefinedConstants, Variable } from "./Variable";
 export function incompatibleTypesError(newType: varTypes, oldVar: Variable): string {
   let errorMessage: string
   if (oldVar.type === varTypes.PredefConstant) {
-    errorMessage = "Unabled to set type to '" + newType + "' because it is a predefined constant";
+    errorMessage = "Unable to set type to '" + newType + "' because it is a predefined constant";
   } else {
     errorMessage= "Unable to set the type to '" + newType +
                 "' because it is already set to be the incompatible type '"+ oldVar.type +
@@ -23,7 +23,7 @@ export function incompatibleTypesError(newType: varTypes, oldVar: Variable): str
 }
 
 export function predefConstantValueAssignmentError(id: string) {
-  const errorMessage= "Cannot assign value to " + id + " as it is a predefined constant";
+  const errorMessage= "Cannot assign value to '" + id + "' as it is a predefined constant";
   return errorMessage;
 }
 

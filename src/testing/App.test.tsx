@@ -170,7 +170,7 @@ describe('grammar tests', function() {
              {
                 "endColumn": 7,
                 "endLineNumber": 1,
-                "message": "Cannot assign value to pi as it is a predefined constant",
+                "message": "Cannot assign value to 'pi' as it is a predefined constant",
                 "severity": 8,
                 "startColumn": 1,
                 "startLineNumber": 1,
@@ -178,7 +178,7 @@ describe('grammar tests', function() {
             {
                 "endColumn": 13,
                 "endLineNumber": 2,
-                "message": "Cannot assign value to avogadro as it is a predefined constant",
+                "message": "Cannot assign value to 'avogadro' as it is a predefined constant",
                 "severity": 8,
                 "startColumn": 1,
                 "startLineNumber": 2,
@@ -186,7 +186,7 @@ describe('grammar tests', function() {
             {
                 "endColumn": 21,
                 "endLineNumber": 3,
-                "message": "Cannot assign value to NaN as it is a predefined constant",
+                "message": "Cannot assign value to 'NaN' as it is a predefined constant",
                 "severity": 8,
                 "startColumn": 9,
                 "startLineNumber": 3,
@@ -194,7 +194,7 @@ describe('grammar tests', function() {
             {
                 "endColumn": 12,
                 "endLineNumber": 3,
-                "message": "Unabled to set type to 'species' because it is a predefined constant",
+                "message": "Unable to set type to 'species' because it is a predefined constant",
                 "severity": 8,
                 "startColumn": 9,
                 "startLineNumber": 3,
@@ -209,7 +209,7 @@ describe('grammar tests', function() {
             {
                 "endColumn": 11,
                 "endLineNumber": 1,
-                "message": "Unabled to set type to 'species' because it is a predefined constant",
+                "message": "Unable to set type to 'species' because it is a predefined constant",
                 "severity": 8,
                 "startColumn": 9,
                 "startLineNumber": 1,
@@ -217,7 +217,7 @@ describe('grammar tests', function() {
             {
                 "endColumn": 16,
                 "endLineNumber": 2,
-                "message": "Cannot assign value to inf as it is a predefined constant",
+                "message": "Cannot assign value to 'inf' as it is a predefined constant",
                 "severity": 8,
                 "startColumn": 9,
                 "startLineNumber": 2,
@@ -225,7 +225,7 @@ describe('grammar tests', function() {
             {
                 "endColumn": 12,
                 "endLineNumber": 2,
-                "message": "Unabled to set type to 'species' because it is a predefined constant",
+                "message": "Unable to set type to 'species' because it is a predefined constant",
                 "severity": 8,
                 "startColumn": 9,
                 "startLineNumber": 2,
@@ -233,7 +233,7 @@ describe('grammar tests', function() {
             {
                 "endColumn": 21,
                 "endLineNumber": 3,
-                "message": "Unabled to set type to 'compartment' because it is a predefined constant",
+                "message": "Unable to set type to 'compartment' because it is a predefined constant",
                 "severity": 8,
                 "startColumn": 13,
                 "startLineNumber": 3,
