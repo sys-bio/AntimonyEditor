@@ -11,7 +11,7 @@ export const antimonyLanguage: monaco.languages.IMonarchLanguage = {
       ['\\-|\\+|\\*|\\/|\\^|\\;', 'operator'],
       ['\\b(at|in|import|has)\\b', 'keywords'],
       [
-        /(?:identity|biological_entity_is|hasPart|part|isPartOf|parthood|isVersionOf|hypernym|hasVersion|version|isHomologTo|homolog|isDescribedBy|description|isEncodedBy|encoder|encodes|encodement|occursIn|container|hasProperty|property|isPropertyOf|propertyBearer|hasTaxon|taxon|sboTerm|model_entity_is|origin)/,
+        /(?:identity|isVersionOf|isDerivedFrom|isEncodedBy|isHomologTo|isPropertyOf|isPartOf|isDescribedBy|is|model_source|biological_entity_is|hasPart|parthood|part|hypernym|biological_system|hasVersion|version|homolog|description|publication|encoder|encodes|encodement|occursIn|container|hasProperty|propertyBearer|property|hasTaxon|taxon|sboTerm|model_entity_is|origin|hasInstance|instance)/,
         'annotation'
       ],
       [/\b[a-zA-Z0-9_]+\:/, 'react-remov'], // Add this rule for strings starting with anything except for symbols and ending with a colon

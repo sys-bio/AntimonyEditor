@@ -1,5 +1,5 @@
 import { SrcRange, varTypes } from "./Types";
-import { Variable } from "./Variable";
+import { predefinedConstants, Variable } from "./Variable";
 
 
 /**
@@ -10,10 +10,20 @@ import { Variable } from "./Variable";
  * @returns the error message string
  */
 export function incompatibleTypesError(newType: varTypes, oldVar: Variable): string {
-  const errorMessage: string = "Unable to set the type to '" + newType +
-                               "' because it is already set to be the incompatible type '"+ oldVar.type +
-                               "' on line " + 
-                               oldVar.idSrcRange.start.toString();
+  let errorMessage: string
+  if (oldVar.type === varTypes.PredefConstant) {
+    errorMessage = "Unable to set type to '" + newType + "' because it is a predefined constant";
+  } else {
+    errorMessage= "Unable to set the type to '" + newType +
+                "' because it is already set to be the incompatible type '"+ oldVar.type +
+                "' on line " + 
+                oldVar.idSrcRange.start.toString();
+  }
+  return errorMessage;
+}
+
+export function predefConstantValueAssignmentError(id: string) {
+  const errorMessage= "Cannot assign value to '" + id + "' as it is a predefined constant";
   return errorMessage;
 }
 
@@ -44,9 +54,10 @@ export function functionAlreadyExistsError(name: string, srcRange: SrcRange): st
  * @returns warning message
  */
 export function overriddenValueWarning(name: string, srcRange: SrcRange): string {
-  const warningMessage: string  = "Value assignment to '" + name +
-                       "' is being overridden by a later assignment on line " +
-                       srcRange.start.toString();
+  const warningMessage: string = "Value assignment to '" + name +
+      "' is being overridden by a later assignment on line " +
+      srcRange.start.toString();
+  
   return warningMessage;
 }
 
@@ -57,9 +68,14 @@ export function overriddenValueWarning(name: string, srcRange: SrcRange): string
  * @returns warning message
  */
 export function overridingValueWarning(name: string, srcRange: SrcRange): string {
-  const warningMessage: string = "Value assignment to '" + name +
+  let warningMessage: string;
+  if (predefinedConstants.has(name)) {
+    warningMessage = "Attempting to override predefined constant '" + name + "'";
+  } else {
+    warningMessage = "Value assignment to '" + name +
                         "' is overriding previous assignment on line " +
                         srcRange.start.toString()
+  }
   return warningMessage;
 }
 

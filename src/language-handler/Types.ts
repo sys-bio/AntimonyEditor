@@ -1,4 +1,5 @@
 import * as monaco from "monaco-editor";
+import { predefinedConstants } from "./Variable";
 
 /**
  * represents a single location
@@ -88,6 +89,9 @@ export enum varTypes {
 
   // what is deleted a subtype of?
   Deleted = "deleted",
+
+  // no type is a subtype of this
+  PredefConstant = 'predef_constant',
 }
 
 export function getTypeFromString(type: string): varTypes {
@@ -116,6 +120,10 @@ export function getTypeFromString(type: string): varTypes {
  * @param type2
  */
 export function isSubtTypeOf(type1: varTypes, type2: varTypes) {
+  if (type1 === varTypes.PredefConstant || type2 === varTypes.PredefConstant) {
+    return  false;
+  }
+
   if (type1 === type2) {
     return true;
   }

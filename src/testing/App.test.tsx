@@ -75,7 +75,7 @@ let searchInput: KeyboardEvent = {
 }
 
 describe('search tests', function() {
-    it('test test test', async () => {
+    it('empty input test', async () => {
         const result = await searchRhea({} as KeyboardEvent, 0);
         assert.strictEqual(result, undefined);
     })
@@ -155,6 +155,92 @@ jest.mock('monaco-editor', () => ({
       Error: 8,
   },
 }));
+
+describe('grammar tests', function() {
+    it('predefined constants no error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'predefConstantNoError.ant'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
+    })
+
+    it('predefined constants reassign value error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'predefConstantValueAssignError.ant'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [
+             {
+                "endColumn": 7,
+                "endLineNumber": 1,
+                "message": "Cannot assign value to 'pi' as it is a predefined constant",
+                "severity": 8,
+                "startColumn": 1,
+                "startLineNumber": 1,
+            },
+            {
+                "endColumn": 13,
+                "endLineNumber": 2,
+                "message": "Cannot assign value to 'avogadro' as it is a predefined constant",
+                "severity": 8,
+                "startColumn": 1,
+                "startLineNumber": 2,
+            },
+            {
+                "endColumn": 21,
+                "endLineNumber": 3,
+                "message": "Cannot assign value to 'NaN' as it is a predefined constant",
+                "severity": 8,
+                "startColumn": 9,
+                "startLineNumber": 3,
+            },
+            {
+                "endColumn": 12,
+                "endLineNumber": 3,
+                "message": "Unable to set type to 'species' because it is a predefined constant",
+                "severity": 8,
+                "startColumn": 9,
+                "startLineNumber": 3,
+            },
+        ])
+    })
+
+    it('predefined constants reassign type error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'predefConstantTypeAssignError.ant'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [
+            {
+                "endColumn": 11,
+                "endLineNumber": 1,
+                "message": "Unable to set type to 'species' because it is a predefined constant",
+                "severity": 8,
+                "startColumn": 9,
+                "startLineNumber": 1,
+            },
+            {
+                "endColumn": 16,
+                "endLineNumber": 2,
+                "message": "Cannot assign value to 'inf' as it is a predefined constant",
+                "severity": 8,
+                "startColumn": 9,
+                "startLineNumber": 2,
+            },
+            {
+                "endColumn": 12,
+                "endLineNumber": 2,
+                "message": "Unable to set type to 'species' because it is a predefined constant",
+                "severity": 8,
+                "startColumn": 9,
+                "startLineNumber": 2,
+            },
+            {
+                "endColumn": 21,
+                "endLineNumber": 3,
+                "message": "Unable to set type to 'compartment' because it is a predefined constant",
+                "severity": 8,
+                "startColumn": 13,
+                "startLineNumber": 3,
+            },
+        ])
+    })
+})
   
 describe('Type Tests', function() {
   it('isSubTypeOf tests', function() {

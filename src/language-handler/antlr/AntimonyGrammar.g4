@@ -46,7 +46,7 @@ event_assignment_list : event_assignment (',' event_assignment)*;
 event_assignment : var_name '=' sum;
 
 // boolean
-BOOLEAN : 'true' | 'false';
+BOOLEAN : 'true' | 'false' | 'True' | 'False' | 'TRUE' | 'FALSE';
 
 // compare
 COMPARE : '>=' | '<=' | '>' | '<' | '==';
@@ -71,34 +71,22 @@ rate_rule : NAME apostrophe '=' sum;
 annotation : var_name ANNOT_KEYWORD ESCAPED_STRING (annot_list)?;
 annot_list : (new_annot)+;
 new_annot : ',' NEWLINE ESCAPED_STRING;
-ANNOT_KEYWORD: 'identity'
-    | 'hasPart'
-    | 'biological_entity_is'
-    | 'parthood'
-    | 'part'
-    | 'isPartOf'
-    | 'isVersionOf'
-    | 'hypernym'
-    | 'hasVersion'
-    | 'version'
-    | 'isHomologTo'
-    | 'homolog'
-    | 'isDescribedBy'
-    | 'description'
-    | 'isEncodedBy'
-    | 'encoder'
-    | 'encodes'
-    | 'encodement'
-    | 'occursIn'
-    | 'container'
-    | 'hasProperty'
-    | 'propertyBearer'
-    | 'property'
-    | 'isPropertyOf'
-    | 'hasTaxon'
-    | 'taxon'
-    | 'model_entity_is'
-    | 'origin';
+ANNOT_KEYWORD: 
+    'identity' | 'is' | 'biological_entity_is' | 'model_entity_is' | 'model_source'
+    | 'hasPart' | 'part'
+    | 'parthood' | 'isPartOf'
+    | 'isVersionOf' | 'hypernym' | 'biological_system'
+    | 'hasVersion' | 'version'
+    | 'isHomologTo' | 'homolog'
+    | 'isDescribedBy'| 'description' | 'publication'
+    | 'isEncodedBy' | 'encoder'
+    | 'encodes' | 'encodement'
+    | 'occursIn' | 'container'
+    | 'hasProperty' | 'property'
+    | 'propertyBearer' | 'isPropertyOf'
+    | 'hasTaxon' | 'taxon'
+    | 'origin' | 'isDerivedFrom'
+    | 'hasInstance' | 'instance';
 
 // declaration
 declaration : decl_modifiers decl_item (',' decl_item)*;

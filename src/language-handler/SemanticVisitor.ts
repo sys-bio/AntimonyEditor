@@ -5,7 +5,7 @@ import { AnnotationContext, FunctionContext, Is_assignmentContext, ModelContext,
 import { ErrorUnderline, SrcRange, isSubtTypeOf, varTypes } from "./Types";
 import { defaultValueWarning, overridingDisplayNameWarning, unitializedParameterError, unitializedRateLawWarning, varNotFound } from "./SemanticErrors";
 import { ErrorNode } from "antlr4ts/tree";
-import { Variable } from "./Variable";
+import { predefinedConstants, Variable } from "./Variable";
 
 // goal is to loop through and look at all variables, classes, 
 export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisitor<void> {
@@ -139,11 +139,14 @@ export class SemanticVisitor extends ErrorVisitor implements AntimonyGrammarVisi
       const varInfo = currST.getVar(varName);
       if (this.currNameAndScope?.scope !== 'function' && varInfo && varInfo.initSrcRange === undefined) {
         if (varInfo.type === varTypes.Parameter) {
-          // error, needs initialized value
-          //Parameter 'k' missing value assignment
-          const errorMessage: string = unitializedParameterError(varName);
-          const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
-          this.addError(errorUnderline);
+          // need to check if this is a predefined-constatnt which does not require initialization
+          if (!predefinedConstants.has(varName)) {
+            // error, needs initialized value
+            //Parameter 'k' missing value assignment
+            const errorMessage: string = unitializedParameterError(varName);
+            const errorUnderline: ErrorUnderline = this.getErrorUnderline(idSrcRange, errorMessage, true);
+            this.addError(errorUnderline);
+          }
         } else if (isSubtTypeOf(varInfo.type, varTypes.Parameter) && varInfo.type !== varTypes.Reaction && varInfo.type !== varTypes.Event) {
           // warning, using default value
           // Species 'Z' has not been initialized, using default value

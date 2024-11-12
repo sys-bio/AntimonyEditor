@@ -65,6 +65,26 @@ export class Variable {
     }
 }
 
+// defines predefined constants in the Antimony grammar
 
-
+export const predefinedConstants: Set<string> = new Set([
+    "true"
+    , "false"
+    , "True"
+    , "False"
+    , "TRUE"
+    , "FALSE"
+    , "pi"
+    , "exponentiale"
+    , "avogadro"
+    , "time"
+    , "inf"
+    , "INF"
+    , "infinity"
+    , "NaN"
+    , "NAN"
+    , "nan"
+    , "notanumber"
+])
+  
 export {}
