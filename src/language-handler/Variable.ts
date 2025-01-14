@@ -23,6 +23,7 @@ export class Variable {
     // NOTE: this is not the case for reactions as a choice.
     public initSrcRange: SrcRange | undefined;
     public substanceOnly: boolean;
+    public unit: string | undefined;
     public value: string | undefined; // for numerical values
     public displayName: string | undefined;
     public annotations: string[];
@@ -43,6 +44,7 @@ export class Variable {
         this.idSrcRange = idSrcRange;
         this.initSrcRange = initSrcRange;
         this.substanceOnly = substanceOnly;
+        this.unit = undefined;
         this.value = undefined;
         this.displayName = undefined;
         this.annotations = [];

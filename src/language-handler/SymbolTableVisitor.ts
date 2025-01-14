@@ -1,4 +1,4 @@
-import {Annot_listContext, AnnotationContext, AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, New_annotContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
+import {Annot_listContext, AnnotationContext, AssignmentContext, AtomContext, Decl_itemContext, Decl_modifiersContext, DeclarationContext, EventContext, Event_assignmentContext, FunctionContext, In_compContext, Init_paramsContext, Modular_modelContext, NamemaybeinContext, New_annotContext, ReactionContext, Reaction_nameContext, SpeciesContext, Species_listContext, SumContext, UnitContext, Unit_assignmentContext, Unit_declarationContext, Var_nameContext, Variable_inContext } from './antlr/AntimonyGrammarParser';
 import { ModelContext } from './antlr/AntimonyGrammarParser'
 import { SymbolTable, ParamAndNameTable} from './SymbolTableClasses';
 import { predefinedConstants, Variable } from './Variable';
@@ -779,7 +779,12 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
     const varName: string = ctx.var_name().text; // Get the species name
     const annotationLink: string = ctx.ESCAPED_STRING().text; // Get the annotation
     const idSrcRange: SrcRange = this.getSrcRange(ctx.var_name().NAME());
-    const annotationKeyword: string = ctx.ANNOT_KEYWORD().text;
+    let annotKeyword = ctx.ANNOT_KEYWORD();
+    // make sure that this is an annotation and not a model metadata
+    if (annotKeyword === undefined || varName === "model") {
+      return;
+    }
+    const annotationKeyword: string = annotKeyword.text ;
     
     const currST: SymbolTable | undefined = this.getCurrST();
     let varInfo: Variable | undefined = currST?.getVar(varName);
@@ -842,5 +847,36 @@ export class SymbolTableVisitor extends ErrorVisitor implements AntimonyGrammarV
       // do nothing
       console.log("parse error in annotations, prob no need to fix");
     }
+  }
+
+  visitUnit(ctx: UnitContext) {
+    console.error("UnitContext reached????");
+  }
+
+  visitUnit_assignment(ctx: Unit_assignmentContext) {
+    // check for any parsing errors first
+    if (this.hasParseError(ctx)) {
+      return;
+    }
+
+    // get relevant child branches
+    const varNameCtx: Var_nameContext | undefined = ctx.var_name();
+    const sum: SumContext | undefined = ctx.sum();
+    
+    if (varNameCtx && sum) {
+      // handle the var name
+      this.handleParameterVarNameContext(varNameCtx);
+
+      // now we want to add the sum as the unit for this variable within the ST.
+      let ST: SymbolTable | undefined = this.getCurrST();
+      if (ST) {
+        let varInfo: Variable | undefined = ST.getVar(varNameCtx.NAME().text);
+        varInfo!!.unit = sum.text;
+      }
+    }
+  }
+
+  visitUnit_declaration(ctx: Unit_declarationContext) {
+
   }
 }

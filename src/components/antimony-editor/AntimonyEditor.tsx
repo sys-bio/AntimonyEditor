@@ -9,6 +9,7 @@ import CreateAnnotationModal from "../create-annotation/CreateAnnotationModal";
 import ModelSemanticsChecker from "../../language-handler/ModelSemanticChecker";
 import { IDBPDatabase, DBSchema } from "idb";
 import { SrcPosition, SrcRange } from "../../language-handler/Types";
+import TurndownService from "turndown";
 
 /**
  * @description AntimonyEditorProps interface
@@ -117,6 +118,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       const [varToAnnotate, setVarToAnnotate] =
           useState<{id: string, name: string | undefined} | null>(null);
       const [decorations, setDecorations] = useState<string[]>([]);
+      const turndownService = new TurndownService();
 
       /**
        * @description adds the menu option to create an annotation
@@ -272,6 +274,26 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         }
       };
 
+      const processContent = (content: string) => {
+        const regex = /```([\s\S]*?)```/g;   // Match content inside triple backticks
+        
+        return content.replace(regex, (match, htmlContent) => {
+          // Check if the content inside the backticks is HTML (simple check)
+          const isHtml = /<\/?[a-z][\s\S]*>/i.test(htmlContent);
+          if (isHtml) {
+            // Convert HTML to Markdown
+            const markdown = turndownService.turndown(htmlContent);
+            const indentedMarkdown = markdown
+              .split('\n')
+              .map(line => `\t${line}`) // Add a tab to the beginning of each line
+              .join('\n');
+            return `\`\`\`\n${indentedMarkdown}\n\`\`\``;
+          }
+          return match; // Return original if no HTML found
+        });
+      };
+
+
       /**
        * @description Loads the editor and sets the language, theme, and content
        */
@@ -291,10 +313,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               .objectStore("files")
               .get(fileName)
               .then((data) => {
-                if (data) {
-                  setNewContent(data.content);
+                if (data) {;
+                  let processedContent = processContent(data.content);
+                  setNewContent(processedContent);
+                  ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
                   window.selectedFile = data.name;
-                  editor.setValue(data.content);
+                  editor.setValue(processedContent);
                 }
               });
 
@@ -315,6 +339,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               value: content,
               language: "antimony",
               automaticLayout: true,
+              wordWrap: 'on',  // Enable word wrap
+              wordWrapColumn: 80,  // Max column width before wrapping
+              wrappingIndent: 'same',
             });
             window.antimonyActive = true;
 
@@ -417,6 +444,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       useEffect(() => {
         if (database && editorInstance) {
           setNewContent(editorInstance.getValue());
+          ModelSemanticsChecker(editorInstance, annotUnderlinedOn, true, highlightColor, decorations);
           const transaction = database.transaction("files", "readwrite");
           transaction.objectStore("files").put({
             name: selectedFile,
@@ -469,24 +497,23 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           }
         });
       };
+      
+      let typingTimer: any;
 
       const handleEditorContentChange = (editor: any) => {
-        // Delay the model parser to avoid parsing while the user is typing
-        let typingTimer: any;
         const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
           clearTimeout(typingTimer);
           typingTimer = setTimeout(() => {
             ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
-          }, 600);
+          }, 100);
         };
-
-        // Parse the model whenever the user types
+      
         editor.onDidChangeModelContent(() => {
           setNewContent(editor.getValue());
           delayedModelParser(editor);
         });
-        ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
       };
+      
 
       return (
           <>

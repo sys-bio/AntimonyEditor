@@ -27,6 +27,7 @@ import { Rate_ruleContext } from "./AntimonyGrammarParser";
 import { AnnotationContext } from "./AntimonyGrammarParser";
 import { Annot_listContext } from "./AntimonyGrammarParser";
 import { New_annotContext } from "./AntimonyGrammarParser";
+import { Model_annotationContext } from "./AntimonyGrammarParser";
 import { DeclarationContext } from "./AntimonyGrammarParser";
 import { Decl_modifiersContext } from "./AntimonyGrammarParser";
 import { Decl_itemContext } from "./AntimonyGrammarParser";
@@ -229,6 +230,13 @@ export interface AntimonyGrammarVisitor<Result> extends ParseTreeVisitor<Result>
 	 * @return the visitor result
 	 */
 	visitNew_annot?: (ctx: New_annotContext) => Result;
+
+	/**
+	 * Visit a parse tree produced by `AntimonyGrammarParser.model_annotation`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitModel_annotation?: (ctx: Model_annotationContext) => Result;
 
 	/**
 	 * Visit a parse tree produced by `AntimonyGrammarParser.declaration`.

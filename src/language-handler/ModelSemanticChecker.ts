@@ -5,6 +5,7 @@ import {
   CommonTokenStream,
   RecognitionException,
   Recognizer,
+  Token,
 } from "antlr4ts";
 import { AntimonyGrammarLexer } from "./antlr/AntimonyGrammarLexer";
 import { AntimonyGrammarParser, RootContext } from "./antlr/AntimonyGrammarParser";
@@ -13,7 +14,8 @@ import { SymbolTableVisitor } from "./SymbolTableVisitor";
 import { SemanticVisitor } from "./SemanticVisitor";
 import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from "./Types";
 import { predefinedConstants, Variable } from "./Variable";
-import { editor } from "monaco-editor";
+import { editor} from "monaco-editor";
+import TurndownService from "turndown";
 
 /**
  * Defines a parse error, which includes a position (line, column) as well as the error message.
@@ -76,6 +78,7 @@ export const ModelSemanticsChecker = (
 
   if (setGeneralHoverInfo) {
     const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
+    console.log(hoverInfo);
     if (hoverInfo) {
       editor.onDidDispose(() => {
         hoverInfo.dispose();
@@ -108,6 +111,7 @@ export class AntimonyProgramAnalyzer {
   private globalST: GlobalST;
   private hoverKeyWordColor: Map<string, string>;
   private highlightColor: string;
+  private turndownService: TurndownService;
 
   constructor(antimonyCode: string, highlightColor: string) {
     // we remove carriage returns in the string since
@@ -115,10 +119,15 @@ export class AntimonyProgramAnalyzer {
     // grammar parse.
     antimonyCode = this.removeCarriageReturn(antimonyCode);
     this.highlightColor = highlightColor;
+    this.turndownService = new TurndownService();
     let inputStream = new ANTLRInputStream(antimonyCode);
     let lexer = new AntimonyGrammarLexer(inputStream);
     let tokenStream = new CommonTokenStream(lexer);
+    let tokens = tokenStream
+    tokens.fill();
+    console.log(tokens.getTokens().map(token => lexer.vocabulary.getDisplayName(token.type)));
     this.parser = new AntimonyGrammarParser(tokenStream);
+    this.parser.isTrace = true;
 
     this.errorListener = new ErrorListener();
     this.parser.removeErrorListeners();
@@ -132,9 +141,13 @@ export class AntimonyProgramAnalyzer {
 
     this.stVisitor = new SymbolTableVisitor(this.globalST);
     this.stVisitor.visit(this.tree);
+    // console.log(this.globalST);
 
     this.semanticVisitor = new SemanticVisitor(this.globalST);
     this.semanticVisitor.visit(this.tree);
+
+    console.log(this.tree);
+    console.log(this.globalST);
 
     this.hoverKeyWordColor = new Map();
     this.hoverKeyWordColor.set(varTypes.Species, "#FD7F20");
@@ -227,6 +240,10 @@ export class AntimonyProgramAnalyzer {
 
               if (varInfo.value) {
                 valueOfHover += `Initialized Value: <span style="color:#DEF9CB;">${varInfo.value}</span> <br/> `;
+              }
+
+              if (varInfo.unit) {
+                valueOfHover += `unit: <span>${varInfo.unit}</span><br/>`;
               }
 
               if (varInfo.compartment) {
