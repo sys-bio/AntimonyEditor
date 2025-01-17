@@ -510,7 +510,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         };
       
         editor.onDidChangeModelContent(() => {
-          let processedContent = processContent(editor.getValue());
+          let currentContent = editor.getValue()
+          let processedContent = processContent(currentContent);
+
+          if (currentContent !== processedContent) {
+            editor.setValue(processedContent);
+          }
           setNewContent(processedContent);
           delayedModelParser(editor);
         });
