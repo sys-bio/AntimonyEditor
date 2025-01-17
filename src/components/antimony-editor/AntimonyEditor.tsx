@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import * as monaco from "monaco-editor";
 import { antimonyLanguage } from "../../language-handler/antlr/AntimonyLanguage";
 import { antimonyTheme } from "../../language-handler/AntimonyTheme";
@@ -316,7 +316,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
                 if (data) {;
                   let processedContent = processContent(data.content);
                   setNewContent(processedContent);
-                  ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
+                  // ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
                   window.selectedFile = data.name;
                   editor.setValue(processedContent);
                 }
@@ -382,26 +382,26 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         }
       }, [annotUnderlinedOn, content, database, fileName]);
 
-      /**
-       * @description reruns semantic checker in case something related to the highlight color is selected.
-       */
-      useEffect(() => {
-        if (editorInstance) {
-          const { symbolTable, decorations: newDecorations } =
-              ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, decorations);
-          setDecorations(newDecorations);
-        }
-      }, [highlightColor]);
+      // /**
+      //  * @description reruns semantic checker in case something related to the highlight color is selected.
+      //  */
+      // useEffect(() => {
+      //   if (editorInstance) {
+      //     const { symbolTable, decorations: newDecorations } =
+      //         ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, decorations);
+      //     setDecorations(newDecorations);
+      //   }
+      // }, [highlightColor]);
 
       /**
        * @description reruns semantic checker in case something related to
        * the editor changes, or the annotation highlight feature is selected.
        */
-      useEffect(() => {
-        if (editorInstance) {
-          ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, decorations);
-        }
-      }, [annotUnderlinedOn, editorInstance]);
+      // useEffect(() => {
+      //   if (editorInstance) {
+      //     ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, decorations);
+      //   }
+      // }, [annotUnderlinedOn, editorInstance]);
 
       /**
        * @description Adds the link action to the editor context menu
@@ -443,12 +443,13 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
        */
       useEffect(() => {
         if (database && editorInstance) {
-          setNewContent(editorInstance.getValue());
-          ModelSemanticsChecker(editorInstance, annotUnderlinedOn, true, highlightColor, decorations);
+          let processedContent = processContent(editorInstance.getValue());
+          setNewContent(processedContent);
+          // ModelSemanticsChecker(editorInstance, annotUnderlinedOn, true, highlightColor, decorations);
           const transaction = database.transaction("files", "readwrite");
           transaction.objectStore("files").put({
             name: selectedFile,
-            content: newContent,
+            content: processedContent,
           });
         }
       }, [newContent, selectedFile, database, editorInstance]);
@@ -509,7 +510,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         };
       
         editor.onDidChangeModelContent(() => {
-          setNewContent(editor.getValue());
+          let processedContent = processContent(editor.getValue());
+          setNewContent(processedContent);
           delayedModelParser(editor);
         });
       };

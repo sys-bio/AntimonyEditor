@@ -101,6 +101,9 @@ MODEL: 'model';
 
 model_annotation: MODEL (ANNOT_KEYWORD | MODEL_CREATOR_TOKEN) ESCAPED_STRING (annot_list)?;
 
+model_notes : MODEL 'notes' MULTILINE_STRING NEWLINE?;
+MULTILINE_STRING : ('```' .*? '```');
+
 // declaration
 declaration : decl_modifiers decl_item (',' decl_item)*;
 decl_modifiers : VAR_MODIFIER
@@ -171,6 +174,7 @@ simple_stmt : (small_stmt)? (';' | NEWLINE);
 small_stmt : reaction 
     | assignment
     | declaration
+    | model_notes
     | model_annotation
     | annotation
     | unit_declaration
