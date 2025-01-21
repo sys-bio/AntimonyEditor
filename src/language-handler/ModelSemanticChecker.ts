@@ -62,7 +62,7 @@ export const ModelSemanticsChecker = (
     existingDecorations: string[]
 ): { symbolTable: GlobalST; decorations: string[] } => {
   // Clear old decorations
-  console.log("checked")
+  // console.log("checked")
   editor.deltaDecorations(existingDecorations, []);
 
   const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue(), highlightColor);
@@ -187,7 +187,7 @@ export class AntimonyProgramAnalyzer {
    */
   getGeneralHoverInfo() {
     if (this.hoverProviderDisposable) {
-      console.log("disposed");
+      // console.log("disposed");
       this.hoverProviderDisposable.dispose();
     }
 
@@ -313,7 +313,7 @@ export class AntimonyProgramAnalyzer {
               endCol++;
             }
             let foundString: string = line.substring(startCol, endCol + 1);
-            console.log("before: " + foundString);
+            // console.log("before: " + foundString);
             if (
               foundString.charAt(0) === '"' &&
               foundString.charAt(foundString.length - 1) === '"'
@@ -322,8 +322,8 @@ export class AntimonyProgramAnalyzer {
               startCol++;
               endCol--;
             }
-            console.log("found: " + foundString);
-            console.log(this.globalST.annotationSet);
+            // console.log("found: " + foundString);
+            // console.log(this.globalST.annotationSet);
             if (
               this.isValidUrl(foundString) ||
               this.globalST.annotationSet.has('"' + foundString + '"')

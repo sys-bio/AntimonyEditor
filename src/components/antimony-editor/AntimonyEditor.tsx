@@ -382,27 +382,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         }
       }, [annotUnderlinedOn, content, database, fileName]);
 
-      // /**
-      //  * @description reruns semantic checker in case something related to the highlight color is selected.
-      //  */
-      // useEffect(() => {
-      //   if (editorInstance) {
-      //     const { symbolTable, decorations: newDecorations } =
-      //         ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, decorations);
-      //     setDecorations(newDecorations);
-      //   }
-      // }, [highlightColor]);
-
-      /**
-       * @description reruns semantic checker in case something related to
-       * the editor changes, or the annotation highlight feature is selected.
-       */
-      // useEffect(() => {
-      //   if (editorInstance) {
-      //     ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, decorations);
-      //   }
-      // }, [annotUnderlinedOn, editorInstance]);
-
       /**
        * @description Adds the link action to the editor context menu
        */
