@@ -62,7 +62,6 @@ export const ModelSemanticsChecker = (
     existingDecorations: string[]
 ): { symbolTable: GlobalST; decorations: string[] } => {
   // Clear old decorations
-  // console.log("checked")
   editor.deltaDecorations(existingDecorations, []);
 
   const antAnalyzer = new AntimonyProgramAnalyzer(editor.getValue(), highlightColor);
@@ -79,7 +78,6 @@ export const ModelSemanticsChecker = (
 
   if (setGeneralHoverInfo) {
     const hoverInfo: monaco.IDisposable = antAnalyzer.getGeneralHoverInfo();
-    // console.log(hoverInfo);
     if (hoverInfo) {
       editor.onDidDispose(() => {
         hoverInfo.dispose();
@@ -120,16 +118,10 @@ export class AntimonyProgramAnalyzer {
     // grammar parse.
     antimonyCode = this.removeCarriageReturn(antimonyCode);
     this.highlightColor = highlightColor;
-    // this.turndownService = new TurndownService();
     let inputStream = new ANTLRInputStream(antimonyCode);
     let lexer = new AntimonyGrammarLexer(inputStream);
     let tokenStream = new CommonTokenStream(lexer);
-    // let tokens = tokenStream
-    // tokens.fill();
-    // console.log(tokens.getTokens().map(token => lexer.vocabulary.getDisplayName(token.type)));
     this.parser = new AntimonyGrammarParser(tokenStream);
-    // this.parser.isTrace = true;
-
     this.errorListener = new ErrorListener();
     this.parser.removeErrorListeners();
     this.parser.addErrorListener(this.errorListener);
@@ -137,18 +129,11 @@ export class AntimonyProgramAnalyzer {
     // Parse the input, where `compilationUnit` is whatever entry point you defined
     this.tree = this.parser.root();
     this.globalST = new GlobalST();
-    // for annotation position
     this.globalST.endLine = this.tree._stop?.line;
-
     this.stVisitor = new SymbolTableVisitor(this.globalST);
     this.stVisitor.visit(this.tree);
-    // console.log(this.globalST);
-
     this.semanticVisitor = new SemanticVisitor(this.globalST);
     this.semanticVisitor.visit(this.tree);
-
-    // console.log(this.tree);
-    // console.log(this.globalST);
 
     this.hoverKeyWordColor = new Map();
     this.hoverKeyWordColor.set(varTypes.Species, "#FD7F20");
@@ -187,7 +172,6 @@ export class AntimonyProgramAnalyzer {
    */
   getGeneralHoverInfo() {
     if (this.hoverProviderDisposable) {
-      // console.log("disposed");
       this.hoverProviderDisposable.dispose();
     }
 
@@ -313,7 +297,6 @@ export class AntimonyProgramAnalyzer {
               endCol++;
             }
             let foundString: string = line.substring(startCol, endCol + 1);
-            // console.log("before: " + foundString);
             if (
               foundString.charAt(0) === '"' &&
               foundString.charAt(foundString.length - 1) === '"'
@@ -322,8 +305,7 @@ export class AntimonyProgramAnalyzer {
               startCol++;
               endCol--;
             }
-            // console.log("found: " + foundString);
-            // console.log(this.globalST.annotationSet);
+
             if (
               this.isValidUrl(foundString) ||
               this.globalST.annotationSet.has('"' + foundString + '"')
@@ -424,7 +406,6 @@ export class AntimonyProgramAnalyzer {
 
         // Replace
         const range = new monaco.Range(startLine, startColumn, endLine, endColumn);
-        // console.log(range)
         const op = {
           range: range,
           text: resultString
