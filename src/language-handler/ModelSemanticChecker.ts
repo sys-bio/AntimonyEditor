@@ -15,7 +15,6 @@ import { SemanticVisitor } from "./SemanticVisitor";
 import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from "./Types";
 import { predefinedConstants, Variable } from "./Variable";
 import { editor} from "monaco-editor";
-import TurndownService from "turndown";
 
 /**
  * Defines a parse error, which includes a position (line, column) as well as the error message.

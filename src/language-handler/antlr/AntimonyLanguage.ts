@@ -7,7 +7,7 @@ export const antimonyLanguage: monaco.languages.IMonarchLanguage = {
       [/"[^"]*"/, 'string'], // Rule for anything surrounded by double quotation marks (")
       [/\(|\)/, 'connected-parentheses'], // Rule for connected parentheses
       [/=>|->/, 'transform'],
-      [/```/, 'comment', '@multilineComment'],
+      [/```/, 'comment', '@model_note'],
       [/=|:=/, 'assign'],
       ['\\-|\\+|\\*|\\/|\\^|\\;', 'operator'],
       ['\\b(at|in|import|has)\\b', 'keywords'],
@@ -37,7 +37,7 @@ export const antimonyLanguage: monaco.languages.IMonarchLanguage = {
     whitespace: [
       [/[ \t\r\n]+/, 'white'],
     ],
-    multilineComment: [
+    model_note: [
       [/```/, 'comment', '@pop'],
       [/./, 'comment']
     ]

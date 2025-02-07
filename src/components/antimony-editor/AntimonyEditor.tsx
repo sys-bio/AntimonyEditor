@@ -276,8 +276,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
 
       const processContent = (content: string) => {
         const regex = /```([\s\S]*?)```/g;   // Match content inside triple backticks
-        
-        return content.replace(regex, (match, htmlContent) => {
+
+        let processedContent = content.replace(regex, (match, htmlContent) => {
           // Check if the content inside the backticks is HTML (simple check)
           const isHtml = /<\/?[a-z][\s\S]*>/i.test(htmlContent);
           if (isHtml) {
@@ -285,12 +285,14 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             const markdown = turndownService.turndown(htmlContent);
             const indentedMarkdown = markdown
               .split('\n')
-              .map(line => `\t${line}`) // Add a tab to the beginning of each line
+              .map(line => `\t\t${line}`) // Add a tab to the beginning of each line
               .join('\n');
-            return `\`\`\`\n${indentedMarkdown}\n\`\`\``;
+            return `\`\`\`\n${indentedMarkdown}\n\t\`\`\``;
           }
           return match; // Return original if no HTML found
         });
+      
+        return processedContent
       };
 
 
@@ -316,9 +318,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
                 if (data) {;
                   let processedContent = processContent(data.content);
                   setNewContent(processedContent);
-                  // ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
                   window.selectedFile = data.name;
-                  editor.setValue(processedContent);
+                  window.antimonyString = processedContent;
                 }
               });
 
@@ -346,7 +347,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             window.antimonyActive = true;
 
             // Set the antimonyString variable to the editor content
+            editor.setValue(processContent(newContent));
             window.antimonyString = editor.getValue();
+            ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
           }
 
           // Adds the create annotations option to the context menu
