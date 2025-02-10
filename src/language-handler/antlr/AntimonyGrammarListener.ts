@@ -27,6 +27,8 @@ import { Rate_ruleContext } from "./AntimonyGrammarParser";
 import { AnnotationContext } from "./AntimonyGrammarParser";
 import { Annot_listContext } from "./AntimonyGrammarParser";
 import { New_annotContext } from "./AntimonyGrammarParser";
+import { Model_annotationContext } from "./AntimonyGrammarParser";
+import { Model_notesContext } from "./AntimonyGrammarParser";
 import { DeclarationContext } from "./AntimonyGrammarParser";
 import { Decl_modifiersContext } from "./AntimonyGrammarParser";
 import { Decl_itemContext } from "./AntimonyGrammarParser";
@@ -322,6 +324,28 @@ export interface AntimonyGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitNew_annot?: (ctx: New_annotContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.model_annotation`.
+	 * @param ctx the parse tree
+	 */
+	enterModel_annotation?: (ctx: Model_annotationContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.model_annotation`.
+	 * @param ctx the parse tree
+	 */
+	exitModel_annotation?: (ctx: Model_annotationContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `AntimonyGrammarParser.model_notes`.
+	 * @param ctx the parse tree
+	 */
+	enterModel_notes?: (ctx: Model_notesContext) => void;
+	/**
+	 * Exit a parse tree produced by `AntimonyGrammarParser.model_notes`.
+	 * @param ctx the parse tree
+	 */
+	exitModel_notes?: (ctx: Model_notesContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `AntimonyGrammarParser.declaration`.

@@ -5,6 +5,7 @@ import {
   CommonTokenStream,
   RecognitionException,
   Recognizer,
+  Token,
 } from "antlr4ts";
 import { AntimonyGrammarLexer } from "./antlr/AntimonyGrammarLexer";
 import { AntimonyGrammarParser, RootContext } from "./antlr/AntimonyGrammarParser";
@@ -13,7 +14,7 @@ import { SymbolTableVisitor } from "./SymbolTableVisitor";
 import { SemanticVisitor } from "./SemanticVisitor";
 import { ErrorUnderline, SrcPosition, SrcRange, isSubtTypeOf, varTypes } from "./Types";
 import { predefinedConstants, Variable } from "./Variable";
-import { editor } from "monaco-editor";
+import { editor} from "monaco-editor";
 
 /**
  * Defines a parse error, which includes a position (line, column) as well as the error message.
@@ -108,6 +109,7 @@ export class AntimonyProgramAnalyzer {
   private globalST: GlobalST;
   private hoverKeyWordColor: Map<string, string>;
   private highlightColor: string;
+  private hoverProviderDisposable: monaco.IDisposable | null = null;
 
   constructor(antimonyCode: string, highlightColor: string) {
     // we remove carriage returns in the string since
@@ -119,7 +121,6 @@ export class AntimonyProgramAnalyzer {
     let lexer = new AntimonyGrammarLexer(inputStream);
     let tokenStream = new CommonTokenStream(lexer);
     this.parser = new AntimonyGrammarParser(tokenStream);
-
     this.errorListener = new ErrorListener();
     this.parser.removeErrorListeners();
     this.parser.addErrorListener(this.errorListener);
@@ -127,12 +128,9 @@ export class AntimonyProgramAnalyzer {
     // Parse the input, where `compilationUnit` is whatever entry point you defined
     this.tree = this.parser.root();
     this.globalST = new GlobalST();
-    // for annotation position
     this.globalST.endLine = this.tree._stop?.line;
-
     this.stVisitor = new SymbolTableVisitor(this.globalST);
     this.stVisitor.visit(this.tree);
-
     this.semanticVisitor = new SemanticVisitor(this.globalST);
     this.semanticVisitor.visit(this.tree);
 
@@ -172,7 +170,11 @@ export class AntimonyProgramAnalyzer {
    * @returns
    */
   getGeneralHoverInfo() {
-    let hoverInfo = monaco.languages.registerHoverProvider("antimony", {
+    if (this.hoverProviderDisposable) {
+      this.hoverProviderDisposable.dispose();
+    }
+
+    this.hoverProviderDisposable = monaco.languages.registerHoverProvider("antimony", {
       provideHover: (model, position) => {
         if (model.isDisposed()) {
           console.error("Model is disposed. Cannot provide hover.");
@@ -229,6 +231,10 @@ export class AntimonyProgramAnalyzer {
                 valueOfHover += `Initialized Value: <span style="color:#DEF9CB;">${varInfo.value}</span> <br/> `;
               }
 
+              if (varInfo.unit) {
+                valueOfHover += `unit: <span>${varInfo.unit}</span><br/>`;
+              }
+
               if (varInfo.compartment) {
                 valueOfHover += `In <span style="color:${this.hoverKeyWordColor.get(
                     varTypes.Compartment
@@ -265,7 +271,54 @@ export class AntimonyProgramAnalyzer {
               });
               this.isTrashIconClickListenerAdded = true;
             }
+          } else {
+            // check if it is an annotation string.
+            let line: string = model.getLineContent(position.lineNumber);
+            let startCol = word.startColumn;
+            let endCol = word.startColumn;
+            while (startCol >= 0) {
+              if (line.charAt(startCol) === '"' || line.charAt(startCol) === " ") {
+                startCol++;
+                break;
+              }
+              startCol--;
+            }
+            while (endCol < line.length) {
+              if (
+                line.charAt(endCol) === '"' ||
+                line.charAt(endCol) === " " ||
+                line.charAt(endCol) === "\r" ||
+                line.charAt(endCol) === "\n"
+              ) {
+                endCol--;
+                break;
+              }
+              endCol++;
+            }
+            let foundString: string = line.substring(startCol, endCol + 1);
+            if (
+              foundString.charAt(0) === '"' &&
+              foundString.charAt(foundString.length - 1) === '"'
+            ) {
+              foundString = foundString.replace('"', "");
+              startCol++;
+              endCol--;
+            }
+
+            if (
+              this.isValidUrl(foundString) ||
+              this.globalST.annotationSet.has('"' + foundString + '"')
+            ) {
+              hoverContents.push({
+                supportHtml: true,
+                value: foundString,
+              });
+              // set new hover bounds to be that of the url
+              hoverColumnStart = startCol + 1;
+              hoverColumnEnd = endCol + 2;
+            }
           }
+
 
           return {
             range: new monaco.Range(hoverLine, hoverColumnStart, hoverLine, hoverColumnEnd),
@@ -274,7 +327,7 @@ export class AntimonyProgramAnalyzer {
         }
       },
     });
-    return hoverInfo;
+    return this.hoverProviderDisposable;
   }
 
   private isTrashIconClickListenerAdded = false;
@@ -352,7 +405,6 @@ export class AntimonyProgramAnalyzer {
 
         // Replace
         const range = new monaco.Range(startLine, startColumn, endLine, endColumn);
-        console.log(range)
         const op = {
           range: range,
           text: resultString

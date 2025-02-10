@@ -137,6 +137,7 @@ const App: React.FC = () => {
     setSelectedFileName(fileName);
     window.localStorage.setItem("current_file_index", index.toString());
     window.localStorage.setItem("current_file_name", fileName);
+    window.localStorage.setItem("current_file", fileContent);
   };
 
   /**
@@ -291,6 +292,7 @@ const App: React.FC = () => {
       } else {
         setSelectedFileIndex(null);
         setSelectedFileContent("// Enter Antimony Model Here");
+        setSelectedFileContent("")
         setSelectedFileName("untitled.ant");
         window.localStorage.removeItem("current_file_index");
       }

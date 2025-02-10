@@ -3,7 +3,7 @@ grammar AntimonyGrammar;
 // entry point for parser
 root : (simple_stmt | model | function | modular_model)*;
 
-model : NEWLINE? COMMENT? ('model' | 'module') '*'? NAME '()'? simple_stmt_list END;
+model : NEWLINE? COMMENT? (MODEL | 'module') '*'? NAME '()'? simple_stmt_list END;
 
 // end of model
 END : 'end';
@@ -68,7 +68,7 @@ apostrophe : '\'';
 rate_rule : NAME apostrophe '=' sum;
 
 // annotation
-annotation : var_name ANNOT_KEYWORD ESCAPED_STRING (annot_list)?;
+annotation : var_name (ANNOT_KEYWORD | MODEL_CREATOR_TOKEN) ESCAPED_STRING (annot_list)?;
 annot_list : (new_annot)+;
 new_annot : ',' NEWLINE ESCAPED_STRING;
 ANNOT_KEYWORD: 
@@ -86,7 +86,23 @@ ANNOT_KEYWORD:
     | 'propertyBearer' | 'isPropertyOf'
     | 'hasTaxon' | 'taxon'
     | 'origin' | 'isDerivedFrom'
-    | 'hasInstance' | 'instance';
+    | 'hasInstance' | 'instance'
+    | 'created' | 'modified'; // added for model metadata
+
+MODEL_CREATOR_TOKEN : 'creator' DIGIT+ '.' MODEL_CREATOR_SUBFIELD;
+
+MODEL_CREATOR_SUBFIELD : 'name'
+                        | 'givenName'
+                        | 'familyName'
+                        | 'organization'
+                        | 'email';
+
+MODEL: 'model';
+
+model_annotation: MODEL (ANNOT_KEYWORD | MODEL_CREATOR_TOKEN) ESCAPED_STRING (annot_list)?;
+
+model_notes : MODEL 'notes' MULTILINE_STRING NEWLINE?;
+MULTILINE_STRING : ('```' .*? '```');
 
 // declaration
 declaration : decl_modifiers decl_item (',' decl_item)*;
@@ -158,6 +174,8 @@ simple_stmt : (small_stmt)? (';' | NEWLINE);
 small_stmt : reaction 
     | assignment
     | declaration
+    | model_notes
+    | model_annotation
     | annotation
     | unit_declaration
     | unit_assignment
@@ -177,7 +195,7 @@ simple_stmt_list : simple_stmt+;
 import_ : 'import' ESCAPED_STRING;
 
 // Modular Model
-modular_model : 'model' ('*')? NAME '(' (init_params)? ')' simple_stmt_list END;
+modular_model : MODEL ('*')? NAME '(' (init_params)? ')' simple_stmt_list END;
 
 // function
 function : 'function' NAME '(' (init_params)? ')' NEWLINE sum (';')? NEWLINE END;
@@ -199,7 +217,7 @@ is_assignment : NAME 'is' ESCAPED_STRING;
 COMMENT : '//' ~[\r\n]* NEWLINE -> skip;
 
 // name 
-NAME : ('species' | 'compartment' | 'var' | 'const' | 'formula' | 'function' | 'end' | 'model' | 'substanceOnly' | 'in')? CNAME;
+NAME : ('species' | 'compartment' | 'var' | 'const' | 'formula' | 'function' | 'end' | 'substanceOnly' | 'in')? CNAME;
 
 // manual coding of import cname from lark
 CNAME: ('_' | LETTER) ('_' | LETTER | DIGIT)*;

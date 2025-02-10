@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import * as monaco from "monaco-editor";
 import { antimonyLanguage } from "../../language-handler/antlr/AntimonyLanguage";
 import { antimonyTheme } from "../../language-handler/AntimonyTheme";
@@ -9,6 +9,7 @@ import CreateAnnotationModal from "../create-annotation/CreateAnnotationModal";
 import ModelSemanticsChecker from "../../language-handler/ModelSemanticChecker";
 import { IDBPDatabase, DBSchema } from "idb";
 import { SrcPosition, SrcRange } from "../../language-handler/Types";
+import TurndownService from "turndown";
 
 /**
  * @description AntimonyEditorProps interface
@@ -117,6 +118,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       const [varToAnnotate, setVarToAnnotate] =
           useState<{id: string, name: string | undefined} | null>(null);
       const [decorations, setDecorations] = useState<string[]>([]);
+      const turndownService = new TurndownService();
 
       /**
        * @description adds the menu option to create an annotation
@@ -272,6 +274,28 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         }
       };
 
+      const processContent = (content: string) => {
+        const regex = /```([\s\S]*?)```/g;   // Match content inside triple backticks
+
+        let processedContent = content.replace(regex, (match, htmlContent) => {
+          // Check if the content inside the backticks is HTML (simple check)
+          const isHtml = /<\/?[a-z][\s\S]*>/i.test(htmlContent);
+          if (isHtml) {
+            // Convert HTML to Markdown
+            const markdown = turndownService.turndown(htmlContent);
+            const indentedMarkdown = markdown
+              .split('\n')
+              .map(line => `\t\t${line}`) // Add a tab to the beginning of each line
+              .join('\n');
+            return `\`\`\`\n${indentedMarkdown}\n\t\`\`\``;
+          }
+          return match; // Return original if no HTML found
+        });
+      
+        return processedContent
+      };
+
+
       /**
        * @description Loads the editor and sets the language, theme, and content
        */
@@ -291,10 +315,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               .objectStore("files")
               .get(fileName)
               .then((data) => {
-                if (data) {
-                  setNewContent(data.content);
+                if (data) {;
+                  let processedContent = processContent(data.content);
+                  setNewContent(processedContent);
                   window.selectedFile = data.name;
-                  editor.setValue(data.content);
+                  window.antimonyString = processedContent;
                 }
               });
 
@@ -315,11 +340,16 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               value: content,
               language: "antimony",
               automaticLayout: true,
+              wordWrap: 'on',  // Enable word wrap
+              wordWrapColumn: 80,  // Max column width before wrapping
+              wrappingIndent: 'same',
             });
             window.antimonyActive = true;
 
             // Set the antimonyString variable to the editor content
+            editor.setValue(processContent(newContent));
             window.antimonyString = editor.getValue();
+            ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
           }
 
           // Adds the create annotations option to the context menu
@@ -354,27 +384,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           return () => editor.dispose();
         }
       }, [annotUnderlinedOn, content, database, fileName]);
-
-      /**
-       * @description reruns semantic checker in case something related to the highlight color is selected.
-       */
-      useEffect(() => {
-        if (editorInstance) {
-          const { symbolTable, decorations: newDecorations } =
-              ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, decorations);
-          setDecorations(newDecorations);
-        }
-      }, [highlightColor]);
-
-      /**
-       * @description reruns semantic checker in case something related to
-       * the editor changes, or the annotation highlight feature is selected.
-       */
-      useEffect(() => {
-        if (editorInstance) {
-          ModelSemanticsChecker(editorInstance, annotUnderlinedOn, false, highlightColor, decorations);
-        }
-      }, [annotUnderlinedOn, editorInstance]);
 
       /**
        * @description Adds the link action to the editor context menu
@@ -416,11 +425,13 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
        */
       useEffect(() => {
         if (database && editorInstance) {
-          setNewContent(editorInstance.getValue());
+          let processedContent = processContent(editorInstance.getValue());
+          setNewContent(processedContent);
+          // ModelSemanticsChecker(editorInstance, annotUnderlinedOn, true, highlightColor, decorations);
           const transaction = database.transaction("files", "readwrite");
           transaction.objectStore("files").put({
             name: selectedFile,
-            content: newContent,
+            content: processedContent,
           });
         }
       }, [newContent, selectedFile, database, editorInstance]);
@@ -469,24 +480,29 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           }
         });
       };
+      
+      let typingTimer: any;
 
       const handleEditorContentChange = (editor: any) => {
-        // Delay the model parser to avoid parsing while the user is typing
-        let typingTimer: any;
         const delayedModelParser = (editor: monaco.editor.IStandaloneCodeEditor) => {
           clearTimeout(typingTimer);
           typingTimer = setTimeout(() => {
             ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
-          }, 600);
+          }, 100);
         };
-
-        // Parse the model whenever the user types
+      
         editor.onDidChangeModelContent(() => {
-          setNewContent(editor.getValue());
+          let currentContent = editor.getValue()
+          let processedContent = processContent(currentContent);
+
+          if (currentContent !== processedContent) {
+            editor.setValue(processedContent);
+          }
+          setNewContent(processedContent);
           delayedModelParser(editor);
         });
-        ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
       };
+      
 
       return (
           <>
