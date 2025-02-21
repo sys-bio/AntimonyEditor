@@ -23,7 +23,7 @@ var jsAllocateUTF8; //
  */
 function processAntimony() {
   // Grab antimonyString global variable from AntimonyEditor to get ant model string
-  let antimonyString = window.antimonyString;
+  let antimonyString = window.antimonyString; ///hahahaha very funny, the need to sync like 10 different stores of file content NEEDS to be addressed.
   const event = new CustomEvent('grabbedSBMLResult', { detail: window.sbmlResult });
   try {
     libantimony().then((libantimony) => {

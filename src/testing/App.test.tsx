@@ -74,6 +74,56 @@ let searchInput: KeyboardEvent = {
     BUBBLING_PHASE: 3
 }
 
+describe('Antimony annotation keyword grammar parse error tests', function() {
+    it('encodes annotation keyword no parse error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles', 'grammarAnnotationKeywordTestFiles/encodes.txt'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
+    })
+    
+    it('hasPart annotation keyword no parse error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles/grammarAnnotationKeywordTestFiles/', 'hasPart.txt'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
+    })
+    
+    it('hasProperty annotation keyword no parse error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles/grammarAnnotationKeywordTestFiles/', 'hasProperty.txt'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
+    })
+    
+    it('hasTaxon annotation keyword no parse error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles/grammarAnnotationKeywordTestFiles/', 'hasTaxon.txt'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
+    })
+    
+    it('hasVersion annotation keyword no parse error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles/grammarAnnotationKeywordTestFiles/', 'hasVersion.txt'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
+    })
+    
+    it('identity annotation keyword no parse error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles/grammarAnnotationKeywordTestFiles/', 'identity.txt'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
+    })
+    
+    it('isDescribedBy annotation keyword no parse error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles/grammarAnnotationKeywordTestFiles/', 'isDescribedBy.txt'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(false), [])
+    })
+    
+    it('isEncodedBy annotation keyword no parse error', function() {
+        const file1: string = fs.readFileSync(join(__dirname, 'testAntFiles/grammarAnnotationKeywordTestFiles/', 'isEncodedBy.txt'), 'utf-8');
+        const antAnalyzer = new AntimonyProgramAnalyzer(file1, "");
+        assert.deepStrictEqual(antAnalyzer.getErrors(true), [])
+    })
+})
+
 describe('search tests', function() {
     it('empty input test', async () => {
         const result = await searchRhea({} as KeyboardEvent, 0);

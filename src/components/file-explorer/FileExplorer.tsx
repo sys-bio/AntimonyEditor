@@ -1,6 +1,23 @@
 import React, { useEffect, useState, useRef } from "react";
 import "./FileExplorer.css";
 import ContextMenu from "../context-menu/ContextMenu";
+import { DBSchema, IDBPDatabase } from "idb";
+
+/**
+ * @description MyDB interface
+ * @interface
+ * @property {object[]} files - The files object
+ * @property {string} files[].key - The key of the file
+ * @property {object} files[].value - The value of the file
+ * @property {string} files[].value.name - The name of the file
+ * @property {string} files[].value.content - The content of the file
+ */
+interface MyDB extends DBSchema {
+  files: {
+    key: string;
+    value: { name: string; content: string };
+  };
+}
 
 /**
  * @description FileExplorerProps interface
@@ -29,6 +46,7 @@ interface FileExplorerProps {
   setSelectedFileIndex: React.Dispatch<React.SetStateAction<number | null>>;
   selectedFileName: string;
   setSelectedFileName: React.Dispatch<React.SetStateAction<string>>;
+  // database: IDBPDatabase<MyDB>;
 }
 
 /**
@@ -52,6 +70,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   setSelectedFileIndex,
   selectedFileName,
   setSelectedFileName,
+  // database,
 }) => {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [deletedFileIndex, setDeletedFileIndex] = useState(null);
@@ -67,6 +86,17 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
    * @param fileName - The name of the file
    */
   const handleFileButtonClick = (index: number, fileName: string) => {
+    if (selectedFileIndex !== null) {
+      setFiles((prevFiles) => {
+        const updatedFiles = [...prevFiles];
+        updatedFiles[selectedFileIndex] = {
+          ...updatedFiles[selectedFileIndex],
+          content: window.localStorage.getItem("current_file")!!, // Save the currently edited content
+        };
+        return updatedFiles;
+      });
+    }
+
     onFileClick(files[index].content, fileName, index);
   };
 
