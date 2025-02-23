@@ -81,6 +81,7 @@ declare global {
     processAntimony?: () => void; // Define the processAntimony function
     processSBML?: () => void; // Define the processSBML function
     selectedFile: string; // Define the selectedFile variable
+    libsbml: any; // Define the libsbml variable
   }
 }
 
@@ -107,7 +108,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
        highlightColor
      }) => {
       const editorRef = useRef<HTMLDivElement | null>(null);
-      const modalRef = useRef<HTMLDivElement>(null);
       const [loading, setLoading] = useState<boolean>(false);
       const [isModalVisible, setModalVisible] = useState<boolean>(false);
       const [chosenModel, setChosenModel] = useState<string | null>(null);
@@ -519,18 +519,15 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             </div>
             <div className="code-editor" ref={editorRef}></div>
             {isModalVisible && (
-                <div ref={modalRef}>
-                  <CreateAnnotationModal
-                      onClose={() => setModalVisible(false)}
-                      annotationAddPosition={annotationAddPosition}
-                      editorInstance={editorInstance}
-                      varToAnnotate={varToAnnotate}
-                  />
-                </div>
+              <CreateAnnotationModal
+                  onClose={() => setModalVisible(false)}
+                  annotationAddPosition={annotationAddPosition}
+                  editorInstance={editorInstance}
+                  varToAnnotate={varToAnnotate}
+              />
             )}
           </>
       );
     };
 
 export default AntimonyEditor;
-

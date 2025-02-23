@@ -336,6 +336,7 @@ module.exports = function (webpackEnv) {
         ]),
       ],
       fallback: {
+        "path": require.resolve("path-browserify"),
         "stream": require.resolve("stream-browserify"),
       }
     },
