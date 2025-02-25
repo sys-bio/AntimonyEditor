@@ -52,6 +52,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   setSelectedFileIndex,
   selectedFileName,
   setSelectedFileName,
+  // database,
 }) => {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [deletedFileIndex, setDeletedFileIndex] = useState(null);
@@ -67,6 +68,17 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
    * @param fileName - The name of the file
    */
   const handleFileButtonClick = (index: number, fileName: string) => {
+    if (selectedFileIndex !== null) {
+      setFiles((prevFiles) => {
+        const updatedFiles = [...prevFiles];
+        updatedFiles[selectedFileIndex] = {
+          ...updatedFiles[selectedFileIndex],
+          content: window.localStorage.getItem("current_file")!!, // Save the currently edited content
+        };
+        return updatedFiles;
+      });
+    }
+
     onFileClick(files[index].content, fileName, index);
   };
 

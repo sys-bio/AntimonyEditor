@@ -433,6 +433,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             name: selectedFile,
             content: processedContent,
           });
+          window.localStorage.setItem("current_file", processedContent);
+          window.antimonyString = processedContent;
         }
       }, [newContent, selectedFile, database, editorInstance]);
 
@@ -499,6 +501,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             editor.setValue(processedContent);
           }
           setNewContent(processedContent);
+          window.localStorage.setItem("current_file", processedContent);
+          window.antimonyString = processedContent;
           delayedModelParser(editor);
         });
       };
