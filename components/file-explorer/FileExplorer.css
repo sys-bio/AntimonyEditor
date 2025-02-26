@@ -1,0 +1,46 @@
+.file-explorer {
+  height: 92%;
+  overflow: auto;
+}
+
+.file-explorer ul {
+  list-style: none;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  flex-direction: column;
+  font-size: 0;
+  padding: 0px 10px;
+}
+
+.file-btn:hover,
+.file-btn.selected {
+  color: white;
+  background-color: #464646;
+}
+
+.file-btn {
+  background-color: #1c1c1c;
+  border-radius: 2px;
+  display: inline-block;
+  font-weight: normal !important;
+  line-height: 1.2;
+  margin-left: 3px;
+  padding: 2px 7px;
+  position: relative;
+  text-align: center;
+  text-decoration: none !important;
+  text-overflow: ellipsis;
+  text-shadow: none;
+  white-space: nowrap;
+  color: white;
+  padding: 5px;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+}
+
+.rename-input {
+  font-size: 16px;
+  margin: 2px 0;
+}
