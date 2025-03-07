@@ -118,6 +118,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       const [varToAnnotate, setVarToAnnotate] =
           useState<{id: string, name: string | undefined} | null>(null);
       const [decorations, setDecorations] = useState<string[]>([]);
+      const [searchMode, setSearchMode] = useState<'standard' | 'model_number'>('standard');
       const turndownService = new TurndownService();
 
       /**
@@ -507,30 +508,46 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         });
       };
       
+      /**
+       * Tracks the current selected biomodel search mode,
+       * this does not do anything yet.
+       * @param e 
+       */
+      const handleBiomodelSearchModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSearchMode(e.target.value as 'standard' | 'model_number');
+      };
 
       return (
-          <>
-            <div className="search-container">
-              {/* <button className='button' onClick={save}> Save Changes </button> */}
-              {/* <CustomButton name={'Insert Rate Law'} /> */}
-              <Loader loading={loading} />
-              <div>
-                <input id="biomodel-browse" type="text" placeholder="Search biomodels" />
+        <>
+          <div className="search-container">
+            <Loader loading={loading} />
+            <div className="search-input-group">
+              <select id="search-mode" defaultValue="standard" onChange={handleBiomodelSearchModeChange}>
+                <option value="standard">Standard Search</option>
+                <option value="model_number">Model Number Search</option>
+              </select>
+              <div className="input-wrapper">
+                <input
+                  id="biomodel-browse"
+                  type="text"
+                  placeholder="Search biomodels"
+                />
                 <div id="biomddropdown">
                   <ul />
                 </div>
               </div>
             </div>
-            <div className="code-editor" ref={editorRef}></div>
-            {isModalVisible && (
-              <CreateAnnotationModal
-                  onClose={() => setModalVisible(false)}
-                  annotationAddPosition={annotationAddPosition}
-                  editorInstance={editorInstance}
-                  varToAnnotate={varToAnnotate}
-              />
-            )}
-          </>
+          </div>
+          <div className="code-editor" ref={editorRef}></div>
+          {isModalVisible && (
+            <CreateAnnotationModal
+              onClose={() => setModalVisible(false)}
+              annotationAddPosition={annotationAddPosition}
+              editorInstance={editorInstance}
+              varToAnnotate={varToAnnotate}
+            />
+          )}
+        </>
       );
     };
 
