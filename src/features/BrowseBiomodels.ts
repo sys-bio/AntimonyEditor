@@ -68,6 +68,9 @@ function formatBiomdNumber(number: number): string {
 /**
  * Function to search for models using the cached data
  * @param {KeyboardEvent} search - The search event
+ * @param {string} searchmode - a string input that is one of `standard` || `model_number`.
+ *                              `standard` search is normal biomodel search, `model_number`
+ *                              search will, given a number X search for biomodel ID: BIOMD000000000X
  * @returns {Promise<Models>} - A promise containing the models returned by the search
  */
 export async function searchModels(search: KeyboardEvent, searchMode: string) {
