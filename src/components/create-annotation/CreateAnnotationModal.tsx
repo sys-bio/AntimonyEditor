@@ -2,7 +2,12 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import "./CreateAnnotationModal.css";
 import * as monaco from "monaco-editor";
 
-import { getChebi, getUniProt, getRhea, getOntology } from "../../features/AnnotationSearch";
+import {
+  getChebi,
+  getUniProt,
+  getRhea,
+  getOntology,
+} from "../../features/AnnotationSearch";
 import { SrcPosition } from "../../language-handler/Types";
 
 /**
@@ -140,8 +145,11 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
   const [step, setStep] = useState<number>(1);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [chosenDatabase, setChosenDatabase] = useState<Database | null>(null);
-  const [databaseSearchResults, setDatabaseSearchResults] = useState<Database[]>(databases);
-  const [annotationSearchResults, setAnnotationSearchResults] = useState<AnnotationInfo[]>([]);
+  const [databaseSearchResults, setDatabaseSearchResults] =
+    useState<Database[]>(databases);
+  const [annotationSearchResults, setAnnotationSearchResults] = useState<
+    AnnotationInfo[]
+  >([]);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const chebiRef = useRef<HTMLInputElement>(null);
@@ -185,7 +193,10 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(event.target as Node)
+      ) {
         onClose(); // Close the modal if the click is outside the modal
       }
     };
@@ -205,8 +216,12 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
     if (step === 1) {
       const filtered = databases.filter(
         (database) =>
-          database.label.toLowerCase().includes(event.target.value.toLowerCase()) ||
-          database.detail.toLowerCase().includes(event.target.value.toLowerCase())
+          database.label
+            .toLowerCase()
+            .includes(event.target.value.toLowerCase()) ||
+          database.detail
+            .toLowerCase()
+            .includes(event.target.value.toLowerCase())
       );
       setDatabaseSearchResults(filtered);
     }
@@ -214,7 +229,7 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
 
   /**
    * Handles the case where for annotation a data base has been selected
-   * Here we want to be able to start querying the chosen database. 
+   * Here we want to be able to start querying the chosen database.
    * @description Handle selecting a database
    */
   const handleSelectDatabase = (database: Database) => {
@@ -233,15 +248,14 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
     setAnnotationSearchResults([]);
   };
 
-
   /**
    * Given a string, will return a modified version as shown below
    * "__A__B_C__" => "A B C"
-   * @param str 
+   * @param str
    */
   const removeUnderScores = (str: string) => {
-    return str.replace(/^_+|_+$/g, '').replace(/_+/g, ' ');
-  }
+    return str.replace(/^_+|_+$/g, "").replace(/_+/g, " ");
+  };
 
   /**
    * @description Reset to Step 1
@@ -274,14 +288,27 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
     }
 
     // total number of lines in the editor currently
-    let lineCount: number | undefined = editorInstance?.getModel()?.getLineCount();
+    let lineCount: number | undefined = editorInstance
+      ?.getModel()
+      ?.getLineCount();
 
     // setup the edits/operations the editor should perform.
     let comment = "//" + annotation.name;
-    let text = spaces + varToAnnotate?.id + ' identity "' + annotation.link + "\";" + comment;
+    let text =
+      spaces +
+      varToAnnotate?.id +
+      ' identity "' +
+      annotation.link +
+      '";' +
+      comment;
     let selection = new monaco.Range(line, 0, line, 0);
     let id = { major: 1, minor: 1 };
-    let op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
+    let op = {
+      identifier: id,
+      range: selection,
+      text: text,
+      forceMoveMarkers: true,
+    };
 
     if (lineCount && line > lineCount) {
       // line to insert is more than existing lines in editor
@@ -347,78 +374,92 @@ const CreateAnnotationModal: React.FC<CreateAnnotationModalProps> = ({
       return (
         <span className="annotationEC">
           Organism: {annotation.organism.scientificName}
-          {annotation.organism.commonName && " (" + annotation.organism.commonName + ")"}
+          {annotation.organism.commonName &&
+            " (" + annotation.organism.commonName + ")"}
         </span>
       );
     }
   };
 
   return (
-    <div className="annot-modal" ref={modalRef} onClick={(e) => e.stopPropagation()}>
-      <div className="modal-title-container">
-        {step === 2 && (
-          <button className="back-button" onClick={handleBack}>
-            Back
-          </button>
-        )}
-        <div className="modal-title">
-          {step === 2 && `${chosenDatabase?.label} (${step}/${TOTAL_STEPS})`}
-          {step === 1 && `Create Annotation (${step}/${TOTAL_STEPS})`}
+    <>
+      <div className="shadow-background" />
+      <div
+        className="annot-modal"
+        ref={modalRef}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-title-container">
+          {step === 2 && (
+            <button className="back-button" onClick={handleBack}>
+              Back
+            </button>
+          )}
+          <div className="modal-title">
+            {step === 2 && `${chosenDatabase?.label} (${step}/${TOTAL_STEPS})`}
+            {step === 1 && `Create Annotation (${step}/${TOTAL_STEPS})`}
+          </div>
+          {step === 2 && <div className="filler" />}
         </div>
-        {step === 2 && <div className="filler" />}
-      </div>
 
-      {step === 1 && (
-        <input
-          id="annot-browse"
-          type="text"
-          value={searchTerm}
-          onChange={handleSearch}
-          placeholder="Pick a database to query"
-        />
-      )}
-
-      {step === 2 && chosenDatabase && (
-        <input
-          id="annot-browse"
-          type="text"
-          value={searchTerm}
-          onChange={handleSearch}
-          placeholder="Enter query"
-          ref={refs[chosenDatabase.id]}
-        />
-      )}
-
-      <ul className="annot-results">
-        {loading ? (
-          <li className="loading">Loading...</li>
-        ) : step === 1 ? (
-          databaseSearchResults.map((database: Database) => (
-            <li key={database.id} onClick={() => handleSelectDatabase(database)}>
-              {database.label}
-              <div className="database-detail">{database.detail}</div>
-            </li>
-          ))
-        ) : (
-          annotationSearchResults.map((annotation: AnnotationInfo) => (
-            <li
-              key={annotation.id}
-              className={annotation.id}
-              onClick={(e) =>
-                annotation.id === "unable-to-retrieve" || annotation.id === "no-results-found"
-                  ? e.preventDefault()
-                  : handleCreateAnnotation(annotation)
-              }
-            >
-              <span className="annotationName">{annotation.name}</span>
-              <span className="annotationDescription">{annotation.description}</span>
-              {handleRheaSearchResults(annotation)}
-              {handleUniProtSearchResults(annotation)}
-            </li>
-          ))
+        {step === 1 && (
+          <input
+            id="annot-browse"
+            type="text"
+            value={searchTerm}
+            onChange={handleSearch}
+            placeholder="Pick a database to query"
+          />
         )}
-      </ul>
-    </div>
+
+        {step === 2 && chosenDatabase && (
+          <input
+            id="annot-browse"
+            type="text"
+            value={searchTerm}
+            onChange={handleSearch}
+            placeholder="Enter query"
+            ref={refs[chosenDatabase.id]}
+          />
+        )}
+
+        <ul className="annot-results">
+          {loading ? (
+            <li className="loading">Loading...</li>
+          ) : step === 1 ? (
+            databaseSearchResults.map((database: Database) => (
+              <li
+                key={database.id}
+                onClick={() => handleSelectDatabase(database)}
+              >
+                {database.label}
+                <div className="database-detail">{database.detail}</div>
+              </li>
+            ))
+          ) : (
+            annotationSearchResults.map((annotation: AnnotationInfo) => (
+              <li
+                key={annotation.id}
+                className={annotation.id}
+                onClick={(e) =>
+                  annotation.id === "unable-to-retrieve" ||
+                  annotation.id === "no-results-found"
+                    ? e.preventDefault()
+                    : handleCreateAnnotation(annotation)
+                }
+              >
+                <span className="annotationName">{annotation.name}</span>
+                <span className="annotationDescription">
+                  {annotation.description}
+                </span>
+                {handleRheaSearchResults(annotation)}
+                {handleUniProtSearchResults(annotation)}
+              </li>
+            ))
+          )}
+        </ul>
+      </div>
+    </>
   );
 };
 
