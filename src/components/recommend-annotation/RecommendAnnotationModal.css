@@ -1,0 +1,87 @@
+.annot-modal {
+  width: 900px;
+}
+
+.annot-arguments-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0px;
+  color: #d4d4d4;
+  outline: none;
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}
+
+.annot-argument-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+#cutoffInput,
+#msscInput {
+  width: 100px;
+  box-sizing: border-box;
+}
+
+.annot-recommend-button {
+  cursor: pointer;
+  text-align: center;
+  padding: 5px;
+  background-color: #333;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.annot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 2fr 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0px;
+  box-sizing: border-box;
+  max-height: 600px;
+  overflow-y: auto;
+  font-size: 10px;
+}
+
+.annot-grid-header-container {
+  display: contents;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 10px;
+}
+
+.annot-grid-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: bold;
+  padding: 5px;
+  border-bottom: 2px solid #ddd;
+}
+
+.annot-grid-row {
+  display: contents;
+  border-bottom: 1px solid #ddd;
+  padding: 10px 0;
+}
+
+.annot-grid-item {
+  text-align: left;
+  padding: 5px;
+}
+
+.sortable-header {
+  cursor: pointer;
+}
+
+.low-match {
+  color: #ff6666;
+}

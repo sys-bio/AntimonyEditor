@@ -80,6 +80,8 @@ declare global {
     conversion: string; // Define the conversion variable
     processAntimony?: () => void; // Define the processAntimony function
     processSBML?: () => void; // Define the processSBML function
+    convertAntimonyToSBML?: ( antimonyString: string ) => Promise<string> // Define the convertAntimonyToSBML function
+    convertSBMLToAntimony?: ( sbmlString: string ) => Promise<string> // Define the convertSBMLToAntimony function
     selectedFile: string; // Define the selectedFile variable
     libsbml: any; // Define the libsbml variable
   }
@@ -348,7 +350,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             window.antimonyActive = true;
 
             // Set the antimonyString variable to the editor content
-            editor.setValue(processContent(newContent));
+            editor.setValue(processContent(content));
             window.antimonyString = editor.getValue();
             ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
           }

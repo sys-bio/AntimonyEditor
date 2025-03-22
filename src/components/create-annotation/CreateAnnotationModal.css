@@ -1,8 +1,19 @@
+.shadow-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 999;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
 .annot-modal {
   position: fixed;
   top: 0;
   left: 50%;
   transform: translate(-50%, 0);
+  border: 1px solid #ccc;
   border-radius: 5px;
   background-color: #1e1e1e;
   color: #d4d4d4;
@@ -105,13 +116,9 @@
 }
 
 .ecLink:visited {
-  color:#0000EE;
+  color: #0000ee;
 }
 
-/* .ecLink:link {
-  color: #30d5c8;
-} */
-
-ecLink:hover {
-  color:#272eb5;
+.ecLink:hover {
+  color: #272eb5;
 }

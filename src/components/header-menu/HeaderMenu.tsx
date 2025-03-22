@@ -1,10 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./HeaderMenu.css";
 
+import { MyDB } from "../../App";
+import RecommendAnnotationModal from "../recommend-annotation/RecommendAnnotationModal";
+
+import { IDBPDatabase } from "idb";
+
 /**
  * @description HeaderMenuProps interface
  * @interface
- * @property {string} fileName - The current select file
+ * @property {IDBPDatabase<MyDB> | null | undefined} db - The database
+ * @property {function} setDb - Set the database
+ * @property {string} fileName - The name of the current selected file
+ * @property {string} fileContent - The contents of the current selected file
+ * @property {function} setFileContent - Sets the file content
+ * @property {function} setUploadedFiles - Sets the uploaded files
  * @property {function} handleConversionAntimony - Handle the Antimony to SBML file conversion process
  * @property {function} handleConversionSBML - Handle the SBML to Antimony file conversion
  * @property {function} handleFileDownload - Handle the file download
@@ -12,19 +22,31 @@ import "./HeaderMenu.css";
  * @property {function} handleNewFile - Handle a new file
  */
 interface HeaderMenuProps {
+  db: IDBPDatabase<MyDB> | null | undefined;
+  setDb: (database: IDBPDatabase<MyDB> | null) => void;
   fileName: string;
+  fileContent: string;
+  setFileContent: (fileContent: string) => void;
+  setUploadedFiles: (files: { name: string; content: string }[]) => void;
   handleConversionAntimony: () => void;
   handleConversionSBML: () => void;
   handleFileDownload: () => void;
-  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  handleFileUpload: (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => Promise<void>;
   handleNewFile: (handleNewFile: string) => Promise<void>;
-  setHighlightColor: (color: string) => void
-  colors: { name: string; color: string}[];
+  setHighlightColor: (color: string) => void;
+  colors: { name: string; color: string }[];
 }
 
 /**
  * @description HeaderMenu component
+ * @param db - HeaderMenuProp
+ * @param setDb - HeaderMenuProp
  * @param fileName - HeaderMenuProp
+ * @param fileContent - HeaderMenuProp
+ * @param setFileContent - HeaderMenuProp
+ * @param setUploadedFiles - setUploadedFiles
  * @param handleConversionAntimony - HeaderMenuProp
  * @param handleConversionSBML - HeaderMenuProp
  * @param handleFileDownload - HeaderMenuProp
@@ -39,18 +61,26 @@ interface HeaderMenuProps {
  * @returns - HeaderMenu component
  */
 const HeaderMenu: React.FC<HeaderMenuProps> = ({
+  db,
+  setDb,
   fileName,
+  fileContent,
+  setFileContent,
+  setUploadedFiles,
   handleConversionAntimony,
   handleConversionSBML,
   handleFileDownload,
   handleFileUpload,
   handleNewFile,
   setHighlightColor,
-  colors
+  colors,
 }) => {
-  const [dropdownVisible, setDropdownVisible] = useState("");
-  const [subDropdownVisible, setSubDropdownVisible] = useState("");
-  const [colorDropdownVisible, setColorDropdownVisible] = useState("");
+  const [dropdownVisible, setDropdownVisible] = useState<string>("");
+  const [subDropdownVisible, setSubDropdownVisible] = useState<string>("");
+  const [colorDropdownVisible, setColorDropdownVisible] = useState<string>("");
+  const [convertedFileContent, setConvertedFileContent] = useState<string>("");
+  const [isConverted, setIsConverted] = useState<boolean>(false);
+  const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,7 +90,10 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
    */
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setDropdownVisible("");
         setSubDropdownVisible("");
         setColorDropdownVisible("");
@@ -72,6 +105,39 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
       document.removeEventListener("mousedown", handleOutsideClick);
     };
   }, [dropdownRef]);
+
+  /**
+   * @description Handles the file annotation process.
+   *              It checks the file type and either opens a modal or converts an Antimony file to SBML before opening the modal.
+   */
+  const handleAnnotateClick = async () => {
+    setDropdownVisible("");
+
+    if (fileName.endsWith(".xml")) {
+      setModalVisible(true);
+    } else if (fileName.endsWith(".ant")) {
+      try {
+        if (window.convertAntimonyToSBML) {
+          setConvertedFileContent(
+            await window.convertAntimonyToSBML(window.antimonyString)
+          );
+          setIsConverted(true);
+          setModalVisible(true);
+        } else {
+          console.error(
+            "convertAntimonyToSBML function not found in the global scope."
+          );
+        }
+      } catch (err) {
+        console.error("Error during Antimony to SBML conversion:", err);
+      }
+    } else {
+      // If the file is neither .xml nor .ant
+      alert(
+        "Invalid file type.\nOnly AMAS (.ant) and SBML (.xml) files can be annotated using AMAS."
+      );
+    }
+  };
 
   /**
    * @description Handle menu option click to toggle the visibility of the dropdown menu.
@@ -167,181 +233,237 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   }, [handleFileUpload, handleNewFile]);
 
   return (
-    <header ref={dropdownRef}>
-      <h1 className="title">Antimony Web Editor</h1>
-      <input
-        ref={fileInputRef}
-        id="file-upload"
-        type="file"
-        multiple
-        onChange={handleFileUpload}
-        accept=".ant,.xml,.txt"
-      />
-      <nav>
-        <ul className="header-menu">
-          <li
-            className={`header-menu-item ${dropdownVisible === "file" && "header-menu-selected"}`}
-            onClick={() => handleMenuOptionClick("file")}
-            onMouseEnter={() => handleMenuOptionHover("file")}
-          >
-            File
-            {dropdownVisible === "file" && (
-              <ul
-                className="header-menu-dropdown"
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              >
-                <li>
-                  <div
-                    className="header-menu-command"
+    <>
+      <header ref={dropdownRef}>
+        <h1 className="title">Antimony Web Editor</h1>
+        <input
+          ref={fileInputRef}
+          id="file-upload"
+          type="file"
+          multiple
+          onChange={handleFileUpload}
+          accept=".ant,.xml,.txt"
+        />
+        <nav>
+          <ul className="header-menu">
+            <li
+              className={`header-menu-item ${
+                dropdownVisible === "file" && "header-menu-selected"
+              }`}
+              onClick={() => handleMenuOptionClick("file")}
+              onMouseEnter={() => handleMenuOptionHover("file")}
+            >
+              File
+              {dropdownVisible === "file" && (
+                <ul
+                  className="header-menu-dropdown"
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                >
+                  <li>
+                    <div
+                      className="header-menu-command"
+                      onClick={() => {
+                        setDropdownVisible("");
+                        handleNewFile("untitled.ant");
+                      }}
+                    >
+                      <div>New File</div>
+                      <div>Alt+N</div>
+                    </div>
+                  </li>
+                  <li
                     onClick={() => {
                       setDropdownVisible("");
-                      handleNewFile("untitled.ant");
+                      fileInputRef.current?.click();
                     }}
                   >
-                    <div>New File</div>
-                    <div>Alt+N</div>
-                  </div>
-                </li>
-                <li
-                  onClick={() => {
-                    setDropdownVisible("");
-                    fileInputRef.current?.click();
-                  }}
+                    <div className="header-menu-command">
+                      <div>Open File(s)</div>
+                      <div>Ctrl+O</div>
+                    </div>
+                  </li>
+                  <li
+                    onClick={() => {
+                      setDropdownVisible("");
+                      handleFileDownload();
+                    }}
+                  >
+                    <div className="header-menu-command">Save to Downloads</div>
+                  </li>
+                  <hr />
+                  <li
+                    onClick={() => {
+                      setDropdownVisible("");
+                      if (fileName.endsWith(".ant")) {
+                        handleConversionAntimony();
+                      } else {
+                        alert(
+                          "Invalid file type.\nOnly Antimony (.ant) files can be converted to SBML (.xml)."
+                        );
+                      }
+                    }}
+                  >
+                    <div className="header-menu-command">
+                      Convert Antimony → SBML
+                    </div>
+                  </li>
+                  <li
+                    onClick={() => {
+                      setDropdownVisible("");
+                      if (fileName.endsWith(".xml")) {
+                        handleConversionSBML();
+                      } else {
+                        alert(
+                          "Invalid file type.\nOnly SBML (.xml) files can be converted to Antimony (.ant)."
+                        );
+                      }
+                    }}
+                  >
+                    <div className="header-menu-command">
+                      Convert SBML → Antimony
+                    </div>
+                  </li>
+                </ul>
+              )}
+            </li>
+            <li
+              className={`header-menu-item ${
+                dropdownVisible === "annotate" && "header-menu-selected"
+              }`}
+              onClick={() => handleMenuOptionClick("annotate")}
+              onMouseEnter={() => handleMenuOptionHover("annotate")}
+            >
+              Annotate
+              {dropdownVisible === "annotate" && (
+                <ul
+                  className="header-menu-dropdown"
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
-                  <div className="header-menu-command">
-                    <div>Open File(s)</div>
-                    <div>Ctrl+O</div>
-                  </div>
-                </li>
-                <li
-                  onClick={() => {
-                    setDropdownVisible("");
-                    handleFileDownload();
-                  }}
+                  <li onClick={handleAnnotateClick}>
+                    <div className="header-menu-command">
+                      Recommend Annotations for All
+                    </div>
+                  </li>
+                </ul>
+              )}
+            </li>
+            <li
+              className={`header-menu-item ${
+                dropdownVisible === "settings" && "header-menu-selected"
+              }`}
+              onClick={() => handleMenuOptionClick("settings")}
+              onMouseEnter={() => handleMenuOptionHover("settings")}
+            >
+              Settings
+              {dropdownVisible === "settings" && (
+                <ul
+                  className="header-menu-dropdown"
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
-                  <div className="header-menu-command">Save to Downloads</div>
-                </li>
-                <hr />
-                <li
-                  onClick={() => {
-                    setDropdownVisible("");
-                    if (fileName.endsWith(".ant")) {
-                      handleConversionAntimony();
-                    } else {
-                      alert(
-                        "Invalid file type.\nOnly Antimony (.ant) files can be converted to SBML (.xml)."
-                      );
-                    }
-                  }}
-                >
-                  <div className="header-menu-command">Convert Antimony → SBML</div>
-                </li>
-                <li
-                  onClick={() => {
-                    setDropdownVisible("");
-                    if (fileName.endsWith(".xml")) {
-                      handleConversionSBML();
-                    } else {
-                      alert(
-                        "Invalid file type.\nOnly SBML (.xml) files can be converted to Antimony (.ant)."
-                      );
-                    }
-                  }}
-                >
-                  <div className="header-menu-command">Convert SBML → Antimony</div>
-                </li>
-              </ul>
-            )}
-          </li>
-          <li
-            className={`header-menu-item ${dropdownVisible === "settings" && "header-menu-selected"}`}
-            onClick={() => handleMenuOptionClick("settings")}
-            onMouseEnter={() => handleMenuOptionHover("settings")}
-          >
-            Settings
-            {dropdownVisible === "settings" && (
-              <ul
-                className="header-menu-dropdown"
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              >
-                <li
-                  onMouseEnter={() => handleSubMenuOptionHover("color")}
-                  onMouseLeave={() => handleSubMenuOptionLeave("color")}
-                >
-                  <div className="header-menu-command">
-                    <div className="menu-text">Color</div>
-                    <div className="arrow-icon">&#9658;</div>
-                  </div>
-                  {subDropdownVisible === "color" && (
-                    <ul className="sub-menu-dropdown"
-                      onMouseEnter={() => handleSubMenuOptionHover("color")}
-                      onMouseLeave={() => handleSubMenuOptionLeave("color")}
-                    >
-                      <li
-                        onMouseEnter={() => handleColorOptionHover("highlight")}
-                        onMouseLeave={() => handleColorOptionLeave("highlight")}
+                  <li
+                    onMouseEnter={() => handleSubMenuOptionHover("color")}
+                    onMouseLeave={() => handleSubMenuOptionLeave("color")}
+                  >
+                    <div className="header-menu-command">
+                      <div className="menu-text">Color</div>
+                      <div className="arrow-icon">&#9658;</div>
+                    </div>
+                    {subDropdownVisible === "color" && (
+                      <ul
+                        className="sub-menu-dropdown"
+                        onMouseEnter={() => handleSubMenuOptionHover("color")}
+                        onMouseLeave={() => handleSubMenuOptionLeave("color")}
                       >
-                        <div className="header-menu-command">
-                          <div className="menu-text">Highlight</div>
-                          <div className="arrow-icon">&#9658;</div>
-                        </div>
-                        {colorDropdownVisible === "highlight" && (
-                          <ul className="sub-menu-dropdown">
-                            {colors.map((color, index) => (
-                              <li
-                                key={index}
-                                onClick={() => {setHighlightColor(color.color);
-                                                handleAllDropdownsHidden()}}>
-                                <div className="color-option">
-                                  {color.name}
-                                  <div className="color-square" style={{ backgroundColor: color.color }}></div>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    </ul>
-                  )}
-                </li>
-              </ul>
-            )}
-          </li>
-          <li
-            className={`header-menu-item ${dropdownVisible === "help" && "header-menu-selected"}`}
-            onClick={() => handleMenuOptionClick("help")}
-            onMouseEnter={() => handleMenuOptionHover("help")}
-          >
-            Help
-            {dropdownVisible === "help" && (
-              <ul
-                className="header-menu-dropdown"
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              >
-                <li onClick={() => setDropdownVisible("")}>
-                  <a
-                    href="https://github.com/sys-bio/AntimonyEditor"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Documentation
-                  </a>
-                </li>
-                <li onClick={() => setDropdownVisible("")}>
-                  <a
-                    href="https://github.com/sys-bio/AntimonyEditor/issues"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Report Issue
-                  </a>
-                </li>
-              </ul>
-            )}
-          </li>
-        </ul>
-      </nav>
-    </header>
+                        <li
+                          onMouseEnter={() =>
+                            handleColorOptionHover("highlight")
+                          }
+                          onMouseLeave={() =>
+                            handleColorOptionLeave("highlight")
+                          }
+                        >
+                          <div className="header-menu-command">
+                            <div className="menu-text">Highlight</div>
+                            <div className="arrow-icon">&#9658;</div>
+                          </div>
+                          {colorDropdownVisible === "highlight" && (
+                            <ul className="sub-menu-dropdown">
+                              {colors.map((color, index) => (
+                                <li
+                                  key={index}
+                                  onClick={() => {
+                                    setHighlightColor(color.color);
+                                    handleAllDropdownsHidden();
+                                  }}
+                                >
+                                  <div className="color-option">
+                                    {color.name}
+                                    <div
+                                      className="color-square"
+                                      style={{ backgroundColor: color.color }}
+                                    ></div>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </li>
+                      </ul>
+                    )}
+                  </li>
+                </ul>
+              )}
+            </li>
+            <li
+              className={`header-menu-item ${
+                dropdownVisible === "help" && "header-menu-selected"
+              }`}
+              onClick={() => handleMenuOptionClick("help")}
+              onMouseEnter={() => handleMenuOptionHover("help")}
+            >
+              Help
+              {dropdownVisible === "help" && (
+                <ul
+                  className="header-menu-dropdown"
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                >
+                  <li onClick={() => setDropdownVisible("")}>
+                    <a
+                      href="https://github.com/sys-bio/AntimonyEditor"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Documentation
+                    </a>
+                  </li>
+                  <li onClick={() => setDropdownVisible("")}>
+                    <a
+                      href="https://github.com/sys-bio/AntimonyEditor/issues"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Report Issue
+                    </a>
+                  </li>
+                </ul>
+              )}
+            </li>
+          </ul>
+        </nav>
+      </header>
+      {isModalVisible && (
+        <RecommendAnnotationModal
+          db={db}
+          setDb={setDb}
+          onClose={() => setModalVisible(false)}
+          fileName={fileName}
+          fileContent={isConverted ? convertedFileContent : fileContent}
+          setFileContent={setFileContent}
+          setUploadedFiles={setUploadedFiles}
+          isConverted={isConverted}
+        />
+      )}
+    </>
   );
 };
 

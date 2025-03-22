@@ -21,7 +21,7 @@ import { Split } from "@geoffcox/react-splitter";
  * @property {string} files[].value.name - The name of the file
  * @property {string} files[].value.content - The content of the file
  */
-interface MyDB extends DBSchema {
+export interface MyDB extends DBSchema {
   files: {
     key: string;
     value: { name: string; content: string };
@@ -375,7 +375,12 @@ const App: React.FC = () => {
   return (
     <div className="app">
       <HeaderMenu
+        db={db}
+        setDb={setDb}
         fileName={selectedFileName}
+        fileContent={selectedFileContent}
+        setFileContent={setSelectedFileContent}
+        setUploadedFiles={setUploadedFiles}
         handleConversionAntimony={handleConversionAntimony}
         handleConversionSBML={handleConversionSBML}
         handleFileDownload={handleFileDownload}
