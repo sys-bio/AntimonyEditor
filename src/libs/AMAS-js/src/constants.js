@@ -54,7 +54,9 @@ const REF_RHEA2LABEL = await loadJSON("/public/files/rhea2label_jan2025.json");
 const REF_RHEA2ECKEGG = await loadJSON("/public/files/mrhea2eckegg_jan2025.json");
 
 // Used in species_annotation.js
-const CHARCOUNT_NP = await loadJSON("/public/files/charcount_scaled_np_jan2025.json");
+const charcount_np_part1 = await loadJSON("/public/files/charcount_scaled_part1_np_jan2025.json");
+const charcount_np_part2 = await loadJSON("/public/files/charcount_scaled_part2_np_jan2025.json");
+const CHARCOUNT_NP = charcount_np_part1.concat(charcount_np_part2);
 const CHEBI_NP = await loadJSON("/public/files/charcount_chebi_scaled_np_jan2025.json");
 
 // Used in reaction_annotation.js
