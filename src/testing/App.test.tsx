@@ -125,17 +125,17 @@ describe('Antimony annotation keyword grammar parse error tests', function() {
 })
 
 describe('search tests', function() {
-    it('empty input test', async () => {
-        const result = await searchRhea({} as KeyboardEvent, 0);
-        assert.strictEqual(result, undefined);
+    it('should have no results when zero results are requested', async () => {
+        const result = await searchRhea(searchInput, 0);
+        assert.deepStrictEqual(result, []);
     })
 
-    it('no input text', async () => {
+    it('should have no results on empty input', async () => {
         const result = await searchRhea(searchInput, 10);
         assert.deepStrictEqual(result, []);
     })
 
-    it('no input text 2', async () => {
+    it('should have no results on empty input 2', async () => {
         (searchInput.target as HTMLInputElement).value = ''
         const result = await searchRhea(searchInput, 1);
         assert.deepStrictEqual(result, []);
