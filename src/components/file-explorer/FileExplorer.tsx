@@ -13,7 +13,8 @@ import ContextMenu from "../context-menu/ContextMenu";
  * @property {string} onFileClick[].content - The content of the file
  * @property {string} onFileClick[].fileName - The name of the file
  * @property {string} onFileClick[].index - The index of the file
- * @property {function} onDeleteFile - The onDeleteFile function that deletes the given file
+ * @property {function} onDeleteFile - The onDeleteFile function that deletes the given file (delete from menu and delete the file)
+ * @property {function} onRemoveFile - The onRemoveFile function that removes the given file (delete from menu)
  * @property {number | null} selectedFileIndex - The index of the currently selected file
  * @property {function} setSelectedFileIndex - The function to set the selectedFileIndex
  * @property {string} selectedFileName - The name of the currently selected file
@@ -25,6 +26,7 @@ interface FileExplorerProps {
   setFiles: React.Dispatch<React.SetStateAction<{ name: string; content: string }[]>>;
   onFileClick: (fileContent: string, fileName: string, index: number) => void;
   onDeleteFile: (fileName: string, deleteFromFileExplorer: boolean) => Promise<void>;
+  onRemoveFile: (fileName: string) => Promise<void>;
   selectedFileIndex: number | null;
   setSelectedFileIndex: React.Dispatch<React.SetStateAction<number | null>>;
   selectedFileName: string;
@@ -37,6 +39,7 @@ interface FileExplorerProps {
  * @param setFiles - FileExplorerProp
  * @param onFileClick - FileExplorerProp
  * @param onDeleteFile - FileExplorerProp
+ * @param onRemoveFile - FileExplorerProp
  * @param selectedFileIndex - FileExplorerProp
  * @param setSelectedFileIndex - FileExplorerProp
  * @param selectedFileName - FileExplorerProp
@@ -48,6 +51,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   setFiles,
   onFileClick,
   onDeleteFile,
+  onRemoveFile,
   selectedFileIndex,
   setSelectedFileIndex,
   selectedFileName,
@@ -168,6 +172,15 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       setNewFileName(selectedFileName);
     } else if (option === "delete" && selectedFileName) {
       await onDeleteFile(selectedFileName, true);
+      if (
+        deletedFileIndex != null &&
+        selectedFileIndex != null &&
+        deletedFileIndex < selectedFileIndex
+      ) {
+        setSelectedFileIndex(selectedFileIndex - 1);
+      }
+    } else if (option === "remove" && selectedFileName) {
+      await onRemoveFile(selectedFileName);
       if (
         deletedFileIndex != null &&
         selectedFileIndex != null &&

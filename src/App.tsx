@@ -302,40 +302,45 @@ const App: React.FC = () => {
   }, []);
 
   /**
-   * @description Deletes the given file
+   * @description Deletes the given file and optionally removes it from the file explorer menu
    * @param fileName - The name of the file to delete
-   * @param deleteFromFileExplorer - Represents whether to delete the file from the file explorer
+   * @param deleteFromFileExplorer - Represents whether to delete the file from the file explorer menu
    */
   const deleteFile = async (fileName: string, deleteFromFileExplorer: boolean) => {
     if (db) {
       await db.delete("files", fileName); // Delete from IndexedDB
 
       if (deleteFromFileExplorer) {
-        const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
-        setUploadedFiles(updatedFiles);
-
-        // NOTE: Currently, a file is selected before it is deleted.
-        //       Therefore, fileName === selectedFileName always holds in this method (for now).
-
-        if (selectedFileIndex === null || updatedFiles.length === 1) {
-          // If last file was deleted, create a new blank file.
-          handleNewFile("untitled.ant");
-        } else if (selectedFileIndex === 1) {
-          // If the selected file is deleted and was the first file, select the new first file.
-          handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
-        } else if (selectedFileIndex === updatedFiles.length) {
-          // If the selected file is deleted and was the last file, select the file before it.
-          const newIndex = selectedFileIndex - 1;
-          handleFileClick(updatedFiles[newIndex].content, updatedFiles[newIndex].name, newIndex);
-        } else {
-          // If the selected file is deleted, select the file now in its place.
-          handleFileClick(
-            updatedFiles[selectedFileIndex].content,
-            updatedFiles[selectedFileIndex].name,
-            selectedFileIndex
-          );
-        }
+        removeFile(fileName);
       }
+    }
+  };
+
+  /**
+   * @description Removes the given file from the file explorer menu
+   * @param fileName - The name of the file to remove
+   */
+  const removeFile = async (fileName: string) => {
+    const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
+    setUploadedFiles(updatedFiles);
+
+    if (selectedFileIndex === null || updatedFiles.length === 1) {
+      // If last file was deleted, create a new blank file.
+      handleNewFile("untitled.ant");
+    } else if (selectedFileIndex === 1) {
+      // If the selected file is deleted and was the first file, select the new first file.
+      handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
+    } else if (selectedFileIndex === updatedFiles.length) {
+      // If the selected file is deleted and was the last file, select the file before it.
+      const newIndex = selectedFileIndex - 1;
+      handleFileClick(updatedFiles[newIndex].content, updatedFiles[newIndex].name, newIndex);
+    } else {
+      // If the selected file is deleted, select the file now in its place.
+      handleFileClick(
+        updatedFiles[selectedFileIndex].content,
+        updatedFiles[selectedFileIndex].name,
+        selectedFileIndex
+      );
     }
   };
 
@@ -406,6 +411,7 @@ const App: React.FC = () => {
               setFiles={setUploadedFiles}
               onFileClick={handleFileClick}
               onDeleteFile={deleteFile}
+              onRemoveFile={removeFile}
               selectedFileIndex={selectedFileIndex}
               setSelectedFileIndex={setSelectedFileIndex}
               selectedFileName={selectedFileName}

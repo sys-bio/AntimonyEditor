@@ -14,6 +14,7 @@ const ContextMenu = React.forwardRef<HTMLDivElement, ContextMenuProps>(
         <ul>
           <li onClick={() => onOptionClick("rename")}>Rename</li>
           <li onClick={() => onOptionClick("delete")}>Delete</li>
+          <li onClick={() => onOptionClick("remove")}>Remove</li>
         </ul>
       </div>
     );
