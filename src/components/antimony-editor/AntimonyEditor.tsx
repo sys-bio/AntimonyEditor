@@ -32,8 +32,9 @@ interface AntimonyEditorProps {
   selectedFilePosition: SrcPosition;
   handleSelectedPosition: (position: SrcPosition) => void;
   handleConversionSBML: () => void;
-  setHighlightColor: (color: string) => void
+  setHighlightColor: (color: string) => void;
   highlightColor: string;
+  addFile: (newFileName: string, newFileContent: string) => Promise<void>;
 }
 
 /**
@@ -107,7 +108,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
        selectedFilePosition,
        handleSelectedPosition,
        handleConversionSBML,
-       highlightColor
+       highlightColor,
+       addFile,
      }) => {
       const editorRef = useRef<HTMLDivElement | null>(null);
       const [loading, setLoading] = useState<boolean>(false);
@@ -278,6 +280,26 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         }
       };
 
+      const loadFile = (fName: string) => {
+        let processedContent: string;
+        database
+              .transaction("files")
+              .objectStore("files")
+              .get(fName)
+              .then((data) => {
+                if (data) {
+                  if (data.content) {
+                    processedContent = processContent(data.content);
+                  } else {
+                    processedContent = "";
+                  }
+                  setInitialContent(processedContent);
+                  window.antimonyString = processedContent;
+                  window.selectedFile = data.name;
+                  setSelectedFile(fName);
+                }})
+      }
+
       const processContent = (content: string) => {
         const regex = /```([\s\S]*?)```/g;   // Match content inside triple backticks
 
@@ -303,41 +325,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
        * @description Initial load of the selected file, retrieve the data, activates loading the editor by setting selectedFile state
        */
       useEffect(() => {
-        let processedContent: string;
-        console.log(fileName);
-        database
-              .transaction("files")
-              .objectStore("files")
-              .get(fileName)
-              .then((data) => {
-                if (data) {
-                  processedContent = processContent(data.content);
-                  setInitialContent(processedContent);
-                  window.antimonyString = processedContent;
-                  window.selectedFile = data.name;
-                  setSelectedFile(fileName);
-                } else {
-                  const transaction = database.transaction("files", "readwrite");
-                  transaction.objectStore("files").put({
-                    name: fileName,
-                    content: (fileName.includes(".xml") ? window.antimonyResult : window.sbmlResult),
-                  }).then(() => {
-                    if (fileName.includes(".xml")) {
-                      processedContent = processContent(window.sbmlResult);
-                      setInitialContent(processedContent)
-                      setSelectedFile(fileName);
-                      window.sbmlString = processedContent;
-                      window.selectedFile = fileName;
-                    } else {
-                      processedContent = processContent(window.antimonyResult);
-                      setInitialContent(processedContent)
-                      setSelectedFile(fileName);
-                      window.antimonyString = processedContent;
-                      window.selectedFile = fileName;
-                    }
-                  })
-                }
-              });
+        loadFile(fileName);
       }, [fileName, database]) 
 
 
@@ -363,7 +351,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             // Create the editor
             editor = monaco.editor.create(editorRef.current, {
               bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
-              value: content,
+              value: initialContent,
               language: "xml",
               automaticLayout: true,
             });
@@ -373,7 +361,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           } else {
             editor = monaco.editor.create(editorRef.current, {
               bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
-              value: content,
+              value: initialContent,
               language: "antimony",
               automaticLayout: true,
               wordWrap: 'on',  // Enable word wrap
@@ -381,9 +369,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               wrappingIndent: 'same',
             });
             window.antimonyActive = true;
-
             // Set the antimonyString variable to the editor content
-            editor.setValue(initialContent);
             window.antimonyString = editor.getValue();
             ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
           }
@@ -472,7 +458,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           window.localStorage.setItem("current_file", processedContent);
           window.antimonyString = processedContent;
         }
-      }, [newContent, editorInstance, database, selectedFile]);
+      }, [newContent]);
 
       /**
        * @description Handles displaying the dropdown when a user searches for a model
@@ -498,7 +484,17 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             window.fileName = model.modelId;
             window.sbmlString = model.sbmlData;
             window.conversion = "biomodels";
-            handleConversionSBML();
+            if (window.convertSBMLToAntimony) {
+              window.convertSBMLToAntimony(model.sbmlData).then((converted) => {
+                addFile(window.fileName + ".ant", (converted ? processContent(converted) : "")).then(() => {
+                  loadFile(window.fileName + ".ant");
+                }); 
+              });
+            } else {
+              console.log("null")
+            }
+            
+            // handleConversionSBML();
             setLoading(false);
           });
         }
