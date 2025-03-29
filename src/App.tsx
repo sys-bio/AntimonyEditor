@@ -151,7 +151,6 @@ const App: React.FC = () => {
       // } else {
       //   console.error("processAntimony function not found in the global scope.");
       // }
-      console.log("converrting")
       if (db) {
         db.transaction("files").objectStore("files").get(selectedFileName).then((data) => {
           if (data) {
@@ -227,19 +226,18 @@ const App: React.FC = () => {
       // } else {
       //   console.error("processSBML function not found in the global scope.");
       // }
-      console.log("converrting")
       if (db) {
         db.transaction("files").objectStore("files").get(selectedFileName).then((data) => {
           if (data) {
-            if (window.convertAntimonyToSBML) {
-              window.convertAntimonyToSBML(data.content).then((converted) => {
-                addFile(selectedFileName.replace("ant", "xml"), converted);
+            if (window.convertSBMLToAntimony) {
+              window.convertSBMLToAntimony(data.content).then((converted) => {
+                addFile(selectedFileName.replace("xml", "ant"), converted);
               })
             }
           }
         });
       } else {
-        console.log("yeah db is null");
+        console.log("DB is null");
       }
     } catch (err) {
       console.error("Conversion error:", err);
