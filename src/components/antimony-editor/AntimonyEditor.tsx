@@ -114,7 +114,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       const [isModalVisible, setModalVisible] = useState<boolean>(false);
       const [chosenModel, setChosenModel] = useState<string | null>(null);
       // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
-      const [newContent, setNewContent] = useState<string>(content); // Track the new content
+      const [initialContent, setInitialContent] = useState<string>("");
+      const [newContent, setNewContent] = useState<string>(""); // Track the new content
       const [selectedFile, setSelectedFile] = useState<string>("");
       const [annotationAddPosition, setAnnotationAddPosition] = useState<SrcPosition | null>(null);
       const [varToAnnotate, setVarToAnnotate] =
@@ -298,6 +299,40 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         return processedContent
       };
 
+      /**
+       * @description Initial load of the selected file, retrieve the data, activates loading the editor by setting selectedFile state
+       */
+      useEffect(() => {
+        let processedContent: string;
+        console.log(fileName);
+        database
+              .transaction("files")
+              .objectStore("files")
+              .get(fileName)
+              .then((data) => {
+                if (data) {
+                  processedContent = processContent(data.content);
+                  setInitialContent(processedContent);
+                  window.antimonyString = processedContent;
+                  window.selectedFile = data.name;
+                  setSelectedFile(fileName);
+                } else {
+                  const transaction = database.transaction("files", "readwrite");
+                  transaction.objectStore("files").put({
+                    name: fileName,
+                    content: window.antimonyResult,
+                  }).then(() => {
+                    console.log(window.antimonyResult);
+                    processedContent = processContent(window.antimonyResult);
+                    setInitialContent(processedContent)
+                    setSelectedFile(fileName);
+                    window.antimonyString = processedContent;
+                    window.selectedFile = fileName;
+                  })
+                }
+              });
+      }, [fileName, database]) 
+
 
       /**
        * @description Loads the editor and sets the language, theme, and content
@@ -305,6 +340,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       useEffect(() => {
         if (editorRef.current) {
           let editor: any;
+          
           // Load the custom language
           monaco.languages.register({ id: "antimony" });
           monaco.languages.setMonarchTokensProvider("antimony", antimonyLanguage);
@@ -313,18 +349,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           monaco.editor.defineTheme("antimonyTheme", antimonyTheme);
           monaco.editor.setTheme("antimonyTheme");
           // Retrieve content and file name from IndexedDB
-          database
-              .transaction("files")
-              .objectStore("files")
-              .get(fileName)
-              .then((data) => {
-                if (data) {;
-                  let processedContent = processContent(data.content);
-                  setNewContent(processedContent);
-                  window.selectedFile = data.name;
-                  window.antimonyString = processedContent;
-                }
-              });
+          
+          // setSelectedFile(fileName);
 
           if (fileName.includes(".xml")) {
             // Create the editor
@@ -350,7 +376,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             window.antimonyActive = true;
 
             // Set the antimonyString variable to the editor content
-            editor.setValue(processContent(content));
+            editor.setValue(initialContent);
             window.antimonyString = editor.getValue();
             ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
           }
@@ -383,10 +409,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           handleCursorPositionChange(editor);
           getBiomodels(setLoading, setChosenModel);
           setEditorInstance(editor);
-          setSelectedFile(fileName);
+          
           return () => editor.dispose();
         }
-      }, [annotUnderlinedOn, content, database, fileName]);
+      }, [annotUnderlinedOn, selectedFile, initialContent]);
 
       /**
        * @description Adds the link action to the editor context menu
@@ -429,8 +455,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       useEffect(() => {
         if (database && editorInstance) {
           let processedContent = processContent(editorInstance.getValue());
-          setNewContent(processedContent);
-          // ModelSemanticsChecker(editorInstance, annotUnderlinedOn, true, highlightColor, decorations);
+          //setNewContent(processedContent);
+          //ModelSemanticsChecker(editorInstance, annotUnderlinedOn, true, highlightColor, decorations);
           const transaction = database.transaction("files", "readwrite");
           transaction.objectStore("files").put({
             name: selectedFile,
@@ -439,7 +465,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           window.localStorage.setItem("current_file", processedContent);
           window.antimonyString = processedContent;
         }
-      }, [newContent, selectedFile, database, editorInstance]);
+      }, [newContent, editorInstance, database, selectedFile]);
 
       /**
        * @description Handles displaying the dropdown when a user searches for a model
