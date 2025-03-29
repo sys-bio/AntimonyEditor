@@ -82,6 +82,7 @@ const App: React.FC = () => {
         setUploadedFiles(files);
       });
     });
+    //window.addEventListener("uploadedFile", handleFileUpload);
     window.addEventListener("grabbedSBMLResult", sbmlResultHandler);
     window.addEventListener("grabbedAntimonyResult", antimonyResultHandler);
 
@@ -145,10 +146,24 @@ const App: React.FC = () => {
    */
   const handleConversionAntimony = () => {
     try {
-      if (window.processAntimony) {
-        window.processAntimony();
+      // if (window.processAntimony) {
+      //   window.processAntimony();
+      // } else {
+      //   console.error("processAntimony function not found in the global scope.");
+      // }
+      console.log("converrting")
+      if (db) {
+        db.transaction("files").objectStore("files").get(selectedFileName).then((data) => {
+          if (data) {
+            if (window.convertAntimonyToSBML) {
+              window.convertAntimonyToSBML(data.content).then((converted) => {
+                addFile(selectedFileName.replace("ant", "xml"), converted);
+              })
+            }
+          }
+        });
       } else {
-        console.error("processAntimony function not found in the global scope.");
+        console.log("DB is null");
       }
     } catch (err) {
       console.error("Conversion error:", err);
@@ -207,10 +222,24 @@ const App: React.FC = () => {
    */
   const handleConversionSBML = () => {
     try {
-      if (window.processSBML) {
-        window.processSBML();
+      // if (window.processSBML) {
+      //   window.processSBML();
+      // } else {
+      //   console.error("processSBML function not found in the global scope.");
+      // }
+      console.log("converrting")
+      if (db) {
+        db.transaction("files").objectStore("files").get(selectedFileName).then((data) => {
+          if (data) {
+            if (window.convertAntimonyToSBML) {
+              window.convertAntimonyToSBML(data.content).then((converted) => {
+                addFile(selectedFileName.replace("ant", "xml"), converted);
+              })
+            }
+          }
+        });
       } else {
-        console.error("processSBML function not found in the global scope.");
+        console.log("yeah db is null");
       }
     } catch (err) {
       console.error("Conversion error:", err);
@@ -372,6 +401,23 @@ const App: React.FC = () => {
     handleFileClick(newFileContent, newFileName, newFileIndex);
   };
 
+  const addFile = async (newFileName: string, newFileContent: string) => {
+    // Simulate opening a file
+    const file = new File([newFileContent], newFileName, { type: "text/plain" });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+
+    const event = {
+      target: {
+        files: dataTransfer.files,
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+
+    await handleFileUpload(event).then(() => {
+      setSelectedFileName(newFileName);
+    });
+  };
+
   return (
     <div className="app">
       <HeaderMenu
@@ -428,6 +474,7 @@ const App: React.FC = () => {
                 handleConversionSBML={handleConversionSBML}
                 highlightColor={highlightColor}
                 setHighlightColor={setHighlightColor}
+                addFile={addFile}
               />
             ) : (
               // You can provide a loading message or handle the absence of the database as needed
