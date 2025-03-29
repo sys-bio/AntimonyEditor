@@ -320,14 +320,21 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
                   const transaction = database.transaction("files", "readwrite");
                   transaction.objectStore("files").put({
                     name: fileName,
-                    content: window.antimonyResult,
+                    content: (fileName.includes(".xml") ? window.antimonyResult : window.sbmlResult),
                   }).then(() => {
-                    console.log(window.antimonyResult);
-                    processedContent = processContent(window.antimonyResult);
-                    setInitialContent(processedContent)
-                    setSelectedFile(fileName);
-                    window.antimonyString = processedContent;
-                    window.selectedFile = fileName;
+                    if (fileName.includes(".xml")) {
+                      processedContent = processContent(window.sbmlResult);
+                      setInitialContent(processedContent)
+                      setSelectedFile(fileName);
+                      window.sbmlString = processedContent;
+                      window.selectedFile = fileName;
+                    } else {
+                      processedContent = processContent(window.antimonyResult);
+                      setInitialContent(processedContent)
+                      setSelectedFile(fileName);
+                      window.antimonyString = processedContent;
+                      window.selectedFile = fileName;
+                    }
                   })
                 }
               });
