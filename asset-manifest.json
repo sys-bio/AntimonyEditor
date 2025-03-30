@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/AntimonyEditor/static/css/main.e4a7e3b2.css",
-    "main.js": "/AntimonyEditor/static/js/main.57a4e2c2.js",
+    "main.js": "/AntimonyEditor/static/js/main.70d32cda.js",
     "static/js/9553.fb252606.chunk.js": "/AntimonyEditor/static/js/9553.fb252606.chunk.js",
     "static/js/4473.92ba45cc.chunk.js": "/AntimonyEditor/static/js/4473.92ba45cc.chunk.js",
     "static/js/3439.e4ed6114.chunk.js": "/AntimonyEditor/static/js/3439.e4ed6114.chunk.js",
@@ -90,7 +90,7 @@
     "static/media/codicon.ttf": "/AntimonyEditor/static/media/codicon.762fced46d6cddbda272.ttf",
     "index.html": "/AntimonyEditor/index.html",
     "main.e4a7e3b2.css.map": "/AntimonyEditor/static/css/main.e4a7e3b2.css.map",
-    "main.57a4e2c2.js.map": "/AntimonyEditor/static/js/main.57a4e2c2.js.map",
+    "main.70d32cda.js.map": "/AntimonyEditor/static/js/main.70d32cda.js.map",
     "9553.fb252606.chunk.js.map": "/AntimonyEditor/static/js/9553.fb252606.chunk.js.map",
     "4473.92ba45cc.chunk.js.map": "/AntimonyEditor/static/js/4473.92ba45cc.chunk.js.map",
     "3439.e4ed6114.chunk.js.map": "/AntimonyEditor/static/js/3439.e4ed6114.chunk.js.map",
@@ -179,6 +179,6 @@
   },
   "entrypoints": [
     "static/css/main.e4a7e3b2.css",
-    "static/js/main.57a4e2c2.js"
+    "static/js/main.70d32cda.js"
   ]
 }
