@@ -34,7 +34,7 @@ interface HeaderMenuProps {
   handleFileUpload: (
     event: React.ChangeEvent<HTMLInputElement>
   ) => Promise<void>;
-  handleNewFile: (handleNewFile: string) => Promise<void>;
+  handleNewFile: (newFileName: string, fileContent: string) => Promise<void>;
   setHighlightColor: (color: string) => void;
   colors: { name: string; color: string }[];
 }
@@ -216,7 +216,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
       // Check if Alt+N is pressed
       if (event.altKey && event.key === "n") {
         event.preventDefault();
-        handleNewFile("untitled.ant");
+        handleNewFile("untitled.ant", "");
       }
 
       // Check if Ctrl+O is pressed
@@ -264,7 +264,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                       className="header-menu-command"
                       onClick={() => {
                         setDropdownVisible("");
-                        handleNewFile("untitled.ant");
+                        handleNewFile("untitled.ant", "");
                       }}
                     >
                       <div>New File</div>
