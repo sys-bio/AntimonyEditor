@@ -34,7 +34,7 @@ interface AntimonyEditorProps {
   handleConversionSBML: () => void;
   setHighlightColor: (color: string) => void;
   highlightColor: string;
-  addFile: (newFileName: string, newFileContent: string) => Promise<void>;
+  handleNewFile: (newFileName: string, newFileContent: string) => Promise<void>;
 }
 
 /**
@@ -109,7 +109,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
        handleSelectedPosition,
        handleConversionSBML,
        highlightColor,
-       addFile,
+       handleNewFile,
      }) => {
       const editorRef = useRef<HTMLDivElement | null>(null);
       const [loading, setLoading] = useState<boolean>(false);
@@ -297,7 +297,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
                   window.antimonyString = processedContent;
                   window.selectedFile = data.name;
                   setSelectedFile(fName);
-                }})
+                }
+              })
       }
 
       const processContent = (content: string) => {
@@ -486,9 +487,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             window.conversion = "biomodels";
             if (window.convertSBMLToAntimony) {
               window.convertSBMLToAntimony(model.sbmlData).then((converted) => {
-                addFile(window.fileName + ".ant", (converted ? processContent(converted) : "")).then(() => {
-                  loadFile(window.fileName + ".ant");
-                }); 
+                handleNewFile(window.fileName + ".ant", (converted ? processContent(converted) : ""))
               });
             } else {
               console.log("null")

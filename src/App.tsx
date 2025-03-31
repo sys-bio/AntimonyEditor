@@ -48,7 +48,6 @@ const App: React.FC = () => {
     null
   );
   const [fileExplorerKey, setFileExplorerKey] = useState<number>(0);
-  const [sbmlResultListenerAdded, setSbmlResultListenerAdded] = useState<boolean>(false);
   const [selectedEditorPosition, setSelectedEditorPosition] = useState<SrcPosition>(
     new SrcPosition(1, 1)
   );
@@ -82,14 +81,9 @@ const App: React.FC = () => {
         setUploadedFiles(files);
       });
     });
-    //window.addEventListener("uploadedFile", handleFileUpload);
-    window.addEventListener("grabbedSBMLResult", sbmlResultHandler);
-    window.addEventListener("grabbedAntimonyResult", antimonyResultHandler);
 
     // Cleanup: Remove the event listeners when the component is unmounted
     return () => {
-      window.removeEventListener("grabbedSBMLResult", sbmlResultHandler);
-      window.removeEventListener("grabbedAntimonyResult", antimonyResultHandler);
     };
   }, []);
 
@@ -134,11 +128,11 @@ const App: React.FC = () => {
    * @param index - The index of the file
    */
   const handleFileClick = (fileContent: string, fileName: string, index: number) => {
-    setSelectedFileContent(fileContent);
-    setSelectedFileName(fileName);
     window.localStorage.setItem("current_file_index", index.toString());
     window.localStorage.setItem("current_file_name", fileName);
     window.localStorage.setItem("current_file", fileContent);
+    setSelectedFileContent(fileContent);
+    setSelectedFileName(fileName);
   };
 
   /**
@@ -146,17 +140,12 @@ const App: React.FC = () => {
    */
   const handleConversionAntimony = () => {
     try {
-      // if (window.processAntimony) {
-      //   window.processAntimony();
-      // } else {
-      //   console.error("processAntimony function not found in the global scope.");
-      // }
       if (db) {
         db.transaction("files").objectStore("files").get(selectedFileName).then((data) => {
           if (data) {
             if (window.convertAntimonyToSBML) {
               window.convertAntimonyToSBML(data.content).then((converted) => {
-                addFile(selectedFileName.replace("ant", "xml"), converted);
+                handleNewFile(selectedFileName.replace("ant", "xml"), converted);
               })
             }
           }
@@ -167,53 +156,6 @@ const App: React.FC = () => {
     } catch (err) {
       console.error("Conversion error:", err);
     }
-  };
-
-  function sbmlResultHandler() {
-    let sbml = window.sbmlResult;
-    if (window.selectedFile !== "" && window.selectedFile.includes(".ant")) {
-      handleAntToSBML(sbml, window.selectedFile.replace("ant", "xml"))
-        .then(() => {
-          window.antimonyActive = false;
-          window.sbmlString = "";
-        })
-        .catch((error) => {
-          console.error("Error in handleFileConversion:", error);
-        });
-    }
-  }
-
-  const handleAntToSBML = async (fileContent: string, fileName: string) => {
-    window.selectedFile = fileName;
-
-    setUploadedFiles((prevFiles) => {
-      window.removeEventListener("grabbedSBMLResult", sbmlResultHandler);
-      setSbmlResultListenerAdded(false);
-      let updatedFiles = [...prevFiles];
-      // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
-
-      // if (existingFileIndex !== -1) {
-      // } else {
-      // If the file doesn't exist, add it to the array
-      updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
-
-      // Store the selected file's information in IndexedDB
-      // NOTE: db is always undefined here for some reason.
-      if (db) {
-        db.put("files", { name: window.selectedFile, content: fileContent });
-      }
-
-      window.addEventListener("grabbedSBMLResult", sbmlResultHandler, { once: true });
-
-      // Sort the files alphabetically and numerically based on their names
-      updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-
-      // Select the converted file
-      const convertedIndex = updatedFiles.findIndex((file) => file.name === fileName);
-      handleFileClick(fileContent, fileName, convertedIndex);
-
-      return updatedFiles;
-    });
   };
 
   /**
@@ -221,17 +163,12 @@ const App: React.FC = () => {
    */
   const handleConversionSBML = () => {
     try {
-      // if (window.processSBML) {
-      //   window.processSBML();
-      // } else {
-      //   console.error("processSBML function not found in the global scope.");
-      // }
       if (db) {
         db.transaction("files").objectStore("files").get(selectedFileName).then((data) => {
           if (data) {
             if (window.convertSBMLToAntimony) {
               window.convertSBMLToAntimony(data.content).then((converted) => {
-                addFile(selectedFileName.replace("xml", "ant"), converted);
+                handleNewFile(selectedFileName.replace("xml", "ant"), converted);
               })
             }
           }
@@ -242,65 +179,6 @@ const App: React.FC = () => {
     } catch (err) {
       console.error("Conversion error:", err);
     }
-  };
-
-  function antimonyResultHandler() {
-    let antimony = window.antimonyResult;
-    if (window.selectedFile !== "" && window.selectedFile.includes(".xml")) {
-      window.conversion = "standard";
-      handleSBMLtoAntConversion(antimony, window.selectedFile.replace("xml", "ant"))
-        .then(() => {
-          window.antimonyActive = true;
-          window.antimonyString = "";
-        })
-        .catch((error) => {
-          console.error("Error in handleFileConversion:", error);
-        });
-    } else {
-      window.conversion = "";
-      handleSBMLtoAntConversion(antimony, window.fileName + ".ant")
-        .then(() => {
-          window.antimonyActive = true;
-          window.antimonyString = "";
-        })
-        .catch((error) => {
-          console.error("Error in handleFileConversion:", error);
-        });
-    }
-  }
-
-  const handleSBMLtoAntConversion = async (fileContent: string, fileName: string) => {
-    window.selectedFile = fileName;
-
-    setUploadedFiles((prevFiles) => {
-      window.removeEventListener("grabbedAntimonyResult", antimonyResultHandler);
-      setSbmlResultListenerAdded(false);
-      let updatedFiles = [...prevFiles];
-      // const existingFileIndex = prevFiles.findIndex(file => file.name === window.selectedFile);
-
-      // if (existingFileIndex !== -1) {
-      //   // alert('File already exists');
-      // } else {
-      // If the file doesn't exist, add it to the array
-      updatedFiles = [...prevFiles, { name: window.selectedFile, content: fileContent }];
-
-      // Store the selected file's information in IndexedDB
-      // NOTE: db is always undefined here for some reason.
-      if (db) {
-        db.put("files", { name: window.selectedFile, content: fileContent });
-      }
-
-      window.addEventListener("grabbedAntimonyResult", antimonyResultHandler, { once: true });
-
-      // Sort the files alphabetically and numerically based on their names
-      updatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-
-      // Select the converted file
-      const convertedIndex = updatedFiles.findIndex((file) => file.name === fileName);
-      handleFileClick(fileContent, fileName, convertedIndex);
-
-      return updatedFiles;
-    });
   };
 
   useEffect(() => {
@@ -346,7 +224,7 @@ const App: React.FC = () => {
 
         if (selectedFileIndex === null || updatedFiles.length === 1) {
           // If last file was deleted, create a new blank file.
-          handleNewFile("untitled.ant");
+          handleNewFile("untitled.ant", "");
         } else if (selectedFileIndex === 1) {
           // If the selected file is deleted and was the first file, select the new first file.
           handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
@@ -377,9 +255,9 @@ const App: React.FC = () => {
    * @description Open a new file.
    * @param newFileName - The name of the new file
    */
-  const handleNewFile = async (newFileName: string) => {
+  const handleNewFile = async (newFileName: string, fileContent: string) => {
     // Simulate opening a file
-    const newFileContent = "// Enter Antimony Model Here";
+    const newFileContent = (fileContent === "" ? "// Enter Antimony Model Here" : fileContent);
     const file = new File([newFileContent], newFileName, { type: "text/plain" });
     const dataTransfer = new DataTransfer();
     dataTransfer.items.add(file);
@@ -390,30 +268,23 @@ const App: React.FC = () => {
       },
     } as React.ChangeEvent<HTMLInputElement>;
 
-    await handleFileUpload(event);
-
-    // Simulate clicking the file
-    const newFileIndex = uploadedFiles.findIndex(
-      (file: { name: string; content: string }) => file.name === newFileName
-    );
-    handleFileClick(newFileContent, newFileName, newFileIndex);
-  };
-
-  const addFile = async (newFileName: string, newFileContent: string) => {
-    // Simulate opening a file
-    const file = new File([newFileContent], newFileName, { type: "text/plain" });
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(file);
-
-    const event = {
-      target: {
-        files: dataTransfer.files,
-      },
-    } as React.ChangeEvent<HTMLInputElement>;
-
-    await handleFileUpload(event).then(() => {
-      setSelectedFileName(newFileName);
-    });
+    //await handleFileUpload(event);
+    if (db) {
+      let fileobj = {name: newFileName, content: newFileContent};
+      await db.put("files", fileobj);
+      // Simulate clicking the file
+      setUploadedFiles((prevFiles) => {
+        const updatedFiles = [...prevFiles, fileobj];
+        // Sort the files alphabetically and numerically based on their names
+        return updatedFiles.sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { numeric: true })
+        );
+      });
+      const newFileIndex = uploadedFiles.findIndex(
+        (file: { name: string; content: string }) => file.name === newFileName
+      );
+      handleFileClick(newFileContent, newFileName, newFileIndex);
+    }
   };
 
   return (
@@ -472,7 +343,7 @@ const App: React.FC = () => {
                 handleConversionSBML={handleConversionSBML}
                 highlightColor={highlightColor}
                 setHighlightColor={setHighlightColor}
-                addFile={addFile}
+                handleNewFile={handleNewFile}
               />
             ) : (
               // You can provide a loading message or handle the absence of the database as needed
