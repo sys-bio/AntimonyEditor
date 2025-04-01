@@ -23,7 +23,6 @@ import TurndownService from "turndown";
  * @property {function} handleConversionSBML - Handle the SBML to Antimony file conversion
  */
 interface AntimonyEditorProps {
-  content: string;
   fileName: string;
   annotUnderlinedOn: boolean;
   setAnnotUnderlinedOn: (value: React.SetStateAction<boolean>) => void;
@@ -31,7 +30,6 @@ interface AntimonyEditorProps {
   setEditorInstance: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
   selectedFilePosition: SrcPosition;
   handleSelectedPosition: (position: SrcPosition) => void;
-  handleConversionSBML: () => void;
   setHighlightColor: (color: string) => void;
   highlightColor: string;
   handleNewFile: (newFileName: string, newFileContent: string) => Promise<void>;
@@ -59,7 +57,6 @@ interface MyDB extends DBSchema {
  * @global
  * @property {string} antimonyString - The Antimony string
  * @property {string} sbmlString - The SBML string
- * @property {function} processAntimony - The processAntimony function
  */
 declare global {
   interface Window {
@@ -67,7 +64,6 @@ declare global {
     sbmlString: string; // Define the sbmlString variable
     sbmlResult: string; // Define the sbmlResult variable
     antimonyResult: string; // Define the antimonyResult variable
-    antimonyActive: boolean; // Define the antimonyActive variable
     fileName: string; // Define the fileName variable
     modelId: string; // Define the modelId variable
     url: string; // Define the link variable
@@ -79,8 +75,6 @@ declare global {
     date: string; // Define the date variable
     journal: string; // Define the journal variable
     conversion: string; // Define the conversion variable
-    processAntimony?: () => void; // Define the processAntimony function
-    processSBML?: () => void; // Define the processSBML function
     convertAntimonyToSBML?: ( antimonyString: string ) => Promise<string> // Define the convertAntimonyToSBML function
     convertSBMLToAntimony?: ( sbmlString: string ) => Promise<string> // Define the convertSBMLToAntimony function
     selectedFile: string; // Define the selectedFile variable
@@ -98,7 +92,6 @@ declare global {
  */
 const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> =
     ({
-       content,
        fileName,
        database,
        annotUnderlinedOn,
@@ -107,7 +100,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
        setEditorInstance,
        selectedFilePosition,
        handleSelectedPosition,
-       handleConversionSBML,
        highlightColor,
        handleNewFile,
      }) => {
@@ -280,6 +272,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         }
       };
 
+      // Takes in an a file in the database and loads it into the editor.
       const loadFile = (fName: string) => {
         let processedContent: string;
         database
@@ -297,8 +290,11 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
                   window.antimonyString = processedContent;
                   window.selectedFile = data.name;
                   setSelectedFile(fName);
+                } else {
+                  console.log("File called to load does not exist in database");
                 }
-              })
+              }
+            );
       }
 
       const processContent = (content: string) => {
@@ -344,9 +340,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           // Load the custom theme
           monaco.editor.defineTheme("antimonyTheme", antimonyTheme);
           monaco.editor.setTheme("antimonyTheme");
-          // Retrieve content and file name from IndexedDB
-          
-          // setSelectedFile(fileName);
 
           if (fileName.includes(".xml")) {
             // Create the editor
@@ -369,7 +362,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
               wordWrapColumn: 80,  // Max column width before wrapping
               wrappingIndent: 'same',
             });
-            window.antimonyActive = true;
             // Set the antimonyString variable to the editor content
             window.antimonyString = editor.getValue();
             ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
@@ -449,8 +441,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       useEffect(() => {
         if (database && editorInstance) {
           let processedContent = processContent(editorInstance.getValue());
-          //setNewContent(processedContent);
-          //ModelSemanticsChecker(editorInstance, annotUnderlinedOn, true, highlightColor, decorations);
           const transaction = database.transaction("files", "readwrite");
           transaction.objectStore("files").put({
             name: selectedFile,
@@ -458,6 +448,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           });
           window.localStorage.setItem("current_file", processedContent);
           window.antimonyString = processedContent;
+        } else {
+          if (!database) console.log("Database state is null!");
         }
       }, [newContent]);
 
@@ -490,10 +482,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
                 handleNewFile(window.fileName + ".ant", (converted ? processContent(converted) : ""))
               });
             } else {
-              console.log("null")
+              console.log("null");
             }
-            
-            // handleConversionSBML();
             setLoading(false);
           });
         }

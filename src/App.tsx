@@ -81,10 +81,6 @@ const App: React.FC = () => {
         setUploadedFiles(files);
       });
     });
-
-    // Cleanup: Remove the event listeners when the component is unmounted
-    return () => {
-    };
   }, []);
 
   /**
@@ -256,23 +252,19 @@ const App: React.FC = () => {
    * @param newFileName - The name of the new file
    */
   const handleNewFile = async (newFileName: string, fileContent: string) => {
-    // Simulate opening a file
     const newFileContent = (fileContent === "" ? "// Enter Antimony Model Here" : fileContent);
     const file = new File([newFileContent], newFileName, { type: "text/plain" });
     const dataTransfer = new DataTransfer();
+
     dataTransfer.items.add(file);
 
-    const event = {
-      target: {
-        files: dataTransfer.files,
-      },
-    } as React.ChangeEvent<HTMLInputElement>;
-
-    //await handleFileUpload(event);
     if (db) {
       let fileobj = {name: newFileName, content: newFileContent};
+
+      // Add file to database
       await db.put("files", fileobj);
-      // Simulate clicking the file
+
+      // Update uploaded files state
       setUploadedFiles((prevFiles) => {
         const updatedFiles = [...prevFiles, fileobj];
         // Sort the files alphabetically and numerically based on their names
@@ -284,6 +276,8 @@ const App: React.FC = () => {
         (file: { name: string; content: string }) => file.name === newFileName
       );
       handleFileClick(newFileContent, newFileName, newFileIndex);
+    } else {
+      console.log("Database is null! File was not added");
     }
   };
 
@@ -331,7 +325,6 @@ const App: React.FC = () => {
             {db ? ( // Conditionally render the AntimonyEditor component when db is defined
               <AntimonyEditor
                 key={selectedFileName}
-                content={selectedFileContent}
                 fileName={selectedFileName}
                 database={db}
                 annotUnderlinedOn={annotUnderlinedOn}
@@ -340,7 +333,6 @@ const App: React.FC = () => {
                 setEditorInstance={setEditorInstance}
                 selectedFilePosition={selectedEditorPosition}
                 handleSelectedPosition={handleSelectedPosition}
-                handleConversionSBML={handleConversionSBML}
                 highlightColor={highlightColor}
                 setHighlightColor={setHighlightColor}
                 handleNewFile={handleNewFile}
