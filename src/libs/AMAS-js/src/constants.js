@@ -44,23 +44,23 @@ async function loadJSON(filePath) {
   }
 }
 
-const REF_RHEA2MASTER = await loadJSON("/public/files/rhea_all2master_jan2025.json");
-const REF_KEGG2RHEA = await loadJSON("/public/files/kegg2mrhea_jan2025.json");
-const REF_EC2RHEA = await loadJSON("/public/files/ec2mrhea_jan2025.json");
-const REF_CHEBI2FORMULA = await loadJSON("/public/files/chebi_shortened_formula_jan2025.json");
-const REF_CHEBI2LABEL = await loadJSON("/public/files/chebi2label_jan2025.json");
+const REF_RHEA2MASTER = await loadJSON("./files/rhea_all2master_jan2025.json");
+const REF_KEGG2RHEA = await loadJSON("./files/kegg2mrhea_jan2025.json");
+const REF_EC2RHEA = await loadJSON("./files/ec2mrhea_jan2025.json");
+const REF_CHEBI2FORMULA = await loadJSON("./files/chebi_shortened_formula_jan2025.json");
+const REF_CHEBI2LABEL = await loadJSON("./files/chebi2label_jan2025.json");
 
-const REF_RHEA2LABEL = await loadJSON("/public/files/rhea2label_jan2025.json");
-const REF_RHEA2ECKEGG = await loadJSON("/public/files/mrhea2eckegg_jan2025.json");
+const REF_RHEA2LABEL = await loadJSON("./files/rhea2label_jan2025.json");
+const REF_RHEA2ECKEGG = await loadJSON("./files/mrhea2eckegg_jan2025.json");
 
 // Used in species_annotation.js
-const charcount_np_part1 = await loadJSON("/public/files/charcount_scaled_part1_np_jan2025.json");
-const charcount_np_part2 = await loadJSON("/public/files/charcount_scaled_part2_np_jan2025.json");
+const charcount_np_part1 = await loadJSON("./files/charcount_scaled_part1_np_jan2025.json");
+const charcount_np_part2 = await loadJSON("./files/charcount_scaled_part2_np_jan2025.json");
 const CHARCOUNT_NP = charcount_np_part1.concat(charcount_np_part2);
-const CHEBI_NP = await loadJSON("/public/files/charcount_chebi_scaled_np_jan2025.json");
+const CHEBI_NP = await loadJSON("./files/charcount_chebi_scaled_np_jan2025.json");
 
 // Used in reaction_annotation.js
-const REF_DAT = await loadJSON("/public/files/data2ref_mat_jan2025.json");
+const REF_DAT = await loadJSON("./files/data2ref_mat_jan2025.json");
 const REF_MAT_ROWS = REF_DAT["mrhea2sformula_keys"]; 
 const REF_MAT_COLS = REF_DAT["all_formulas"]; 
 const refMatPairs = REF_DAT["nonzero_vals"];
