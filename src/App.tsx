@@ -309,17 +309,24 @@ const App: React.FC = () => {
             <div className="fileExplorerContainer">
               <div className="fileExplorerTitle">File Explorer</div>
             </div>
+            {db ? (
             <FileExplorer
               key={fileExplorerKey}
+              database={db}
               files={uploadedFiles}
               setFiles={setUploadedFiles}
               onFileClick={handleFileClick}
               onDeleteFile={deleteFile}
+              handleNewFile={handleNewFile}
               selectedFileIndex={selectedFileIndex}
               setSelectedFileIndex={setSelectedFileIndex}
               selectedFileName={selectedFileName}
               setSelectedFileName={setSelectedFileName}
             />
+            ) : (
+              // You can provide a loading message or handle the absence of the database as needed
+              <div>Loading...</div>
+            )}
           </section>
           <section className="editor">
             {db ? ( // Conditionally render the AntimonyEditor component when db is defined
