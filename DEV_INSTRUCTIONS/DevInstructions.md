@@ -17,6 +17,6 @@ to
   appHtml: resolveApp('public/index.html'),
 and change it back after deployment.
 
-If any changes are made to Conversion.js in the root folder, make sure those changes are reflected in the public/Conversion.js file as well.
+If any changes are made to Conversion.js or libantimony.js in the root folder, make sure those changes are reflected in the public/Conversion.js or public/libantimony.js files as well. This is because the deployed page utilizes the version in the public/ folder. 
 
 Run "npm run deploy" in terminal to deploy the changes.
