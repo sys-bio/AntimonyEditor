@@ -23,7 +23,6 @@ import TurndownService from "turndown";
  * @property {function} handleConversionSBML - Handle the SBML to Antimony file conversion
  */
 interface AntimonyEditorProps {
-  content: string;
   fileName: string;
   annotUnderlinedOn: boolean;
   setAnnotUnderlinedOn: (value: React.SetStateAction<boolean>) => void;
@@ -31,9 +30,9 @@ interface AntimonyEditorProps {
   setEditorInstance: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
   selectedFilePosition: SrcPosition;
   handleSelectedPosition: (position: SrcPosition) => void;
-  handleConversionSBML: () => void;
-  setHighlightColor: (color: string) => void
+  setHighlightColor: (color: string) => void;
   highlightColor: string;
+  handleNewFile: (newFileName: string, newFileContent: string) => Promise<void>;
 }
 
 /**
@@ -58,7 +57,6 @@ interface MyDB extends DBSchema {
  * @global
  * @property {string} antimonyString - The Antimony string
  * @property {string} sbmlString - The SBML string
- * @property {function} processAntimony - The processAntimony function
  */
 declare global {
   interface Window {
@@ -66,7 +64,6 @@ declare global {
     sbmlString: string; // Define the sbmlString variable
     sbmlResult: string; // Define the sbmlResult variable
     antimonyResult: string; // Define the antimonyResult variable
-    antimonyActive: boolean; // Define the antimonyActive variable
     fileName: string; // Define the fileName variable
     modelId: string; // Define the modelId variable
     url: string; // Define the link variable
@@ -78,8 +75,6 @@ declare global {
     date: string; // Define the date variable
     journal: string; // Define the journal variable
     conversion: string; // Define the conversion variable
-    processAntimony?: () => void; // Define the processAntimony function
-    processSBML?: () => void; // Define the processSBML function
     convertAntimonyToSBML?: ( antimonyString: string ) => Promise<string> // Define the convertAntimonyToSBML function
     convertSBMLToAntimony?: ( sbmlString: string ) => Promise<string> // Define the convertSBMLToAntimony function
     selectedFile: string; // Define the selectedFile variable
@@ -97,7 +92,6 @@ declare global {
  */
 const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<MyDB> }> =
     ({
-       content,
        fileName,
        database,
        annotUnderlinedOn,
@@ -106,15 +100,16 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
        setEditorInstance,
        selectedFilePosition,
        handleSelectedPosition,
-       handleConversionSBML,
-       highlightColor
+       highlightColor,
+       handleNewFile,
      }) => {
       const editorRef = useRef<HTMLDivElement | null>(null);
       const [loading, setLoading] = useState<boolean>(false);
       const [isModalVisible, setModalVisible] = useState<boolean>(false);
       const [chosenModel, setChosenModel] = useState<string | null>(null);
       // const [originalContent, setOriginalContent] = useState<string>(content); // Track the original content
-      const [newContent, setNewContent] = useState<string>(content); // Track the new content
+      const [initialContent, setInitialContent] = useState<string>("");
+      const [newContent, setNewContent] = useState<string>(""); // Track the new content
       const [selectedFile, setSelectedFile] = useState<string>("");
       const [annotationAddPosition, setAnnotationAddPosition] = useState<SrcPosition | null>(null);
       const [varToAnnotate, setVarToAnnotate] =
@@ -277,6 +272,31 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         }
       };
 
+      // Takes in an a file in the database and loads it into the editor.
+      const loadFile = (fName: string) => {
+        let processedContent: string;
+        database
+              .transaction("files")
+              .objectStore("files")
+              .get(fName)
+              .then((data) => {
+                if (data) {
+                  if (data.content) {
+                    processedContent = processContent(data.content);
+                  } else {
+                    processedContent = "";
+                  }
+                  setInitialContent(processedContent);
+                  window.antimonyString = processedContent;
+                  window.selectedFile = data.name;
+                  setSelectedFile(fName);
+                } else {
+                  console.log("File called to load does not exist in database");
+                }
+              }
+            );
+      }
+
       const processContent = (content: string) => {
         const regex = /```([\s\S]*?)```/g;   // Match content inside triple backticks
 
@@ -298,6 +318,13 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         return processedContent
       };
 
+      /**
+       * @description Initial load of the selected file, retrieve the data, activates loading the editor by setting selectedFile state
+       */
+      useEffect(() => {
+        loadFile(fileName);
+      }, [fileName, database]) 
+
 
       /**
        * @description Loads the editor and sets the language, theme, and content
@@ -305,6 +332,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       useEffect(() => {
         if (editorRef.current) {
           let editor: any;
+          
           // Load the custom language
           monaco.languages.register({ id: "antimony" });
           monaco.languages.setMonarchTokensProvider("antimony", antimonyLanguage);
@@ -312,25 +340,12 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           // Load the custom theme
           monaco.editor.defineTheme("antimonyTheme", antimonyTheme);
           monaco.editor.setTheme("antimonyTheme");
-          // Retrieve content and file name from IndexedDB
-          database
-              .transaction("files")
-              .objectStore("files")
-              .get(fileName)
-              .then((data) => {
-                if (data) {;
-                  let processedContent = processContent(data.content);
-                  setNewContent(processedContent);
-                  window.selectedFile = data.name;
-                  window.antimonyString = processedContent;
-                }
-              });
 
           if (fileName.includes(".xml")) {
             // Create the editor
             editor = monaco.editor.create(editorRef.current, {
               bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
-              value: content,
+              value: initialContent,
               language: "xml",
               automaticLayout: true,
             });
@@ -340,17 +355,14 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           } else {
             editor = monaco.editor.create(editorRef.current, {
               bracketPairColorization: { enabled: true }, // Enable bracket pair colorization
-              value: content,
+              value: initialContent,
               language: "antimony",
               automaticLayout: true,
               wordWrap: 'on',  // Enable word wrap
               wordWrapColumn: 80,  // Max column width before wrapping
               wrappingIndent: 'same',
             });
-            window.antimonyActive = true;
-
             // Set the antimonyString variable to the editor content
-            editor.setValue(processContent(content));
             window.antimonyString = editor.getValue();
             ModelSemanticsChecker(editor, annotUnderlinedOn, true, highlightColor, decorations);
           }
@@ -383,10 +395,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           handleCursorPositionChange(editor);
           getBiomodels(setLoading, setChosenModel);
           setEditorInstance(editor);
-          setSelectedFile(fileName);
+          
           return () => editor.dispose();
         }
-      }, [annotUnderlinedOn, content, database, fileName]);
+      }, [annotUnderlinedOn, selectedFile, initialContent]);
 
       /**
        * @description Adds the link action to the editor context menu
@@ -429,8 +441,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       useEffect(() => {
         if (database && editorInstance) {
           let processedContent = processContent(editorInstance.getValue());
-          setNewContent(processedContent);
-          // ModelSemanticsChecker(editorInstance, annotUnderlinedOn, true, highlightColor, decorations);
           const transaction = database.transaction("files", "readwrite");
           transaction.objectStore("files").put({
             name: selectedFile,
@@ -438,8 +448,10 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
           });
           window.localStorage.setItem("current_file", processedContent);
           window.antimonyString = processedContent;
+        } else {
+          if (!database) console.log("Database state is null!");
         }
-      }, [newContent, selectedFile, database, editorInstance]);
+      }, [newContent]);
 
       /**
        * @description Handles displaying the dropdown when a user searches for a model
@@ -465,7 +477,13 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             window.fileName = model.modelId;
             window.sbmlString = model.sbmlData;
             window.conversion = "biomodels";
-            handleConversionSBML();
+            if (window.convertSBMLToAntimony) {
+              window.convertSBMLToAntimony(model.sbmlData).then((converted) => {
+                handleNewFile(window.fileName + ".ant", (converted ? processContent(converted) : ""))
+              });
+            } else {
+              console.log("null");
+            }
             setLoading(false);
           });
         }
