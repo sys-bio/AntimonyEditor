@@ -100,20 +100,30 @@ const App: React.FC = () => {
     const files = event.target.files;
     if (files && db) {
       Array.from(files).forEach(async (file) => {
-        const reader = new FileReader();
-        reader.readAsText(file);
-        reader.onload = async () => {
-          const fileData = { name: file.name, content: reader.result as string };
-          await db.put("files", fileData);
-          setUploadedFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles, fileData];
-            // Sort the files alphabetically and numerically based on their names
-            return updatedFiles.sort((a, b) =>
-              a.name.localeCompare(b.name, undefined, { numeric: true })
-            );
-          });
-          setFileExplorerKey((prevKey) => prevKey + 1); // Increment key to trigger re-render
-        };
+        // Check if the selected file already exists in the uploadedFiles state
+        const existingFile = uploadedFiles.find((uploadedFile) => uploadedFile.name === file.name);
+        if (existingFile) {
+          const existingFileIndex = uploadedFiles.findIndex(
+            (uploadedFile) => uploadedFile.name === file.name
+          );
+          handleFileClick(existingFile.content, existingFile.name, existingFileIndex);
+        } else {
+          // If the file does not exist, open as normal
+          const reader = new FileReader();
+          reader.readAsText(file);
+          reader.onload = async () => {
+            const fileData = { name: file.name, content: reader.result as string };
+            await db.put("files", fileData);
+            setUploadedFiles((prevFiles) => {
+              const updatedFiles = [...prevFiles, fileData];
+              // Sort the files alphabetically and numerically based on their names
+              return updatedFiles.sort((a, b) =>
+                a.name.localeCompare(b.name, undefined, { numeric: true })
+              );
+            });
+            setFileExplorerKey((prevKey) => prevKey + 1); // Increment key to trigger re-render
+          };
+        }
       });
     }
   };
