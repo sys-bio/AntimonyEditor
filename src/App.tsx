@@ -33,9 +33,12 @@ export interface MyDB extends DBSchema {
  * @returns - App component
  */
 const App: React.FC = () => {
-  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; content: string }[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<
+    { name: string; content: string }[]
+  >([]);
   const [selectedFileContent, setSelectedFileContent] = useState<string>(
-    window.localStorage.getItem("current_file") || "// Enter Antimony Model Here"
+    window.localStorage.getItem("current_file") ||
+      "// Enter Antimony Model Here"
   );
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(
     Number(window.localStorage.getItem("current_file_index") || null)
@@ -44,13 +47,11 @@ const App: React.FC = () => {
     window.localStorage.getItem("current_file_name") || "untitled.ant"
   );
   const [db, setDb] = useState<IDBPDatabase<MyDB> | null>();
-  const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(
-    null
-  );
+  const [editorInstance, setEditorInstance] =
+    useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [fileExplorerKey, setFileExplorerKey] = useState<number>(0);
-  const [selectedEditorPosition, setSelectedEditorPosition] = useState<SrcPosition>(
-    new SrcPosition(1, 1)
-  );
+  const [selectedEditorPosition, setSelectedEditorPosition] =
+    useState<SrcPosition>(new SrcPosition(1, 1));
   // keep track in App so that the option persists across different files.
   const [annotUnderlinedOn, setAnnotUnderlinedOn] = useState<boolean>(false);
 
@@ -87,14 +88,19 @@ const App: React.FC = () => {
    * @description Handle the file upload
    * @param event - The event
    */
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (files && db) {
       Array.from(files).forEach(async (file) => {
         const reader = new FileReader();
         reader.readAsText(file);
         reader.onload = async () => {
-          const fileData = { name: file.name, content: reader.result as string };
+          const fileData = {
+            name: file.name,
+            content: reader.result as string,
+          };
           await db.put("files", fileData);
           setUploadedFiles((prevFiles) => {
             const updatedFiles = [...prevFiles, fileData];
@@ -123,7 +129,11 @@ const App: React.FC = () => {
    * @param fileName - The name of the file
    * @param index - The index of the file
    */
-  const handleFileClick = (fileContent: string, fileName: string, index: number) => {
+  const handleFileClick = (
+    fileContent: string,
+    fileName: string,
+    index: number
+  ) => {
     window.localStorage.setItem("current_file_index", index.toString());
     window.localStorage.setItem("current_file_name", fileName);
     window.localStorage.setItem("current_file", fileContent);
@@ -137,15 +147,21 @@ const App: React.FC = () => {
   const handleConversionAntimony = () => {
     try {
       if (db) {
-        db.transaction("files").objectStore("files").get(selectedFileName).then((data) => {
-          if (data) {
-            if (window.convertAntimonyToSBML) {
-              window.convertAntimonyToSBML(data.content).then((converted) => {
-                handleNewFile(selectedFileName.replace("ant", "xml"), converted);
-              })
+        db.transaction("files")
+          .objectStore("files")
+          .get(selectedFileName)
+          .then((data) => {
+            if (data) {
+              if (window.convertAntimonyToSBML) {
+                window.convertAntimonyToSBML(data.content).then((converted) => {
+                  handleNewFile(
+                    selectedFileName.replace("ant", "xml"),
+                    converted
+                  );
+                });
+              }
             }
-          }
-        });
+          });
       } else {
         console.log("DB is null");
       }
@@ -160,15 +176,21 @@ const App: React.FC = () => {
   const handleConversionSBML = () => {
     try {
       if (db) {
-        db.transaction("files").objectStore("files").get(selectedFileName).then((data) => {
-          if (data) {
-            if (window.convertSBMLToAntimony) {
-              window.convertSBMLToAntimony(data.content).then((converted) => {
-                handleNewFile(selectedFileName.replace("xml", "ant"), converted);
-              })
+        db.transaction("files")
+          .objectStore("files")
+          .get(selectedFileName)
+          .then((data) => {
+            if (data) {
+              if (window.convertSBMLToAntimony) {
+                window.convertSBMLToAntimony(data.content).then((converted) => {
+                  handleNewFile(
+                    selectedFileName.replace("xml", "ant"),
+                    converted
+                  );
+                });
+              }
             }
-          }
-        });
+          });
       } else {
         console.log("DB is null");
       }
@@ -185,7 +207,9 @@ const App: React.FC = () => {
       setUploadedFiles(files);
 
       // Update selectedFileIndex based on the current files
-      const fileIndex = Number(window.localStorage.getItem("current_file_index"));
+      const fileIndex = Number(
+        window.localStorage.getItem("current_file_index")
+      );
       if (fileIndex >= 0 && fileIndex < files.length) {
         setSelectedFileIndex(fileIndex);
         setSelectedFileContent(files[fileIndex].content);
@@ -193,7 +217,7 @@ const App: React.FC = () => {
       } else {
         setSelectedFileIndex(null);
         setSelectedFileContent("// Enter Antimony Model Here");
-        setSelectedFileContent("")
+        setSelectedFileContent("");
         setSelectedFileName("untitled.ant");
         window.localStorage.removeItem("current_file_index");
       }
@@ -207,12 +231,17 @@ const App: React.FC = () => {
    * @param fileName - The name of the file to delete
    * @param deleteFromFileExplorer - Represents whether to delete the file from the file explorer
    */
-  const deleteFile = async (fileName: string, deleteFromFileExplorer: boolean) => {
+  const deleteFile = async (
+    fileName: string,
+    deleteFromFileExplorer: boolean
+  ) => {
     if (db) {
       await db.delete("files", fileName); // Delete from IndexedDB
 
       if (deleteFromFileExplorer) {
-        const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
+        const updatedFiles = uploadedFiles.filter(
+          (file) => file.name !== fileName
+        );
         setUploadedFiles(updatedFiles);
 
         // NOTE: Currently, a file is selected before it is deleted.
@@ -227,7 +256,11 @@ const App: React.FC = () => {
         } else if (selectedFileIndex === updatedFiles.length) {
           // If the selected file is deleted and was the last file, select the file before it.
           const newIndex = selectedFileIndex - 1;
-          handleFileClick(updatedFiles[newIndex].content, updatedFiles[newIndex].name, newIndex);
+          handleFileClick(
+            updatedFiles[newIndex].content,
+            updatedFiles[newIndex].name,
+            newIndex
+          );
         } else {
           // If the selected file is deleted, select the file now in its place.
           handleFileClick(
@@ -252,14 +285,17 @@ const App: React.FC = () => {
    * @param newFileName - The name of the new file
    */
   const handleNewFile = async (newFileName: string, fileContent: string) => {
-    const newFileContent = (fileContent === "" ? "// Enter Antimony Model Here" : fileContent);
-    const file = new File([newFileContent], newFileName, { type: "text/plain" });
+    const newFileContent =
+      fileContent === "" ? "// Enter Antimony Model Here" : fileContent;
+    const file = new File([newFileContent], newFileName, {
+      type: "text/plain",
+    });
     const dataTransfer = new DataTransfer();
 
     dataTransfer.items.add(file);
 
     if (db) {
-      let fileobj = {name: newFileName, content: newFileContent};
+      let fileobj = { name: newFileName, content: newFileContent };
 
       // Add file to database
       await db.put("files", fileobj);
@@ -278,6 +314,35 @@ const App: React.FC = () => {
       handleFileClick(newFileContent, newFileName, newFileIndex);
     } else {
       console.log("Database is null! File was not added");
+    }
+  };
+
+  /**
+   * @description Removes the file from the file explorer menu only
+   * @param fileName - The name of the file to remove
+   */
+  const removeFileFromMenu = (fileName: string) => {
+    const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
+    setUploadedFiles(updatedFiles);
+
+    // Handle selection after removal similar to delete
+    if (selectedFileIndex === null || updatedFiles.length === 1) {
+      handleNewFile("untitled.ant", "");
+    } else if (selectedFileIndex === 1) {
+      handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
+    } else if (selectedFileIndex === updatedFiles.length) {
+      const newIndex = selectedFileIndex - 1;
+      handleFileClick(
+        updatedFiles[newIndex].content,
+        updatedFiles[newIndex].name,
+        newIndex
+      );
+    } else {
+      handleFileClick(
+        updatedFiles[selectedFileIndex].content,
+        updatedFiles[selectedFileIndex].name,
+        selectedFileIndex
+      );
     }
   };
 
@@ -315,6 +380,7 @@ const App: React.FC = () => {
               setFiles={setUploadedFiles}
               onFileClick={handleFileClick}
               onDeleteFile={deleteFile}
+              onRemoveFile={removeFileFromMenu}
               selectedFileIndex={selectedFileIndex}
               setSelectedFileIndex={setSelectedFileIndex}
               selectedFileName={selectedFileName}
@@ -346,11 +412,16 @@ const App: React.FC = () => {
       </div>
       <footer>
         <div className="footer-content">
-          <a target="_blank" rel="noopener noreferrer" href="https://reproduciblebiomodels.org/">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://reproduciblebiomodels.org/"
+          >
             Copyright © 2024 Center for Reproducible Biomedical Modeling
           </a>
           <div className="selected-editor-position">
-            Ln {selectedEditorPosition.line}, Col {selectedEditorPosition.column}
+            Ln {selectedEditorPosition.line}, Col{" "}
+            {selectedEditorPosition.column}
           </div>
         </div>
       </footer>
