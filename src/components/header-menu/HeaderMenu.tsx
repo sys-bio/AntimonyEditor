@@ -81,8 +81,10 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   const [convertedFileContent, setConvertedFileContent] = useState<string>("");
   const [isConverted, setIsConverted] = useState<boolean>(false);
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
+  const [isAboutModalVisible, setAboutModalVisible] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const versionNumber = "1.0.0";
 
   /**
    * @description Handle clicking outside the dropdown to close it.
@@ -445,6 +447,14 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                       Report Issue
                     </a>
                   </li>
+                  <li onClick={() => { 
+                    setDropdownVisible("");
+                    setAboutModalVisible(true);
+                    }}>
+                    <div className="header-menu-command">
+                      About
+                    </div>
+                  </li>
                 </ul>
               )}
             </li>
@@ -462,6 +472,20 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
           setUploadedFiles={setUploadedFiles}
           isConverted={isConverted}
         />
+      )}
+      {isAboutModalVisible && (
+        <div 
+        className="modal-background" 
+        onClick={() => setAboutModalVisible(false)}
+      >
+        <div 
+          className="about-modal" 
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h1>Antimony Web Editor</h1>
+          <h2>Version {versionNumber}</h2>
+        </div>
+      </div>
       )}
     </>
   );
