@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { render, fireEvent } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import FileExplorer from "../components/file-explorer/FileExplorer";
-import { act } from "react-dom/test-utils";
 
 test("when renaming file, pressing enter should finish the rename", async () => {
     const initialFileName = "hi click me"
     const newFileName = "hi click me 2"
-    const typeThis = " 2{Enter}"; // This is what they type to go from the initial file name to the new file name
+    const typeThis = " 2[Enter]"; // This is what they type to go from the initial file name to the new file name
 
     // We have to create a container for the file explorer so we can use `useState` to mock the files.
     const FileExplorerMockContainer = () => {
@@ -36,12 +35,12 @@ test("when renaming file, pressing enter should finish the rename", async () => 
     // right click the file button
     const fileButton = await explorer.findByText(initialFileName);
     expect(fileButton).toBeInstanceOf(HTMLButtonElement);
-    await fireEvent.contextMenu(fileButton);
+    await userEvent.pointer({ keys: "[MouseRight]", target: fileButton });
 
     /// now click rename
     const renameButton = await explorer.findByText("Rename")
     expect(renameButton).toBeInTheDocument();
-    await fireEvent.click(renameButton);
+    await userEvent.click(renameButton);
 
     // check that it is now renaming
     const fileInput = await explorer.findByDisplayValue(initialFileName);
@@ -49,7 +48,7 @@ test("when renaming file, pressing enter should finish the rename", async () => 
     expect(fileInput).toHaveFocus();
 
     // type into the box the new name
-    userEvent.keyboard(typeThis);
+    await userEvent.keyboard(typeThis);
 
     // the file should now be renamed
     const fileButton2 = await explorer.findByText(newFileName);
