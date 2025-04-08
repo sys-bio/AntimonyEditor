@@ -22,6 +22,7 @@ interface MyDB extends DBSchema {
  * @property {string} onFileClick[].fileName - The name of the file
  * @property {string} onFileClick[].index - The index of the file
  * @property {function} onDeleteFile - The onDeleteFile function that deletes the given file
+ * @property {function} handleNewFile - The handleNewFile function that adds the given file to the database
  * @property {number | null} selectedFileIndex - The index of the currently selected file
  * @property {function} setSelectedFileIndex - The function to set the selectedFileIndex
  * @property {string} selectedFileName - The name of the currently selected file
