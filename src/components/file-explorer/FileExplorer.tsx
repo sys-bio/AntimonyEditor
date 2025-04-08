@@ -198,6 +198,15 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     setRenamingFileIndex(null);
   };
 
+  // Handles pressing `enter` to close renaming.
+  const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    if (e.key == "Enter") {
+      // Forces the input to cancel
+      target.blur();
+    }
+  };
+
   return (
     <div className="file-explorer">
       <ul>
@@ -208,6 +217,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                 type="text"
                 value={newFileName}
                 onChange={(e) => setNewFileName(e.target.value)}
+                onKeyDown={handleRenameKeyDown}
                 onBlur={handleRenameComplete}
                 autoComplete="off"
                 autoFocus
