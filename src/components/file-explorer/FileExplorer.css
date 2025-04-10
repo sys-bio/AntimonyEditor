@@ -3,7 +3,7 @@
   overflow: auto;
 }
 
-.file-explorer ul {
+.file-explorer-list {
   list-style: none;
   display: flex;
   align-items: flex-start;
@@ -11,6 +11,10 @@
   flex-direction: column;
   font-size: 0;
   padding: 0px 10px;
+}
+
+.file-explorer-list > li {
+  width: 100%;
 }
 
 .file-btn:hover,
@@ -26,15 +30,16 @@
   font-weight: normal !important;
   line-height: 1.2;
   margin-left: 3px;
-  padding: 2px 7px;
+  overflow: hidden;
+  padding: 5px;
   position: relative;
-  text-align: center;
+  text-align: left;
   text-decoration: none !important;
   text-overflow: ellipsis;
   text-shadow: none;
+  width: 100%;
   white-space: nowrap;
   color: white;
-  padding: 5px;
   font-size: 16px;
   border: none;
   cursor: pointer;

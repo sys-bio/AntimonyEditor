@@ -226,7 +226,7 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
 
   return (
     <div className="file-explorer">
-      <ul>
+      <ul className="file-explorer-list">
         {files.map((file, index) => (
           <li key={index}>
             {isRenaming && renamingFileIndex === index ? (
