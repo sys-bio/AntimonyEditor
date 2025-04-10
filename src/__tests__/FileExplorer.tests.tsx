@@ -5,29 +5,40 @@ import userEvent from "@testing-library/user-event";
 import FileExplorer from "../components/file-explorer/FileExplorer";
 
 test("when renaming file, pressing enter should finish the rename", async () => {
-    const initialFileName = "hi click me"
-    const newFileName = "hi click me 2"
+    const initialFileName = "hi click me";
+    const newFileName = "hi click me 2";
+    const fileContent = "hello world";
     const typeThis = " 2[Enter]"; // This is what they type to go from the initial file name to the new file name
 
     // We have to create a container for the file explorer so we can use `useState` to mock the files.
     const FileExplorerMockContainer = () => {
         const [files, setFiles] = useState([
-            { name: initialFileName, content: "hello world" },
+            { name: initialFileName, content: fileContent },
         ])
         const [selectedFileName, setSelectedFileName] = useState(initialFileName);
 
+        const mockDatabase = {
+            transaction: () => ({
+                objectStore: () => ({
+                    get: () => Promise.resolve({ content: fileContent }),
+                }),
+            }),
+        };
+
         return (
             <FileExplorer
+                database={mockDatabase as any}
                 files={files}
                 setFiles={setFiles}
                 onFileClick={jest.fn()}
                 onDeleteFile={jest.fn()}
+                handleNewFile={jest.fn()}
                 selectedFileIndex={0}
                 setSelectedFileIndex={jest.fn()}
                 selectedFileName={selectedFileName}
                 setSelectedFileName={setSelectedFileName}
             />
-        )
+        );
     };
 
     const explorer = render(<FileExplorerMockContainer />);
@@ -53,4 +64,4 @@ test("when renaming file, pressing enter should finish the rename", async () => 
     // the file should now be renamed
     const fileButton2 = await explorer.findByText(newFileName);
     expect(fileButton2).toBeInstanceOf(HTMLButtonElement);
-})
+});
