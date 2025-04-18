@@ -24,4 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Try Build
-        run: npm run build
+        run: |
+          npm install
+          npm run build
