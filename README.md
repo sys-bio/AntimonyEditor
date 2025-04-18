@@ -2,6 +2,7 @@
 ## Try it Out: [Antimony Web Editor](https://sys-bio.github.io/AntimonyEditor/)
 
 [![MIT License](https://img.shields.io/github/license/sys-bio/vscode-antimony)](https://github.com/evaxliu/evaxliu.github.io/blob/master/LICENSE)
+[![Tests](https://github.com/qndan/AntimonyEditor/actions/workflows/tests.yaml)](https://github.com/qndan/AntimonyEditor/actions/workflows/tests.yaml/badge.svg)
 
 #### [Repository](https://github.com/evaxliu/evaxliu.github.io)&nbsp;&nbsp;|&nbsp;&nbsp;[Issues](https://github.com/evaxliu/evaxliu.github.io/issues)&nbsp;&nbsp;|&nbsp;&nbsp;[Antimony Reference](https://tellurium.readthedocs.io/en/latest/antimony.html)&nbsp;&nbsp;|&nbsp;&nbsp;[tellurium](https://tellurium.readthedocs.io/en/latest/index.html)
 
