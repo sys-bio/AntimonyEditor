@@ -1,0 +1,59 @@
+name: Deploy AWE to Github Pages
+
+on:
+  push:
+    branches: 
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with: 
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ANTLR if .g4 files changed
+        if: contains(github.event.head_commit.mesage, 'g4')
+        run: npm run antlr4ts
+        
+
+      - name: Add homepage to package.json
+        run: |
+          node -e "
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json'));
+          pkg.homepage = 'https://sys-bio.github.io/AntimonyEditor/';
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+        "
+          
+      
+      - name: Change config/paths.js
+        run: |
+          sed -i 's/resolveApp(""),/resolveApp("public"),/' config/paths.js
+          sed -i 's/resolveApp("index.html"),/resolveApp("public\/index.html"),/' config/paths.js
+
+      - name: Update public folder files
+        run: |
+          cp Conversion.js public/Conversion.js
+          cp libantimony.js public/libantimony.js   
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Github Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
+      
+      - name: Revert deployment changes
+        run: git checkout -- package.json config/paths.js
