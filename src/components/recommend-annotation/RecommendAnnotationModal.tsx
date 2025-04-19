@@ -21,6 +21,47 @@ enum MSSC {
   TOP = "top",
   ABOVE = "above",
 }
+interface AlgorithmInfo {
+  name: string;
+  description: string;
+  version: string;
+  sourceCode: string;
+}
+
+const algorithms: AlgorithmInfo[] = [
+  { name: "AMAS", description: "Placeholder", version: "1.0", sourceCode: "https://github.com/sys-bio/AMAS" },
+  { name: "Example", description: "An example alternative algorithm", version: "1.2.3.4 beta", sourceCode: "https://sys-bio.github.io/AntimonyEditor/" }
+];
+
+class AnnotationAlgorithm {
+
+  info:AlgorithmInfo;
+
+  constructor(info:AlgorithmInfo) {
+    this.info = info;
+  }
+
+  getForm = () => {
+    return (
+      <>
+      </>
+    )
+  }
+
+  getResults = () => {
+    return (
+      <>
+      </>
+    )
+  }
+
+  getInfo = () => {
+    return (
+      <>
+      </>
+    )
+  }
+}
 
 interface Recommendation {
   type: string;
@@ -100,7 +141,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   setUploadedFiles,
   isConverted,
 }) => {
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState<number>(0);
   const [progress, setProgress] = useState<number>(0);
   const [progressMessage, setProgressMessage] = useState<string>("Loading...");
   const [cutoff, setCutoff] = useState<number>(0.01);
@@ -314,21 +355,20 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   const sortedRecommendations =
     sortConfig.field !== null
       ? [...recommendations].sort((a, b) => {
-          const field = sortConfig.field as keyof typeof a;
-          const valueA = a[field];
-          const valueB = b[field];
-
-          if (typeof valueA === "number" && typeof valueB === "number") {
-            return sortConfig.order === SortOrder.ASC
-              ? valueA - valueB
-              : valueB - valueA;
-          } else if (typeof valueA === "string" && typeof valueB === "string") {
-            return sortConfig.order === SortOrder.ASC
-              ? valueA.localeCompare(valueB)
-              : valueB.localeCompare(valueA);
-          }
-          return 0;
-        })
+        const field = sortConfig.field as keyof typeof a;
+        const valueA = a[field];
+        const valueB = b[field];
+        if (typeof valueA === "number" && typeof valueB === "number") {
+          return sortConfig.order === SortOrder.ASC
+            ? valueA - valueB
+            : valueB - valueA;
+        } else if (typeof valueA === "string" && typeof valueB === "string") {
+          return sortConfig.order === SortOrder.ASC
+            ? valueA.localeCompare(valueB)
+            : valueB.localeCompare(valueA);
+        }
+        return 0;
+      })
       : recommendations;
 
   /**
@@ -396,16 +436,33 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
       >
         <div className="modal-title-container">
           <div className="modal-title">
-            {step === 1 && `Select arguments:`}
+            {step === 0 && 'Select Algorithm'}
+            {step === 1 && `Select Arguments`}
             {step === 2 && (
               <div>
                 <div>{progressMessage}</div>
                 <progress value={progress} />
               </div>
             )}
-            {step === 3 && `Select annotations to update:`}
+            {step === 3 && `Select annotations to update`}
           </div>
         </div>
+
+
+        {step === 0 && (
+          <div className="algo-list-container">{algorithms.map((a) => (
+            <div className="algo-info-box" onClick={() => {setStep(1)}}>
+              <h2 className="algo-info-header">{a.name}</h2>
+              <div className="algo-info-description">
+                <div><a href={a.sourceCode}>Source</a></div>
+                <div>{"Version: " + a.version}</div>
+                {}
+                <div>{a.description}</div>
+              </div>
+            </div>
+          ))}
+          </div>
+        )}
 
         {step === 1 && (
           <>
@@ -485,9 +542,8 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
                 const key = getRecommendationKey(rec);
                 return (
                   <div
-                    className={`annot-grid-row ${
-                      rec.isLowMatch && "low-match"
-                    }`}
+                    className={`annot-grid-row ${rec.isLowMatch && "low-match"
+                      }`}
                     key={key}
                   >
                     <div className="annot-grid-item">{rec.type}</div>

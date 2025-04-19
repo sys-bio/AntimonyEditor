@@ -1,5 +1,26 @@
 .annot-modal {
-  width: 900px;
+  position: absolute;
+  top:20%;
+  left:50%;
+  padding:0px;
+  width: 700px;
+  border: 0px;
+  border-radius: 10px;
+}
+
+.modal-title-container {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  box-shadow: #333;
+  padding:10px;
+  background-color: #5b5b5c;
+}
+
+.modal-title {
+  text-align: left;
+  color:#ffffff;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .annot-arguments-container {
@@ -84,4 +105,36 @@
 
 .low-match {
   color: #ff6666;
+}
+
+.algo-list-container {
+  padding:10px;
+  display: grid;
+  vertical-align: middle;
+}
+
+.algo-info-box {
+  margin: 10px;
+  height: 150px;
+  max-height: 150px;
+  border: 0px solid #5b5b5c;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: rgba(0,0,0,0.5);
+  color:#ffffff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  vertical-align: middle;
+  align-items: center;
+}
+
+.algo-info-box:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.algo-info-header {
+  margin-top: 0;
+  margin-bottom: 0;
+  color: #ffffff;
+  font-size: 1.5em;
+  font-weight: bold;
 }
