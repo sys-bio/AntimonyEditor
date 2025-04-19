@@ -82,9 +82,9 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   const [isConverted, setIsConverted] = useState<boolean>(false);
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const [isAboutModalVisible, setAboutModalVisible] = useState<boolean>(false);
+  const [aboutContent, setAboutContent] = useState<string>('');
   const dropdownRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const versionNumber = "1.0.0";
 
   /**
    * @description Handle clicking outside the dropdown to close it.
@@ -233,6 +233,16 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleFileUpload, handleNewFile]);
+
+  useEffect(() => {
+    if (isAboutModalVisible) {
+      fetch('/about.html')
+        .then(response =>response.text())
+        .then(html => {
+          setAboutContent(html);
+        });
+    }
+  }, [isAboutModalVisible]);
 
   return (
     <>
@@ -482,8 +492,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
           className="about-modal" 
           onClick={(e) => e.stopPropagation()}
         >
-          <h1>Antimony Web Editor</h1>
-          <h2>Version {versionNumber}</h2>
+          <div dangerouslySetInnerHTML={{ __html: aboutContent }} />
         </div>
       </div>
       )}
