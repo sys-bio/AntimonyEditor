@@ -343,7 +343,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                 >
                   <li onClick={handleAnnotateClick}>
                     <div className="header-menu-command">
-                      Recommend Annotations for All
+                      Generate Annotations
                     </div>
                   </li>
                 </ul>
