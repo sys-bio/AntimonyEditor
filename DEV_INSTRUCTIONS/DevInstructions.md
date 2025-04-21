@@ -19,6 +19,6 @@ and change it back after deployment.
 
 If any changes are made to Conversion.js or libantimony.js in the root folder, make sure those changes are reflected in the public/Conversion.js or public/libantimony.js files as well. This is because the deployed page utilizes the version in the public/ folder. 
 
-Additionally, make sure to update the version number before deploying. Navigate to HeaderMenu.tsx and update the versionNumber constant.
+Additionally, make sure to update the version number before deploying. Navigate to about.html in the root directory and edit the html to diplay the new version number.
 
 Run "npm run deploy" in terminal to deploy the changes.
