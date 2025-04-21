@@ -30,7 +30,6 @@ function getPublicUrlOrPath(isEnvDevelopment, homepage) {
   // For our situation, we only want to use the homepage when deploying,
   // not in development
   if (isEnvDevelopment) {
-    console.log("lol");
     homepage = "./";
   }
 
