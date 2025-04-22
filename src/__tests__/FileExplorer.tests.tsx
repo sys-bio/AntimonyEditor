@@ -6,12 +6,12 @@ import FileExplorer, { FileExplorerProps } from "../components/file-explorer/Fil
 
 describe("FileExplorer", () => {
     /**
-    * We have to create a container for the file explorer so we can use `useState` to mock the files.
+     * We have to create a container for the file explorer so we can use `useState` to mock the files.
      * The only required field is initialFiles to represent the initial files the tree will contain.
      * Additional props can be provided to pass down directly to the file explorer.
      * 
      * @param props.initialFiles - Initial files the tree will be populated with.
-     * @param props.initialSelectedIndex - Initial file index that will be selected. By default is 0.
+     * @param props.initialSelectedIndex - Initial file index that will be selected.
      */
     const FileExplorerMockContainer = (
         props: {
@@ -106,7 +106,6 @@ describe("FileExplorer", () => {
             await userEvent.pointer({ keys: "[MouseRight]", target: fileButton });
         }
 
-        // The +1 is for the initial selection when the component renders
         expect(mockSetSelectedFileIndex.mock.calls).toHaveLength(files.length);
         for (let [index, call] of mockSetSelectedFileIndex.mock.calls.entries()) {
             // Should've selected the files in sequence
@@ -221,7 +220,7 @@ describe("FileExplorer", () => {
          * @param fileName - The name of the file to click rename for
          * @returns - The input for renaming the file
          */
-        async function clickRenameFor(explorer: any, fileName: string): Promise<Element> {
+        async function clickRenameFor(explorer: any, fileName: string): Promise<HTMLInputElement> {
             const fileButton = await explorer.findByText(fileName);
             expect(fileButton).toBeInstanceOf(HTMLButtonElement);
             await userEvent.pointer({ keys: "[MouseRight]", target: fileButton });
@@ -262,12 +261,11 @@ describe("FileExplorer", () => {
         test("clicking somewhere else should finish the rename", async () => {
             const initialFileName = "hi click me";
             const newFileName = "hi click me 2";
-            const fileContent = "hello world";
-            const typeThis = " 2"; // This is what they type to go from the initial file name to the new file name
+            const typeThis = " 2";
 
             const explorer = render(
                 <FileExplorerMockContainer
-                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
+                    initialFiles={[ { name: initialFileName, content: "hello world" } ]}
                 />
             );
 
@@ -284,12 +282,11 @@ describe("FileExplorer", () => {
 
         test("pressing esc should cancel the rename", async () => {
             const initialFileName = "hi click me";
-            const fileContent = "hello world";
-            const typeThis = " 2[Escape]"; // This is what they type to go from the initial file name to the new file name
+            const typeThis = " 2[Escape]";
 
             const explorer = render(
                 <FileExplorerMockContainer
-                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
+                    initialFiles={[ { name: initialFileName, content: "hello world" } ]}
                 />
             );
 
@@ -304,14 +301,13 @@ describe("FileExplorer", () => {
 
         test("should not be able to rename a file to nothing", async () => {
             const initialFileName = "hi click me";
-            const fileContent = "hello world";
 
             // Type enough to empty out the file name
             const typeThis = "[Backspace]".repeat(initialFileName.length) + "[Enter]";
 
             const explorer = render(
                 <FileExplorerMockContainer
-                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
+                    initialFiles={[ { name: initialFileName, content: "hello world" } ]}
                 />
             );
 
@@ -330,7 +326,6 @@ describe("FileExplorer", () => {
         test("should not be able to rename files to the same thing", async () => {
             const initialFileName = "hi click me";
             const otherFileName = "hi click"
-            const fileContent = "hello world";
 
             // Type so they have the same name
             const typeThis = " me[Enter]";
@@ -338,8 +333,8 @@ describe("FileExplorer", () => {
             const explorer = render(
                 <FileExplorerMockContainer
                     initialFiles={[
-                        { name: initialFileName, content: fileContent },
-                        { name: otherFileName, content: fileContent },
+                        { name: initialFileName, content: "hello world" },
+                        { name: otherFileName, content: "hello world" },
                     ]}
                 />
             );
