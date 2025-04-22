@@ -221,7 +221,7 @@ describe("FileExplorer", () => {
          * @param fileName - The name of the file to click rename for
          * @returns - The input for renaming the file
          */
-        async function clickRenameFor(explorer: any, fileName: string): Promise<any> {
+        async function clickRenameFor(explorer: any, fileName: string): Promise<Element> {
             const fileButton = await explorer.findByText(fileName);
             expect(fileButton).toBeInstanceOf(HTMLButtonElement);
             await userEvent.pointer({ keys: "[MouseRight]", target: fileButton });
@@ -259,10 +259,33 @@ describe("FileExplorer", () => {
             expect(fileButton).toBeInstanceOf(HTMLButtonElement);
         });
 
+        test("clicking somewhere else should finish the rename", async () => {
+            const initialFileName = "hi click me";
+            const newFileName = "hi click me 2";
+            const fileContent = "hello world";
+            const typeThis = " 2"; // This is what they type to go from the initial file name to the new file name
+
+            const explorer = render(
+                <FileExplorerMockContainer
+                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
+                />
+            );
+
+            const renameInput = await clickRenameFor(explorer, initialFileName);
+
+            await userEvent.keyboard(typeThis);
+            expect(renameInput).toBeInTheDocument();
+            await userEvent.pointer({ keys: "[MouseLeft]" });
+            expect(renameInput).not.toBeInTheDocument();
+
+            const fileButton = await explorer.findByText(newFileName);
+            expect(fileButton).toBeInstanceOf(HTMLButtonElement);
+        });
+
         test("pressing esc should cancel the rename", async () => {
             const initialFileName = "hi click me";
             const fileContent = "hello world";
-            const typeThis = " 2[Esc]"; // This is what they type to go from the initial file name to the new file name
+            const typeThis = " 2[Escape]"; // This is what they type to go from the initial file name to the new file name
 
             const explorer = render(
                 <FileExplorerMockContainer
