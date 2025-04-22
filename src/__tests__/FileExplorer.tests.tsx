@@ -2,25 +2,31 @@ import { useState } from "react";
 import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import FileExplorer from "../components/file-explorer/FileExplorer";
+import FileExplorer, { FileExplorerProps } from "../components/file-explorer/FileExplorer";
 
-test("when renaming file, pressing enter should finish the rename", async () => {
-    const initialFileName = "hi click me";
-    const newFileName = "hi click me 2";
-    const fileContent = "hello world";
-    const typeThis = " 2[Enter]"; // This is what they type to go from the initial file name to the new file name
-
-    // We have to create a container for the file explorer so we can use `useState` to mock the files.
-    const FileExplorerMockContainer = () => {
-        const [files, setFiles] = useState([
-            { name: initialFileName, content: fileContent },
-        ])
-        const [selectedFileName, setSelectedFileName] = useState(initialFileName);
+describe("FileExplorer", () => {
+    /**
+     * We have to create a container for the file explorer so we can use `useState` to mock the files.
+     * The only required field is initialFiles to represent the initial files the tree will contain.
+     * Additional props can be provided to pass down directly to the file explorer.
+     * 
+     * @param props.initialFiles - Initial files the tree will be populated with.
+     * @param props.initialSelectedIndex - Initial file index that will be selected. By default is 0.
+     */
+    const FileExplorerMockContainer = (
+        props: {
+            initialFiles: FileExplorerProps["files"],
+            initialSelectedIndex?: number,
+        } & Partial<FileExplorerProps>
+    ) => {
+        const [files, setFiles] = useState(props.initialFiles);
+        const [selectedFileIndex, setSelectedFileIndex] = useState(props.initialSelectedIndex ?? null);
+        const [selectedFileName, setSelectedFileName] = useState(files[selectedFileIndex ?? 0]?.name);
 
         const mockDatabase = {
             transaction: () => ({
                 objectStore: () => ({
-                    get: () => Promise.resolve({ content: fileContent }),
+                    get: (name: string) => Promise.resolve(files.find(f => f.name == name)),
                 }),
             }),
         };
@@ -33,35 +39,298 @@ test("when renaming file, pressing enter should finish the rename", async () => 
                 onFileClick={jest.fn()}
                 onDeleteFile={jest.fn()}
                 handleNewFile={jest.fn()}
-                selectedFileIndex={0}
-                setSelectedFileIndex={jest.fn()}
+                selectedFileIndex={selectedFileIndex}
+                setSelectedFileIndex={setSelectedFileIndex}
                 selectedFileName={selectedFileName}
                 setSelectedFileName={setSelectedFileName}
+                {...props}
             />
         );
     };
 
-    const explorer = render(<FileExplorerMockContainer />);
+    test("multiple files should appear in the tree", async () => {
+        const files = [
+            { name: "test1", content: "hey" },
+            { name: "test2", content: "hey" },
+            { name: "test3", content: "hey" },
+            { name: "test4", content: "hey" },
+            { name: "test5", content: "hey" },
+        ];
 
-    // right click the file button
-    const fileButton = await explorer.findByText(initialFileName);
-    expect(fileButton).toBeInstanceOf(HTMLButtonElement);
-    await userEvent.pointer({ keys: "[MouseRight]", target: fileButton });
+        const explorer = render(
+            <FileExplorerMockContainer
+                initialFiles={files}
+            />
+        );
 
-    /// now click rename
-    const renameButton = await explorer.findByText("Rename")
-    expect(renameButton).toBeInTheDocument();
-    await userEvent.click(renameButton);
+        // All the files should appear
+        for (let file of files) {
+            const fileButton = await explorer.findByText(file.name);
+            expect(fileButton).toBeInstanceOf(HTMLButtonElement);
+        }
+    });
 
-    // check that it is now renaming
-    const fileInput = await explorer.findByDisplayValue(initialFileName);
-    expect(fileInput).toBeInstanceOf(HTMLInputElement);
-    expect(fileInput).toHaveFocus();
+    test("empty file tree should have no buttons", async () => {
+        const files: any = [];
 
-    // type into the box the new name
-    await userEvent.keyboard(typeThis);
+        const explorer = render(
+            <FileExplorerMockContainer
+                initialFiles={files}
+            />
+        );
 
-    // the file should now be renamed
-    const fileButton2 = await explorer.findByText(newFileName);
-    expect(fileButton2).toBeInstanceOf(HTMLButtonElement);
-});
+        // There should be no buttons because there are no files
+        expect(explorer.queryByRole("button")).toBeNull();
+    });
+
+    test("right clicking a file should select it", async () => {
+        const files = [
+            { name: "test1", content: "hey" },
+            { name: "test2", content: "hey" },
+            { name: "test3", content: "hey" },
+            { name: "test4", content: "hey" },
+            { name: "test5", content: "hey" },
+        ];
+
+        const mockSetSelectedFileIndex = jest.fn();
+        const explorer = render(
+            <FileExplorerMockContainer
+                initialFiles={files}
+                setSelectedFileIndex={mockSetSelectedFileIndex}
+            />
+        );
+
+        for (let file of files) {
+            const fileButton = await explorer.findByText(file.name);
+            expect(fileButton).toBeInstanceOf(HTMLButtonElement);
+            await userEvent.pointer({ keys: "[MouseRight]", target: fileButton });
+        }
+
+        // The +1 is for the initial selection when the component renders
+        expect(mockSetSelectedFileIndex.mock.calls).toHaveLength(files.length);
+        for (let [index, call] of mockSetSelectedFileIndex.mock.calls.entries()) {
+            // Should've selected the files in sequence
+            expect(call).toEqual([index]);
+        }
+    });
+
+    test("clicking a file should fire onFileClick", async () => {
+        const files = [
+            { name: "hello world", content: "goodbye world" },
+            { name: "hi", content: "bye"},
+            { name: "abc", content: "def"},
+        ];
+
+        const mockOnClick = jest.fn();
+        const explorer = render(
+            <FileExplorerMockContainer
+                initialFiles={files}
+                onFileClick={mockOnClick}
+            />
+        );
+
+        for (let file of files) {
+            const fileButton = await explorer.findByText(file.name);
+            expect(fileButton).toBeInstanceOf(HTMLButtonElement);
+            await userEvent.click(fileButton);
+        }
+
+        expect(mockOnClick.mock.calls).toHaveLength(files.length);
+        for (let [index, file] of files.entries()) {
+            expect(mockOnClick.mock.calls[index][0]).toBe(file.content);
+            expect(mockOnClick.mock.calls[index][1]).toBe(file.name);
+            expect(mockOnClick.mock.calls[index][2]).toBe(index);
+        }
+    });
+
+    test("deleting a file that comes after the selected file should not change the selected file index", async () => {
+        const files = [
+            { name: "file1", content: "" },
+            { name: "file2", content: "" },
+            { name: "file3", content: "" },
+        ];
+
+        const mockOnDelete = jest.fn();
+        const mockSetSelectedFileIndex = jest.fn();
+        const explorer = render(
+            <FileExplorerMockContainer
+                initialFiles={files}
+                initialSelectedIndex={1}
+                onDeleteFile={mockOnDelete}
+                setSelectedFileIndex={mockSetSelectedFileIndex}
+            />
+        );
+
+        // Click the button after the currently selected one
+        const file2Button = await explorer.findByText(files[2].name);
+        expect(file2Button).toBeInstanceOf(HTMLButtonElement);
+        await userEvent.pointer({ keys: "[MouseRight]", target: file2Button });
+        
+        const deleteButton = await explorer.findByText("Delete");
+        await userEvent.click(deleteButton);
+
+        // Should have called it once and requested to delete the file after the currently selected one
+        // The `true` means it should have requested to be deleted from the file tree.
+        expect(mockOnDelete.mock.calls).toHaveLength(1);
+        expect(mockOnDelete.mock.calls[0]).toEqual([files[2].name, true]);
+
+        // The last selection change should have only been from the right click
+        expect(mockSetSelectedFileIndex.mock.lastCall).toEqual([2]);
+    });
+
+    test("deleting a file that comes before the selected file should change the selected file index", async () => {
+        const files = [
+            { name: "file1", content: "" },
+            { name: "file2", content: "" },
+            { name: "file3", content: "" },
+        ];
+
+        const mockOnDelete = jest.fn();
+        const mockSetSelectedFileIndex = jest.fn();
+        const explorer = render(
+            <FileExplorerMockContainer
+                initialFiles={files}
+                initialSelectedIndex={1}
+                onDeleteFile={mockOnDelete}
+                setSelectedFileIndex={mockSetSelectedFileIndex}
+            />
+        );
+
+        // Click the button after the currently selected one
+        const file0Button = await explorer.findByText(files[0].name);
+        expect(file0Button).toBeInstanceOf(HTMLButtonElement);
+        await userEvent.pointer({ keys: "[MouseRight]", target: file0Button });
+        
+        const deleteButton = await explorer.findByText("Delete");
+        await userEvent.click(deleteButton);
+
+        // Should have called it once and requested to delete the file after the currently selected one
+        // The `true` means it should have requested to be deleted from the file tree.
+        expect(mockOnDelete.mock.calls).toHaveLength(1);
+        expect(mockOnDelete.mock.calls[0]).toEqual([files[0].name, true]);
+
+        // Deleting the file that came before should move the current selected file one down (so zero)
+        expect(mockSetSelectedFileIndex.mock.lastCall).toEqual([0]);
+    });
+
+    describe("Renaming", () => {
+        /**
+         * Convenience function for finding the file button in the rendered file explorer
+         * and right clicking it then clicking rename.
+         * @param explorer - The explorer containg all the files
+         * @param fileName - The name of the file to click rename for
+         * @returns - The input for renaming the file
+         */
+        async function clickRenameFor(explorer: any, fileName: string): Promise<any> {
+            const fileButton = await explorer.findByText(fileName);
+            expect(fileButton).toBeInstanceOf(HTMLButtonElement);
+            await userEvent.pointer({ keys: "[MouseRight]", target: fileButton });
+            
+            const renameButton = await explorer.findByText("Rename")
+            await userEvent.click(renameButton);
+
+            const fileInput = await explorer.findByDisplayValue(fileName);
+            expect(fileInput).toBeInstanceOf(HTMLInputElement);
+            expect(fileInput).toHaveFocus();
+
+            return fileInput;
+        }
+
+        test("pressing enter should finish the rename", async () => {
+            const initialFileName = "hi click me";
+            const newFileName = "hi click me 2";
+            const fileContent = "hello world";
+            const typeThis = " 2[Enter]"; // This is what they type to go from the initial file name to the new file name
+
+            const explorer = render(
+                <FileExplorerMockContainer
+                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
+                />
+            );
+
+            const renameInput = await clickRenameFor(explorer, initialFileName);
+
+            // type into the box the new name
+            await userEvent.keyboard(typeThis);
+            expect(renameInput).not.toBeInTheDocument();
+
+            // the file should now be renamed
+            const fileButton = await explorer.findByText(newFileName);
+            expect(fileButton).toBeInstanceOf(HTMLButtonElement);
+        });
+
+        test("pressing esc should cancel the rename", async () => {
+            const initialFileName = "hi click me";
+            const fileContent = "hello world";
+            const typeThis = " 2[Esc]"; // This is what they type to go from the initial file name to the new file name
+
+            const explorer = render(
+                <FileExplorerMockContainer
+                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
+                />
+            );
+
+            const renameInput = await clickRenameFor(explorer, initialFileName);
+
+            await userEvent.keyboard(typeThis);
+            expect(renameInput).not.toBeInTheDocument();
+
+            const fileButton = await explorer.findByText(initialFileName);
+            expect(fileButton).toBeInstanceOf(HTMLButtonElement);
+        });
+
+        test("should not be able to rename a file to nothing", async () => {
+            const initialFileName = "hi click me";
+            const fileContent = "hello world";
+
+            // Type enough to empty out the file name
+            const typeThis = "[Backspace]".repeat(initialFileName.length) + "[Enter]";
+
+            const explorer = render(
+                <FileExplorerMockContainer
+                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
+                />
+            );
+
+            const renameInput = await clickRenameFor(explorer, initialFileName);
+
+            // Delete all the text so its empty
+            await userEvent.keyboard(typeThis);
+            expect(renameInput).toHaveValue("");
+            expect(renameInput).toBeInTheDocument();
+            
+            // Should not exist because they should not be allowed to rename the file to nothing
+            const fileButton2 = explorer.queryByRole("button");
+            expect(fileButton2).toBeNull();
+        });
+
+        test("should not be able to rename files to the same thing", async () => {
+            const initialFileName = "hi click me";
+            const otherFileName = "hi click"
+            const fileContent = "hello world";
+
+            // Type so they have the same name
+            const typeThis = " me[Enter]";
+
+            const explorer = render(
+                <FileExplorerMockContainer
+                    initialFiles={[
+                        { name: initialFileName, content: fileContent },
+                        { name: otherFileName, content: fileContent },
+                    ]}
+                />
+            );
+
+            const renameInput = await clickRenameFor(explorer, otherFileName);
+            expect(renameInput).toBeInstanceOf(HTMLInputElement);
+            expect(renameInput).toHaveFocus();
+
+            await userEvent.keyboard(typeThis);
+            expect(renameInput).toHaveValue(initialFileName);
+
+            // Should not exist because they should not be allowed to rename the file to nothing
+            const fileButton2 = explorer.queryByRole("button");
+            expect(fileButton2).toBeNull();
+        });
+    });
+})
