@@ -6,7 +6,7 @@ import FileExplorer, { FileExplorerProps } from "../components/file-explorer/Fil
 
 describe("FileExplorer", () => {
     /**
-     * We have to create a container for the file explorer so we can use `useState` to mock the files.
+    * We have to create a container for the file explorer so we can use `useState` to mock the files.
      * The only required field is initialFiles to represent the initial files the tree will contain.
      * Additional props can be provided to pass down directly to the file explorer.
      * 
@@ -323,8 +323,8 @@ describe("FileExplorer", () => {
             expect(renameInput).toBeInTheDocument();
             
             // Should not exist because they should not be allowed to rename the file to nothing
-            const fileButton2 = explorer.queryByRole("button");
-            expect(fileButton2).toBeNull();
+            const fileButton = explorer.queryByRole("button");
+            expect(fileButton).toBeNull();
         });
 
         test("should not be able to rename files to the same thing", async () => {
@@ -350,10 +350,38 @@ describe("FileExplorer", () => {
 
             await userEvent.keyboard(typeThis);
             expect(renameInput).toHaveValue(initialFileName);
+            expect(renameInput).toHaveFocus();
+            expect(renameInput).toBeInTheDocument(); // They should not have been able to submit
 
-            // Should not exist because they should not be allowed to rename the file to nothing
-            const fileButton2 = explorer.queryByRole("button");
-            expect(fileButton2).toBeNull();
+            // There should only be one button with the name
+            const buttons = await explorer.findAllByText(initialFileName);
+            expect(buttons).toHaveLength(1);
+        });
+
+        test("when there is an error while renaming, clicking somewhere else should reset to original name", async () => {
+            const initialFileName = "hi click me";
+            const fileContent = "hello world";
+
+            // Type enough to empty out the file name
+            const typeThis = "[Backspace]".repeat(initialFileName.length);
+
+            const explorer = render(
+                <FileExplorerMockContainer
+                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
+                />
+            );
+
+            const renameInput = await clickRenameFor(explorer, initialFileName);
+
+            // Delete all the text so its empty
+            await userEvent.keyboard(typeThis);
+            expect(renameInput).toHaveValue("");
+            expect(renameInput).toBeInTheDocument();
+
+            await userEvent.pointer({ keys: "[MouseLeft]" });
+           
+            // Name should've reset
+            await explorer.findByText(initialFileName);
         });
     });
 })
