@@ -29,7 +29,7 @@ interface MyDB extends DBSchema {
  * @property {function} setSelectedFileName - The function to set the setSelectedFileName
  *
  */
-interface FileExplorerProps {
+export interface FileExplorerProps {
   files: { name: string; content: string }[];
   setFiles: React.Dispatch<React.SetStateAction<{ name: string; content: string }[]>>;
   onFileClick: (fileContent: string, fileName: string, index: number) => void;
