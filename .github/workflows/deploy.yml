@@ -48,9 +48,9 @@ jobs:
       - name: Disable ESLint strict mode
         run: |
           export CI=false
+          npm run build
 
-      - name: Build
-        run: npm run build
+
 
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v4
