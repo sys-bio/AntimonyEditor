@@ -11,8 +11,8 @@
     "@testing-library/jest-dom": "^5.17.0",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.71",
-    "@types/react": "^18.2.74",
-    "@types/react-dom": "^18.2.18",
+    "@types/react": "^18.3.20",
+    "@types/react-dom": "^18.3.6",
     "antlr4ts": "^0.5.0-alpha.4",
     "assert": "^2.1.0",
     "babel-loader": "^8.2.3",
@@ -101,9 +101,9 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@babel/preset-env": "^7.24.0",
     "@babel/preset-react": "^7.23.3",
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@testing-library/react": "^14.2.1",
     "@testing-library/user-event": "^14.5.2",
     "@types/turndown": "^5.0.5",
