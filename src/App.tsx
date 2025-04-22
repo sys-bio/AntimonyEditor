@@ -181,7 +181,9 @@ const App: React.FC = () => {
     const loadData = async () => {
       const database = await openDB<MyDB>("antimony_editor_db", 1);
       setDb(database);
-      const files = await database.getAll("files");
+
+      // Filter out invalid names like empty string
+      const files = (await database.getAll("files")).filter(f => f.name !== "");
       setUploadedFiles(files);
 
       // Update selectedFileIndex based on the current files
