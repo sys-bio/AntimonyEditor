@@ -37,8 +37,8 @@ jobs:
         
       - name: Change config/paths.js
         run: |
-          sed -i 's/resolveApp(''),/resolveApp('public'),/' config/paths.js
-          sed -i 's/resolveApp('index.html'),/resolveApp('public\/index.html'),/' config/paths.js
+          sed -i "s/resolveApp(''),/resolveApp('public'),/" config/paths.js
+          sed -i "s/resolveApp('index.html'),/resolveApp('public\/index.html'),/" config/paths.js
 
       - name: Update public folder files
         run: |
