@@ -4,6 +4,7 @@ on:
   push:
     branches: 
       - main
+      - auto-deploy-main
 
 jobs:
   deploy:
@@ -22,7 +23,7 @@ jobs:
         run: npm ci
 
       - name: Run ANTLR if .g4 files changed
-        if: contains(github.event.head_commit.mesage, 'g4')
+        if: contains(github.event.head_commit.message, 'g4')
         run: npm run antlr4ts
         
 
@@ -33,9 +34,7 @@ jobs:
           const pkg = JSON.parse(fs.readFileSync('package.json'));
           pkg.homepage = 'https://sys-bio.github.io/AntimonyEditor/';
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-        "
-          
-      
+        
       - name: Change config/paths.js
         run: |
           sed -i 's/resolveApp(""),/resolveApp("public"),/' config/paths.js
