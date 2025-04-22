@@ -45,6 +45,11 @@ jobs:
           cp Conversion.js public/Conversion.js
           cp libantimony.js public/libantimony.js   
 
+      - name: Debug working directory
+        run: |
+          pwd
+          ls -lah
+
       - name: Build
         run: npm run build
 
