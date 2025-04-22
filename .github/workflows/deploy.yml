@@ -48,7 +48,8 @@ jobs:
       - name: Build
         run: CI=false npm run build
 
-
+      - name: Debug build directory
+        run: ls -lah build
 
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v4
