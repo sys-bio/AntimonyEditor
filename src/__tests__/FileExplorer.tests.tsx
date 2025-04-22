@@ -383,5 +383,28 @@ describe("FileExplorer", () => {
             // Name should've reset
             await explorer.findByText(initialFileName);
         });
+
+        test("when there is an error while renaming, there should be an error message", async () => {
+            const initialFileName = "hi click me";
+            const fileContent = "hello world";
+
+            // Type enough to empty out the file name
+            const typeThis = "[Backspace]".repeat(initialFileName.length);
+
+            const explorer = render(
+                <FileExplorerMockContainer
+                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
+                />
+            );
+
+            const renameInput = await clickRenameFor(explorer, initialFileName);
+
+            // Delete all the text so its empty
+            await userEvent.keyboard(typeThis);
+            expect(renameInput).toHaveValue("");
+           
+            // Should have error message
+            await explorer.findByRole("alert");
+        });
     });
 })
