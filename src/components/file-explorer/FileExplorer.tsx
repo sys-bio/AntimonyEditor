@@ -288,12 +288,14 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
                   autoFocus
                   className="rename-input"
                   aria-invalid={renameError !== null}
-                  aria-errormessage={renameError ? "renameErrorMessage" : undefined}
+                  aria-errormessage={renameError ? `renameErrorMessage${selectedFileName}` : undefined}
                 />
                 {!renameError ? null :
-                  <span id="renameErrorMessage" className="rename-error" role="alert">
-                    {renameError}
-                  </span>
+                  <div className="rename-error-container">
+                    <span id={`renameErrorMessage${selectedFileName}`} className="rename-error" role="alert">
+                      {renameError}
+                    </span>
+                  </div>
                 }
               </>
             ) : (

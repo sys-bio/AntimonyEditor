@@ -65,7 +65,13 @@
   border-bottom-right-radius: 0;
 }
 
+.rename-error-container {
+  position: relative;
+  width: 100%;
+}
+
 .rename-error {
+  position: absolute;
   background-color: #950c0c;
   border: 1.5px solid #e30b0b;
   border-bottom-left-radius: 2px;
@@ -75,4 +81,5 @@
   font-size: 0.75rem;
   padding: 4px;
   width: 100%;
+  z-index: 2;
 }
