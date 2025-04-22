@@ -73,6 +73,7 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
   const [isRenaming, setIsRenaming] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [renamingFileIndex, setRenamingFileIndex] = useState<number | null>(null);
+  const [renameError, setRenameError] = useState<string | null>(null);
   const originalFileName = useRef<string | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
@@ -212,6 +213,14 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
     return null;
   };
 
+  const finishRename = () => {
+    setIsRenaming(false);
+    setNewFileName("");
+    setRenamingFileIndex(null);
+    setRenameError(null);
+    originalFileName.current = null;
+  };
+
   const handleRenameComplete = async () => {
     if (
       renamingFileIndex !== null
@@ -236,10 +245,7 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
       window.localStorage.setItem("current_file_name", newFileName);
     }
 
-    setIsRenaming(false);
-    setNewFileName("");
-    setRenamingFileIndex(null);
-    originalFileName.current = null;
+    finishRename();
   };
 
   // Handles pressing `enter` to close renaming.
@@ -257,9 +263,7 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
           setNewFileName(originalFileName.current);
         }
 
-        // Can't call blur() because that will trigger onBlur and force rename before the
-        // setNewFileName works
-        setIsRenaming(false);
+        finishRename();
         break;
     }
   };
@@ -270,16 +274,28 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
         {files.map((file, index) => (
           <li key={index}>
             {isRenaming && renamingFileIndex === index ? (
-              <input
-                type="text"
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-                onKeyDown={handleRenameKeyDown}
-                onBlur={handleRenameComplete}
-                autoComplete="off"
-                autoFocus
-                className="rename-input"
-              />
+              <>
+                <input
+                  type="text"
+                  value={newFileName}
+                  onChange={(e) => {
+                    setNewFileName(e.target.value);
+                    setRenameError(getRenameError(e.target.value));
+                  }}
+                  onKeyDown={handleRenameKeyDown}
+                  onBlur={handleRenameComplete}
+                  autoComplete="off"
+                  autoFocus
+                  className="rename-input"
+                  aria-invalid={renameError !== null}
+                  aria-errormessage={renameError ? "renameErrorMessage" : undefined}
+                />
+                {!renameError ? null :
+                  <span id="renameErrorMessage" className="rename-error" role="alert">
+                    {renameError}
+                  </span>
+                }
+              </>
             ) : (
               <button
                 onClick={() => handleFileButtonClick(index, file.name)}
