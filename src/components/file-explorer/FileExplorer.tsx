@@ -194,8 +194,30 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
     }
   };
 
+  /**
+   * Checks if a new file name is valid.
+   * @param newName - name to validate
+   * @returns - String with error or null if no error
+   */
+  const getRenameError = (newName: string): string | null => {
+    if (newName === "") {
+      return "Provide a name";
+    } else {
+      const sameNameIndex = files.findIndex(f => f.name === newName);
+      if (sameNameIndex !== -1 && sameNameIndex !== renamingFileIndex) {
+        return "Name already taken"
+      }
+    }
+
+    return null;
+  };
+
   const handleRenameComplete = async () => {
-    if (renamingFileIndex !== null && selectedFileName !== newFileName) {
+    if (
+      renamingFileIndex !== null
+      && selectedFileName !== newFileName
+      && !getRenameError(newFileName)
+    ) {
       const updatedFiles = files.map((file, index) => {
         if (index === renamingFileIndex) {
           return { ...file, name: newFileName };
@@ -225,8 +247,10 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
     const target = e.target as HTMLInputElement;
     switch (e.key) {
       case "Enter":
-        // Forces the input to cancel
-        target.blur();
+        // Forces the input to cancel, but only when there's no error
+        if (!getRenameError(newFileName)) {
+          target.blur();
+        }
         break;
       case "Escape":
         if (originalFileName.current) {
