@@ -69,9 +69,12 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [deletedFileIndex, setDeletedFileIndex] = useState(null);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+
   const [isRenaming, setIsRenaming] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [renamingFileIndex, setRenamingFileIndex] = useState<number | null>(null);
+  const originalFileName = useRef<string | null>(null);
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -178,6 +181,7 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
       setIsRenaming(true);
       setRenamingFileIndex(selectedFileIndex);
       setNewFileName(selectedFileName);
+      originalFileName.current = selectedFileName;
     } else if (option === "delete" && selectedFileName) {
       await onDeleteFile(selectedFileName, true);
       if (
@@ -213,14 +217,26 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
     setIsRenaming(false);
     setNewFileName("");
     setRenamingFileIndex(null);
+    originalFileName.current = null;
   };
 
   // Handles pressing `enter` to close renaming.
   const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const target = e.target as HTMLInputElement;
-    if (e.key == "Enter") {
-      // Forces the input to cancel
-      target.blur();
+    switch (e.key) {
+      case "Enter":
+        // Forces the input to cancel
+        target.blur();
+        break;
+      case "Escape":
+        if (originalFileName.current) {
+          setNewFileName(originalFileName.current);
+        }
+
+        // Can't call blur() because that will trigger onBlur and force rename before the
+        // setNewFileName works
+        setIsRenaming(false);
+        break;
     }
   };
 
