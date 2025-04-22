@@ -32,7 +32,7 @@ jobs:
           node -e "
           const fs = require('fs');
           const pkg = JSON.parse(fs.readFileSync('package.json'));
-          pkg.homepage = 'https://sys-bio.github.io/AntimonyEditor/';
+          pkg.homepage = "https://sys-bio.github.io/AntimonyEditor/"";
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
         
       - name: Change config/paths.js
