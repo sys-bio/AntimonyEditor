@@ -45,8 +45,13 @@ jobs:
           cp Conversion.js public/Conversion.js
           cp libantimony.js public/libantimony.js   
 
-      - name: Check public directory
-        run: ls -lah public || echo "public/ folder is missing"
+      - name: Debug build paths
+        run: |
+          node -e "
+          const paths = require('./config/paths');
+          console.log('appPublic:', paths.appPublic);
+          console.log('appBuild:', paths.appBuild);
+          "
 
       - name: Build
         run: npm run build
