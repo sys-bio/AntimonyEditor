@@ -29,7 +29,7 @@ interface MyDB extends DBSchema {
  * @property {function} setSelectedFileName - The function to set the setSelectedFileName
  *
  */
-interface FileExplorerProps {
+export interface FileExplorerProps {
   files: { name: string; content: string }[];
   setFiles: React.Dispatch<React.SetStateAction<{ name: string; content: string }[]>>;
   onFileClick: (fileContent: string, fileName: string, index: number) => void;
@@ -69,9 +69,13 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [deletedFileIndex, setDeletedFileIndex] = useState(null);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+
   const [isRenaming, setIsRenaming] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [renamingFileIndex, setRenamingFileIndex] = useState<number | null>(null);
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const originalFileName = useRef<string | null>(null);
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -178,6 +182,7 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
       setIsRenaming(true);
       setRenamingFileIndex(selectedFileIndex);
       setNewFileName(selectedFileName);
+      originalFileName.current = selectedFileName;
     } else if (option === "delete" && selectedFileName) {
       await onDeleteFile(selectedFileName, true);
       if (
@@ -190,8 +195,38 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
     }
   };
 
+  /**
+   * Checks if a new file name is valid.
+   * @param newName - name to validate
+   * @returns - String with error or null if no error
+   */
+  const getRenameError = (newName: string): string | null => {
+    if (newName === "") {
+      return "Provide a name";
+    } else {
+      const sameNameIndex = files.findIndex(f => f.name === newName);
+      if (sameNameIndex !== -1 && sameNameIndex !== renamingFileIndex) {
+        return "Name already taken"
+      }
+    }
+
+    return null;
+  };
+
+  const finishRename = () => {
+    setIsRenaming(false);
+    setNewFileName("");
+    setRenamingFileIndex(null);
+    setRenameError(null);
+    originalFileName.current = null;
+  };
+
   const handleRenameComplete = async () => {
-    if (renamingFileIndex !== null && selectedFileName !== newFileName) {
+    if (
+      renamingFileIndex !== null
+      && selectedFileName !== newFileName
+      && !getRenameError(newFileName)
+    ) {
       const updatedFiles = files.map((file, index) => {
         if (index === renamingFileIndex) {
           return { ...file, name: newFileName };
@@ -210,36 +245,59 @@ const FileExplorer: React.FC<FileExplorerProps & {database: IDBPDatabase<MyDB>}>
       window.localStorage.setItem("current_file_name", newFileName);
     }
 
-    setIsRenaming(false);
-    setNewFileName("");
-    setRenamingFileIndex(null);
+    finishRename();
   };
 
   // Handles pressing `enter` to close renaming.
   const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const target = e.target as HTMLInputElement;
-    if (e.key == "Enter") {
-      // Forces the input to cancel
-      target.blur();
+    switch (e.key) {
+      case "Enter":
+        // Forces the input to cancel, but only when there's no error
+        if (!getRenameError(newFileName)) {
+          target.blur();
+        }
+        break;
+      case "Escape":
+        if (originalFileName.current) {
+          setNewFileName(originalFileName.current);
+        }
+
+        finishRename();
+        break;
     }
   };
 
   return (
     <div className="file-explorer">
-      <ul>
+      <ul className="file-explorer-list">
         {files.map((file, index) => (
           <li key={index}>
             {isRenaming && renamingFileIndex === index ? (
-              <input
-                type="text"
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-                onKeyDown={handleRenameKeyDown}
-                onBlur={handleRenameComplete}
-                autoComplete="off"
-                autoFocus
-                className="rename-input"
-              />
+              <>
+                <input
+                  type="text"
+                  value={newFileName}
+                  onChange={(e) => {
+                    setNewFileName(e.target.value);
+                    setRenameError(getRenameError(e.target.value));
+                  }}
+                  onKeyDown={handleRenameKeyDown}
+                  onBlur={handleRenameComplete}
+                  autoComplete="off"
+                  autoFocus
+                  className="rename-input"
+                  aria-invalid={renameError !== null}
+                  aria-errormessage={renameError ? `renameErrorMessage${selectedFileName}` : undefined}
+                />
+                {!renameError ? null :
+                  <div className="rename-error-container">
+                    <span id={`renameErrorMessage${selectedFileName}`} className="rename-error" role="alert">
+                      {renameError}
+                    </span>
+                  </div>
+                }
+              </>
             ) : (
               <button
                 onClick={() => handleFileButtonClick(index, file.name)}
