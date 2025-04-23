@@ -250,10 +250,42 @@ const App: React.FC = () => {
   };
 
   /**
+   * Finds a version of the provided name that is available.
+   * 
+   * @param name - the name to find an available version of
+   * @returns - the name, but a version of it that's not taken
+   * 
+   * @example
+   * Returns "untitled1.ant" if there is already a file named "untitled.ant"
+   * ```
+   * getAvailableFileName("untitled.ant")
+   * ```
+   */
+  const getAvailableFileName = (name: string) => {
+    if (!uploadedFiles.find(f => f.name === name)) {
+      return name;
+    } else {
+      const [fileName, ...extensions] = name.split(".");
+      const extension = extensions.join(".");
+
+      let i = 1;
+      let newName: string;
+      do {
+        newName = `${fileName}${i}.${extension}`;
+        i += 1;
+      } while (uploadedFiles.find(f => f.name === newName));
+
+      return newName;
+    }
+  };
+
+  /**
    * @description Open a new file.
    * @param newFileName - The name of the new file
    */
   const handleNewFile = async (newFileName: string, fileContent: string) => {
+    newFileName = getAvailableFileName(newFileName);
+
     const newFileContent = (fileContent === "" ? "// Enter Antimony Model Here" : fileContent);
     const file = new File([newFileContent], newFileName, { type: "text/plain" });
     const dataTransfer = new DataTransfer();
