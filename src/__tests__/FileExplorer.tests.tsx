@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { render } from "@testing-library/react";
+import { render, RenderResult } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import FileExplorer, { FileExplorerProps } from "../components/file-explorer/FileExplorer";
@@ -220,7 +220,7 @@ describe("FileExplorer", () => {
          * @param fileName - The name of the file to click rename for
          * @returns - The input for renaming the file
          */
-        async function clickRenameFor(explorer: any, fileName: string): Promise<HTMLInputElement> {
+        const clickRenameFor = async (explorer: any, fileName: string): Promise<HTMLInputElement> => {
             const fileButton = await explorer.findByText(fileName);
             expect(fileButton).toBeInstanceOf(HTMLButtonElement);
             await userEvent.pointer({ keys: "[MouseRight]", target: fileButton });
@@ -234,6 +234,32 @@ describe("FileExplorer", () => {
 
             return fileInput;
         }
+
+        /**
+         * Convience function to reach renaming to nothing state.
+         * @param fileName - name of the single file which will appear in the tree
+         * @returns - the rendered explorer
+         * @returns - the rename input element
+         */
+        const setupRenameFileToNothing = async (fileName: string): Promise<[RenderResult, HTMLInputElement]> => {
+            // Type enough to empty out the file name
+            const typeThis = "[Backspace]".repeat(fileName.length);
+
+            const explorer = render(
+                <FileExplorerMockContainer
+                    initialFiles={[ { name: fileName, content: "hi" } ]}
+                />
+            );
+
+            const renameInput = await clickRenameFor(explorer, fileName);
+
+            // Delete all the text so its empty
+            await userEvent.keyboard(typeThis);
+            expect(renameInput).toHaveValue("");
+            expect(renameInput).toBeInTheDocument();
+
+            return [explorer, renameInput];
+        };
 
         test("pressing enter should finish the rename", async () => {
             const initialFileName = "hi click me";
@@ -300,23 +326,7 @@ describe("FileExplorer", () => {
         });
 
         test("should not be able to rename a file to nothing", async () => {
-            const initialFileName = "hi click me";
-
-            // Type enough to empty out the file name
-            const typeThis = "[Backspace]".repeat(initialFileName.length) + "[Enter]";
-
-            const explorer = render(
-                <FileExplorerMockContainer
-                    initialFiles={[ { name: initialFileName, content: "hello world" } ]}
-                />
-            );
-
-            const renameInput = await clickRenameFor(explorer, initialFileName);
-
-            // Delete all the text so its empty
-            await userEvent.keyboard(typeThis);
-            expect(renameInput).toHaveValue("");
-            expect(renameInput).toBeInTheDocument();
+            const [explorer, _] = await setupRenameFileToNothing("hi click me");
             
             // Should not exist because they should not be allowed to rename the file to nothing
             const fileButton = explorer.queryByRole("button");
@@ -354,49 +364,17 @@ describe("FileExplorer", () => {
         });
 
         test("when there is an error while renaming, clicking somewhere else should reset to original name", async () => {
-            const initialFileName = "hi click me";
-            const fileContent = "hello world";
-
-            // Type enough to empty out the file name
-            const typeThis = "[Backspace]".repeat(initialFileName.length);
-
-            const explorer = render(
-                <FileExplorerMockContainer
-                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
-                />
-            );
-
-            const renameInput = await clickRenameFor(explorer, initialFileName);
-
-            // Delete all the text so its empty
-            await userEvent.keyboard(typeThis);
-            expect(renameInput).toHaveValue("");
-            expect(renameInput).toBeInTheDocument();
-
+            const fileName = "hi click me";
+            const [explorer, _] = await setupRenameFileToNothing(fileName);
             await userEvent.pointer({ keys: "[MouseLeft]" });
            
             // Name should've reset
-            await explorer.findByText(initialFileName);
+            await explorer.findByText(fileName);
         });
 
         test("when there is an error while renaming, there should be an error message", async () => {
-            const initialFileName = "hi click me";
-            const fileContent = "hello world";
-
-            // Type enough to empty out the file name
-            const typeThis = "[Backspace]".repeat(initialFileName.length);
-
-            const explorer = render(
-                <FileExplorerMockContainer
-                    initialFiles={[ { name: initialFileName, content: fileContent } ]}
-                />
-            );
-
-            const renameInput = await clickRenameFor(explorer, initialFileName);
-
-            // Delete all the text so its empty
-            await userEvent.keyboard(typeThis);
-            expect(renameInput).toHaveValue("");
+            const fileName = "hi click me";
+            const [explorer, _] = await setupRenameFileToNothing(fileName);
            
             // Should have error message
             await explorer.findByRole("alert");
