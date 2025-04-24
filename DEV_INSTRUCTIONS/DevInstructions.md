@@ -6,7 +6,7 @@ Ignore or delete the .antlr file if it appears. It is auto generated whenever th
 # Development and Deployment
 Run `npm run start` to start a development server.
 
-Run `npm run build && npm run deploy` in terminal to deploy the changes. Navigate to about.html in the root directory and edit the html to diplay the new version number.
+Run `npm run deploy` to deploy the changes. Navigate to about.html in `public/` and edit the html to before deploying to display the new version number.
 
 # Testing
 Run `npm run test` to run unit tests. Run `npm build` to check if everything builds correctly.
