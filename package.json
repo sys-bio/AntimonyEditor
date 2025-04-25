@@ -2,6 +2,7 @@
   "name": "antimony-editor",
   "version": "1.0",
   "private": true,
+  "homepage": "/AntimonyEditor/",
   "dependencies": {
     "@babel/core": "^7.16.0",
     "@geoffcox/react-splitter": "^2.1.2",
@@ -75,6 +76,7 @@
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js",
+    "coverage": "jest --collectCoverage",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "publish": "gh-pages -d src",
