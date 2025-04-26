@@ -128,7 +128,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
 
   useEffect(() => {
     if (isAboutModalVisible) {
-      fetch('/about.html')
+      fetch('./about.html')
         .then(response =>response.text())
         .then(html => {
           setAboutContent(html);

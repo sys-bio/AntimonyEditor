@@ -2,12 +2,51 @@
 
 const path = require('path');
 const fs = require('fs');
-const getPublicUrlOrPath = require('react-dev-utils/getPublicUrlOrPath');
 
 // Make sure any symlinks in the project folder are resolved:
 // https://github.com/facebook/create-react-app/issues/637
 const appDirectory = fs.realpathSync(process.cwd());
 const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
+
+/**
+ * NOTE: this is a modified version of react-dev-utils/getPublicUrlOrPath
+ * to fit our weird homepage situation.
+ * 
+ * Returns a URL or a path with slash at the end
+ * In production can be URL, abolute path, relative path
+ * In development always will be an absolute path
+ * In development can use `path` module functions for operations
+ *
+ * @param {boolean} isEnvDevelopment
+ * @param {string} homepage a valid url or pathname
+ * @returns {string}
+ */
+function getPublicUrlOrPath(isEnvDevelopment, homepage) {
+  const stubDomain = 'https://create-react-app.dev';
+
+  // strip last slash if exists
+  homepage = homepage.endsWith('/') ? homepage : homepage + '/';
+  
+  // For our situation, we only want to use the homepage when deploying,
+  // not in development
+  if (isEnvDevelopment) {
+    homepage = "./";
+  }
+
+  // validate if `homepage` is a URL or path like and use just pathname
+  const validHomepagePathname = new URL(homepage, stubDomain).pathname;
+  return isEnvDevelopment
+    ? homepage.startsWith('.')
+      ? '/'
+      : validHomepagePathname
+    : // Some apps do not use client-side routing with pushState.
+    // For these, "homepage" can be set to "." to enable relative asset paths.
+    homepage.startsWith('.')
+    ? homepage
+    : validHomepagePathname;
+
+  return '/';
+}
 
 // We use `PUBLIC_URL` environment variable or "homepage" field to infer
 // "public path" at which the app is served.
@@ -18,7 +57,6 @@ const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
 const publicUrlOrPath = getPublicUrlOrPath(
   process.env.NODE_ENV === 'development',
   require(resolveApp('package.json')).homepage,
-  process.env.PUBLIC_URL
 );
 
 const buildPath = process.env.BUILD_PATH || 'build';
@@ -55,8 +93,8 @@ module.exports = {
   dotenv: resolveApp('.env'),
   appPath: resolveApp('.'),
   appBuild: resolveApp(buildPath),
-  appPublic: resolveApp(''),
-  appHtml: resolveApp('index.html'),
+  appPublic: resolveApp('public'),
+  appHtml: resolveApp('public/index.html'),
   appIndexJs: resolveModule(resolveApp, 'src/index'),
   appPackageJson: resolveApp('package.json'),
   appSrc: resolveApp('src'),
@@ -71,7 +109,5 @@ module.exports = {
   swSrc: resolveModule(resolveApp, 'src/service-worker'),
   publicUrlOrPath,
 };
-
-
 
 module.exports.moduleFileExtensions = moduleFileExtensions;

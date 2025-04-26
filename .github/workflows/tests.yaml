@@ -1,0 +1,29 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Tests
+        run: |
+          npm ci 
+          npm run test
+  
+  builds:
+    runs-on: ubuntu-latest
+    needs: [ test ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Try Build
+        run: |
+          npm ci
+          npm run build
