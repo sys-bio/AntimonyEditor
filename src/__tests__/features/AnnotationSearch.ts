@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import { searchChebi, searchRhea, searchUniProt, searchOntology, AnnotationInfo } from "../../features/AnnotationSearch";
 import path from "path";
 
-describe("AnnotationSearch", function () {
+describe("AnnotationSearch", () => {
   const makeMockKeyboardEvent = (text: string) => {
     return {
       target: { value: text },
