@@ -107,34 +107,23 @@
   color: #ff6666;
 }
 
-.algo-list-container {
-  padding:10px;
-  display: grid;
-  vertical-align: middle;
-}
-
-.algo-info-box {
-  margin: 10px;
-  height: 150px;
-  max-height: 150px;
-  border: 0px solid #5b5b5c;
-  padding: 10px;
-  border-radius: 8px;
-  background-color: rgba(0,0,0,0.5);
-  color:#ffffff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  vertical-align: middle;
+.select-annotator-container {
+  display:flex;
+  justify-content: center;
   align-items: center;
+  gap:10px;
 }
 
-.algo-info-box:hover {
-  background-color: rgba(0, 0, 0, 0.3);
-}
-
-.algo-info-header {
-  margin-top: 0;
-  margin-bottom: 0;
+.select-annotator {
+  margin:0;
+  padding: 0;
+  min-width: 150px;
+  background-color: #5b5b5c;
   color: #ffffff;
-  font-size: 1.5em;
-  font-weight: bold;
+  border-radius: 3px;
+}
+
+.select-options {
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
 }
