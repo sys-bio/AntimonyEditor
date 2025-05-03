@@ -21,47 +21,18 @@ enum MSSC {
   TOP = "top",
   ABOVE = "above",
 }
-interface AlgorithmInfo {
+interface AnnotatorInfo {
+  id: string;
   name: string;
   description: string;
   version: string;
   sourceCode: string;
 }
 
-const algorithms: AlgorithmInfo[] = [
-  { name: "AMAS", description: "Placeholder", version: "1.0", sourceCode: "https://github.com/sys-bio/AMAS" },
-  { name: "Example", description: "An example alternative algorithm", version: "1.2.3.4 beta", sourceCode: "https://sys-bio.github.io/AntimonyEditor/" }
+const annotators: AnnotatorInfo[] = [
+  { id: "amas", name: "AMAS", description: "Placeholder", version: "1.0", sourceCode: "https://github.com/sys-bio/AMAS" },
+  { id: "example", name: "Example", description: "An example alternative algorithm", version: "1.2.3.4 beta", sourceCode: "https://sys-bio.github.io/AntimonyEditor/" }
 ];
-
-class AnnotationAlgorithm {
-
-  info:AlgorithmInfo;
-
-  constructor(info:AlgorithmInfo) {
-    this.info = info;
-  }
-
-  getForm = () => {
-    return (
-      <>
-      </>
-    )
-  }
-
-  getResults = () => {
-    return (
-      <>
-      </>
-    )
-  }
-
-  getInfo = () => {
-    return (
-      <>
-      </>
-    )
-  }
-}
 
 interface Recommendation {
   type: string;
@@ -141,7 +112,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   setUploadedFiles,
   isConverted,
 }) => {
-  const [step, setStep] = useState<number>(0);
+  const [step, setStep] = useState<number>(1);
   const [progress, setProgress] = useState<number>(0);
   const [progressMessage, setProgressMessage] = useState<string>("Loading...");
   const [cutoff, setCutoff] = useState<number>(0.01);
@@ -156,6 +127,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     order: SortOrder.ASC,
   });
   const modalRef = useRef<HTMLDivElement>(null);
+  const [selectedAnnotator, setSelectedAnnotator] = useState<string>("amas");
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -426,6 +398,36 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     }
   };
 
+  const annotatorIDtoForm: {[key:string]: any}= {
+    "amas": <>
+      <div className="annot-argument-container">
+        <label htmlFor="cutoffInput">Cutoff Score (0.0 - 1.0):</label>
+        <input
+          id="cutoffInput"
+          type="number"
+          value={cutoff}
+          onChange={handleCutoff}
+          min="0.0"
+          max="1.0"
+          step="0.01"
+        />
+      </div>
+      <div className="annot-argument-container">
+        <label htmlFor="msscInput">
+          Match Score Selection Criteria (MSSC):
+        </label>
+        <select id="msscInput" value={mssc} onChange={handleMSSC}>
+          {Object.values(MSSC).map((value) => (
+            <option key={value} value={value}>
+              {value.toUpperCase()}
+            </option>
+          ))}
+        </select>
+      </div>
+    </>,
+    "example": <>Example Preference</>
+  }
+
   return (
     <>
       <div className="shadow-background" />
@@ -436,7 +438,6 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
       >
         <div className="modal-title-container">
           <div className="modal-title">
-            {step === 0 && 'Select Algorithm'}
             {step === 1 && `Select Arguments`}
             {step === 2 && (
               <div>
@@ -448,49 +449,24 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
           </div>
         </div>
 
-
-        {step === 0 && (
-          <div className="algo-list-container">{algorithms.map((a) => (
-            <div className="algo-info-box" onClick={() => {setStep(1)}}>
-              <h2 className="algo-info-header">{a.name}</h2>
-              <div className="algo-info-description">
-                <div><a href={a.sourceCode}>Source</a></div>
-                <div>{"Version: " + a.version}</div>
-                {}
-                <div>{a.description}</div>
-              </div>
-            </div>
-          ))}
-          </div>
-        )}
-
         {step === 1 && (
           <>
             <div className="annot-arguments-container">
-              <div className="annot-argument-container">
-                <label htmlFor="cutoffInput">Cutoff Score (0.0 - 1.0):</label>
-                <input
-                  id="cutoffInput"
-                  type="number"
-                  value={cutoff}
-                  onChange={handleCutoff}
-                  min="0.0"
-                  max="1.0"
-                  step="0.01"
-                />
-              </div>
-              <div className="annot-argument-container">
-                <label htmlFor="msscInput">
-                  Match Score Selection Criteria (MSSC):
-                </label>
-                <select id="msscInput" value={mssc} onChange={handleMSSC}>
-                  {Object.values(MSSC).map((value) => (
-                    <option key={value} value={value}>
-                      {value.toUpperCase()}
-                    </option>
-                  ))}
+              <div className="select-annotator-container">
+                <>Selected Annotator:</>
+                <select
+                  className="select-annotator"
+                  value={selectedAnnotator}
+                  onChange={e => setSelectedAnnotator(e.target.value)}
+                >
+                  {annotators.map((a) => (
+                    <option className="select-options" value={a.id}>{a.name}</option>
+                  ))
+                  }
                 </select>
               </div>
+              
+              {annotatorIDtoForm[selectedAnnotator]}
             </div>
             <div
               className="annot-recommend-button"
