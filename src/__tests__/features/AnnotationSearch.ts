@@ -3,6 +3,9 @@ import { searchChebi, searchRhea, searchUniProt, searchOntology, AnnotationInfo 
 import path from "path";
 
 describe("AnnotationSearch", () => {
+  /** Opens a file and removes all carriage returns */
+  const openRemoveCarriageReturns = (path: string) => readFileSync(path, "utf8").toString().replaceAll(/\r+/g, "");
+
   const makeMockKeyboardEvent = (text: string) => {
     return {
       target: { value: text },
@@ -78,14 +81,14 @@ describe("AnnotationSearch", () => {
     itShouldReturnZeroResultsForAppropriateCases(searchChebi);
 
     // Could maybe write a script to grab these files in the future.
-    const chebiLiteText = readFileSync(path.resolve(__dirname, "./queries/chebi_lite.xml"), "utf8").toString();
-    const chebiFaultText = readFileSync(path.resolve(__dirname, "./queries/chebi_fault.xml"), "utf8").toString();
+    const chebiLiteText = openRemoveCarriageReturns(path.resolve(__dirname, "./queries/chebi_lite.xml"));
+    const chebiFaultText = openRemoveCarriageReturns(path.resolve(__dirname, "./queries/chebi_fault.xml"));
     const chebiFullEntries: Record<string, string> = {
-      ["211886"]: readFileSync(path.resolve(__dirname, "./queries/chebi_full_211886.xml"), "utf8").toString(),
-      ["211893"]: readFileSync(path.resolve(__dirname, "./queries/chebi_full_211893.xml"), "utf8").toString(),
-      ["224188"]: readFileSync(path.resolve(__dirname, "./queries/chebi_full_224188.xml"), "utf8").toString(),
-      ["224192"]: readFileSync(path.resolve(__dirname, "./queries/chebi_full_224192.xml"), "utf8").toString(),
-      ["224197"]: readFileSync(path.resolve(__dirname, "./queries/chebi_full_224197.xml"), "utf8").toString(),
+      ["211886"]: openRemoveCarriageReturns(path.resolve(__dirname, "./queries/chebi_full_211886.xml")),
+      ["211893"]: openRemoveCarriageReturns(path.resolve(__dirname, "./queries/chebi_full_211893.xml")),
+      ["224188"]: openRemoveCarriageReturns(path.resolve(__dirname, "./queries/chebi_full_224188.xml")),
+      ["224192"]: openRemoveCarriageReturns(path.resolve(__dirname, "./queries/chebi_full_224192.xml")),
+      ["224197"]: openRemoveCarriageReturns(path.resolve(__dirname, "./queries/chebi_full_224197.xml")),
     }
 
     it("should return undefined on CHEBI webservice fault", async () => {
@@ -126,7 +129,7 @@ describe("AnnotationSearch", () => {
 
   describe("UniProt", () => {
     // Command: curl "https://rest.uniprot.org/uniprotkb/search?fields=accession%2Creviewed%2Cid%2Cprotein_name%2Cgene_names%2Corganism_name%2Clength&query=%28ok%29&size=6" >> src/__tests__/features/queries/uniprot_sample.txt
-    const sampleQuery = readFileSync(path.resolve(__dirname, "./queries/uniprot_sample.json"), "utf8").toString();
+    const sampleQuery = openRemoveCarriageReturns(path.resolve(__dirname, "./queries/uniprot_sample.json"));
 
     itShouldReturnZeroResultsForAppropriateCases(searchUniProt);
 
@@ -172,7 +175,7 @@ describe("AnnotationSearch", () => {
 
 
   describe("Rhea", () => {
-    const sampleQuery = readFileSync(path.resolve(__dirname, "./queries/rhea_sample.txt"), "utf8").toString();
+    const sampleQuery = openRemoveCarriageReturns(path.resolve(__dirname, "./queries/rhea_sample.txt"));
 
     itShouldReturnZeroResultsForAppropriateCases(searchRhea);
 
@@ -225,7 +228,7 @@ describe("AnnotationSearch", () => {
 
   describe("Ontology", () => {
     // Command: curl "https://www.ebi.ac.uk/ols4/api/v2/entities?search=hi&size=6&page=0&ontologyId=cl&lang=en&exactMatch=false&includeObsoleteEntities=false&isDefiningOntology=true" > src/__tests__/features/queries/ontology_sample.json
-    const sampleQuery = readFileSync(path.resolve(__dirname, "./queries/ontology_sample.json"), "utf8").toString();
+    const sampleQuery = openRemoveCarriageReturns(path.resolve(__dirname, "./queries/ontology_sample.json"));
     
     itShouldReturnZeroResultsForAppropriateCases(searchOntology, "cl");
 
