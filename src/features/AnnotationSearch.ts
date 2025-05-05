@@ -1,10 +1,11 @@
 import React from "react";
+import convert from "xml-js";
 const corsProxyUrl = "https://corsproxy.io/?"; // "https://api.allorigins.win/raw?url=";
 
 /**
  * @description Holds relevant information for a single annotation search result
  */
-type AnnotationInfo = {
+export type AnnotationInfo = {
   name: string;
   id: string;
   description: string;
@@ -55,7 +56,7 @@ export async function searchChebi(
   size: number
 ): Promise<AnnotationInfo[] | undefined> {
   try {
-    const queryText = (search.target as HTMLInputElement).value.trim();
+    const queryText = encodeURIComponent((search.target as HTMLInputElement).value.trim());
     if (size <= 0 || queryText.length === 0) {
       return [];
     }
@@ -69,7 +70,6 @@ export async function searchChebi(
       return undefined;
     }
 
-    const convert = require("xml-js");
     const data = await response.text();
     let jsonStr = convert.xml2json(data, {
       compact: true,
@@ -115,11 +115,10 @@ async function getCompleteChebiEntity(id: string): Promise<string | any> {
   try {
     const response = await fetch(
       corsProxyUrl +
-        `https://www.ebi.ac.uk/webservices/chebi/2.0/test/getCompleteEntity?chebiId=${id}`
+        `https://www.ebi.ac.uk/webservices/chebi/2.0/test/getCompleteEntity?chebiId=${encodeURIComponent(id)}`
     );
 
     if (response.ok) {
-      const convert = require("xml-js");
       const data = await response.text();
       let jsonStr = convert.xml2json(data, {
         compact: true,
@@ -129,7 +128,7 @@ async function getCompleteChebiEntity(id: string): Promise<string | any> {
       let resBody = results["S:Envelope"]["S:Body"];
 
       if (resBody["S:Fault"] === undefined) {
-        return resBody["getCompleteEntityResponse"]["return"]["definition"]._text as string;
+        return resBody["getCompleteEntityResponse"]["return"]["definition"]._text ?? "";
       }
       return "";
     }
@@ -150,7 +149,7 @@ export async function searchUniProt(
   size: number
 ): Promise<AnnotationInfo[] | undefined> {
   try {
-    const queryText = (search.target as HTMLInputElement).value.trim();
+    const queryText = encodeURIComponent((search.target as HTMLInputElement).value.trim());
     if (size <= 0 || queryText.length === 0) {
       return [];
     }
@@ -164,7 +163,6 @@ export async function searchUniProt(
     }
 
     const data = await response.json();
-    console.log(data);
     const info: AnnotationInfo[] = data.results.map((result: any) => {
       return {
         id: result.uniProtkbId,
@@ -196,7 +194,7 @@ export async function searchRhea(
   size: number
 ): Promise<AnnotationInfo[] | undefined> {
   try {
-    const queryText = (search.target as HTMLInputElement).value.trim();
+    const queryText = encodeURIComponent((search.target as HTMLInputElement).value.trim());
     if (size <= 0 || queryText.length === 0) {
       return [];
     }
@@ -217,7 +215,9 @@ export async function searchRhea(
         let currLine = split[i].split('\t');
         let reactionId = currLine[0].substring(5);
         let equation = currLine[1];
-        let ec: string[] = currLine[2].substring(3).split(';EC:');
+
+        // format: EC:12.2.121;EC:1242.24.24
+        let ec: string[] = currLine[2].substring(3).split(';EC:').filter(e => e.length > 0);
 
         output.push({
           id: reactionId,
@@ -256,13 +256,13 @@ export async function searchOntology(
   ontologyId: string
 ): Promise<AnnotationInfo[] | undefined> {
   try {
-    const queryText = (search.target as HTMLInputElement).value.trim();
+    const queryText = encodeURIComponent((search.target as HTMLInputElement).value.trim());
     if (size <= 0 || queryText.length === 0 || !validOntologyIds.includes(ontologyId)) {
       return [];
     }
 
     const response = await fetch(
-      `https://www.ebi.ac.uk/ols4/api/v2/entities?search=${queryText}&size=${size}&page=0&ontologyId=${ontologyId}&lang=en&exactMatch=false&includeObsoleteEntities=false&isDefiningOntology=true`
+      `https://www.ebi.ac.uk/ols4/api/v2/entities?search=${queryText}&size=${size}&page=0&ontologyId=${encodeURIComponent(ontologyId)}&lang=en&exactMatch=false&includeObsoleteEntities=false&isDefiningOntology=true`
     );
 
     if (!response.ok) {
@@ -270,7 +270,6 @@ export async function searchOntology(
     }
 
     const data = await response.json();
-    console.log(data)
     let info: AnnotationInfo[] = data.elements.map((result: any) => {
       if (result.type[0] === "class" && result.type[1] === "entity") {
         // Get description
@@ -293,7 +292,7 @@ export async function searchOntology(
         // Add this element to the list of results
         return {
           id: result.curie,
-          name: result.label,
+          name: result.label[0],
           description: description,
           link: result.iri,
         };
