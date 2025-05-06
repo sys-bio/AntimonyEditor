@@ -1,7 +1,7 @@
 
 // For use in nodejs environment.
 // Test Antimony javascript library 
-const libantimony = require('../../public/libantimony.js'); // libantimony.js in local dir
+const libantimony = require('../public/libantimony.js'); // libantimony.js in local dir
 
 console.log('Starting script...');
 var antString = "model example1; S1 -> S2; k1*S ; S1 = 550; S2 = 0;  k1 = 0.1; end"
