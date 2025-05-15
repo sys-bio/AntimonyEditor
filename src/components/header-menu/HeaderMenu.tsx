@@ -20,6 +20,8 @@ import { IDBPDatabase } from "idb";
  * @property {function} handleFileDownload - Handle the file download
  * @property {function} handleFileUpload - Handle the file upload
  * @property {function} handleNewFile - Handle a new file
+ * @property {dict} preferences - A stateful object that contains the user's AWE preferences
+ * @property {function} handlePreferenceUpdate - A function used to update and save the user's AWE preferences
  */
 interface HeaderMenuProps {
   db: IDBPDatabase<MyDB> | null | undefined;
@@ -35,6 +37,8 @@ interface HeaderMenuProps {
     event: React.ChangeEvent<HTMLInputElement>
   ) => Promise<void>;
   handleNewFile: (newFileName: string, fileContent: string) => Promise<void>;
+  preferences: {[key: string]: any};
+  handlePreferenceUpdate: (preferences: {[key: string]: any}) => void;
   setHighlightColor: (color: string) => void;
   colors: { name: string; color: string }[];
 }
@@ -52,6 +56,8 @@ interface HeaderMenuProps {
  * @param handleFileDownload - HeaderMenuProp
  * @param handleFileUpload - HeaderMenuProp
  * @param handleNewFile - HeaderMenuProp
+ * @param preferences - A stateful object that contains the user's AWE preferences
+ * @param handlePreferenceUpdate - A function used to update and save the user's AWE preferences
  * @example - <HeaderMenu
  *              handleConversionAntimony={handleConversionAntimony}
  *              handleConversionSBML={handleConversionSBML}
@@ -72,6 +78,8 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   handleFileDownload,
   handleFileUpload,
   handleNewFile,
+  preferences,
+  handlePreferenceUpdate,
   setHighlightColor,
   colors,
 }) => {
@@ -471,6 +479,8 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
           setFileContent={setFileContent}
           setUploadedFiles={setUploadedFiles}
           isConverted={isConverted}
+          preferences={preferences}
+          handlePreferenceUpdate={handlePreferenceUpdate}
         />
       )}
       {isAboutModalVisible && (
