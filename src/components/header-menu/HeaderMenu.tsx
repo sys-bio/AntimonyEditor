@@ -23,6 +23,8 @@ import { IDBPDatabase } from "idb";
  * @property {function} handleNewFile - Handle a new file
  * @property {dict} preferences - A stateful object that contains the user's AWE preferences
  * @property {function} handlePreferenceUpdate - A function used to update and save the user's AWE preferences
+ * @property {dict} preferences - A stateful object that contains the user's AWE preferences
+ * @property {function} handlePreferenceUpdate - A function used to update and save the user's AWE preferences
  */
 interface HeaderMenuProps {
   db: IDBPDatabase<MyDB> | null | undefined;
@@ -73,6 +75,8 @@ interface HeaderMenuProps {
  * @param handleFileDownload - HeaderMenuProp
  * @param handleFileUpload - HeaderMenuProp
  * @param handleNewFile - HeaderMenuProp
+ * @param preferences - A stateful object that contains the user's AWE preferences
+ * @param handlePreferenceUpdate - A function used to update and save the user's AWE preferences
  * @param preferences - A stateful object that contains the user's AWE preferences
  * @param handlePreferenceUpdate - A function used to update and save the user's AWE preferences
  * @example - <HeaderMenu
