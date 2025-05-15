@@ -90,12 +90,10 @@ interface HeaderMenuProps {
 const HeaderMenu: React.FC<HeaderMenuProps> = ({
   db,
   setDb,
-
   fileName,
   fileContent,
   setFileContent,
   setUploadedFiles,
-
   handleConversionAntimony,
   handleConversionSBML,
   handleFileDownload,
@@ -103,7 +101,6 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   handleNewFile,
   preferences,
   handlePreferenceUpdate,
-
   highlightColor,
   setHighlightColor,
   colors,
@@ -111,11 +108,9 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   const [isModalVisible, setModalVisible] = useState(false);
   const [convertedFileContent, setConvertedFileContent] = useState("");
   const [isConverted, setIsConverted] = useState(false);
-
   const [visibleDropdown, setVisibleDropdown] = useState("");
   const headerRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [isAboutModalVisible, setAboutModalVisible] = useState(false);
   const [aboutContent, setAboutContent] = useState('');
 
@@ -256,7 +251,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
     ],
 
     Annotate: [
-      { name: "Recommend Annotations for All", onSelected: wrapOnSelected(handleAnnotateClick) },
+      { name: "Recommend Annotations", onSelected: wrapOnSelected(handleAnnotateClick) },
     ],
 
     Settings: [
