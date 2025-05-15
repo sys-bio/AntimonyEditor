@@ -10,6 +10,7 @@ import ModelSemanticsChecker from "../../language-handler/ModelSemanticChecker";
 import { IDBPDatabase, DBSchema } from "idb";
 import { SrcPosition, SrcRange } from "../../language-handler/Types";
 import TurndownService from "turndown";
+import { MyDB } from "../../App";
 
 /**
  * @description AntimonyEditorProps interface
@@ -33,23 +34,6 @@ interface AntimonyEditorProps {
   setHighlightColor: (color: string) => void;
   highlightColor: string;
   handleNewFile: (newFileName: string, newFileContent: string) => Promise<void>;
-}
-
-/**
- * @description IndexedDB schema
- * @interface
- * @property {object} files - The files object
- * @property {string} files.key - The key of the files object
- * @property {object} files.value - The value of the files object
- * @property {string} files.value.name - The name of the file
- * @property {string} files.value.content - The content of the file
- * @extends DBSchema
- */
-interface MyDB extends DBSchema {
-  files: {
-    key: string;
-    value: { name: string; content: string };
-  };
 }
 
 /**

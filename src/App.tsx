@@ -11,6 +11,7 @@ import handleDownload from "./features/HandleDownload";
 import * as monaco from "monaco-editor";
 import { openDB, IDBPDatabase, DBSchema } from "idb";
 import { Split } from "@geoffcox/react-splitter";
+import RecommendAnnotationModal, { DefaultFormPreferences } from "./components/recommend-annotation/RecommendAnnotationModal";
 
 /**
  * @description MyDB interface
@@ -20,13 +21,36 @@ import { Split } from "@geoffcox/react-splitter";
  * @property {object} files[].value - The value of the file
  * @property {string} files[].value.name - The name of the file
  * @property {string} files[].value.content - The content of the file
+ * @property {object[]} settings - The settings object store
+ * @property {string} files[].key - Key of the object store
+ * @property {object} files[].value - Value of the object store
+ * @property {string} files[].value.name - The name of the settings file (settings.json)
+ * @property {string} files[].value.content - The content of the settings file
  */
 export interface MyDB extends DBSchema {
   files: {
     key: string;
     value: { name: string; content: string };
-  };
+  },
+
+  settings: {
+    key: string;
+    value: { name: string; content: string };
+  }
 }
+
+// Preference group types
+export enum PreferenceTypes {
+  ANNOTATOR = "annotatorPreferences",
+  HIGHLIGHTCOLOR = "highlightColor"
+}
+
+
+// Default user preferences
+const defaultPreferences:{[key:string]: any} = {
+  "annotatorPreferences": DefaultFormPreferences,
+  "highlightColor": "Red"
+};
 
 /**
  * @description App component
@@ -65,6 +89,9 @@ const App: React.FC = () => {
     { name: "Aqua", color: "aqua" },
   ];
 
+  // Preferences start empty and are later set on DB setup
+  const [preferences, setPreferences] = useState<{[key:string]: any}>({});
+
   /**
    * @description Use the openDB function to open the database
    */
@@ -74,14 +101,39 @@ const App: React.FC = () => {
         if (!db.objectStoreNames.contains("files")) {
           db.createObjectStore("files", { keyPath: "name" });
         }
+        if (!db.objectStoreNames.contains("settings")) {
+          db.createObjectStore("settings", {keyPath: "name"});
+        }
       },
     }).then((database) => {
       setDb(database); // Store the database instance in the state
       database.getAll("files").then((files) => {
         setUploadedFiles(files);
       });
+      // Get the settings file if it currently exists, else create settings file with
+      // defaultPreferences loaded in
+      database.get("settings", "settings.json").then((settings) => {
+        if (settings) {
+          setPreferences(JSON.parse(settings.content));
+        } else {
+          setPreferences(defaultPreferences);
+          console.log(defaultPreferences);
+          database.put("settings", {name: "settings.json", content:JSON.stringify(defaultPreferences)});
+        }
+      })
     });
   }, []);
+
+  /**
+   * @description Updates preferences and saves in user storage
+   * @param preferences - Full updated preferences file
+   */
+  const handlePreferenceUpdate = (preferences: {[key:string]: any}) => {
+    setPreferences(preferences);
+    if (db) {
+      db.put("settings", {name: "settings.json", content:JSON.stringify(preferences)});
+    }
+  }
 
   /**
    * @description Handle the file upload
@@ -332,6 +384,8 @@ const App: React.FC = () => {
         highlightColor={highlightColor}
         setHighlightColor={setHighlightColor}
         colors={colors}
+        preferences={preferences}
+        handlePreferenceUpdate={handlePreferenceUpdate}
       />
       <div className="middle">
         <Split
