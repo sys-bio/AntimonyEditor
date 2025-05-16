@@ -96,47 +96,66 @@ const App: React.FC = () => {
    * @description Use the openDB function to open the database
    */
   useEffect(() => {
-    openDB<MyDB>("antimony_editor_db", undefined, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains("files")) {
-          db.createObjectStore("files", { keyPath: "name" });
+    var req = openDB<MyDB>("antimony_editor_db");
+    let newVersion;
+    req.then((db) => {
+      newVersion = db.version + 1;
+      db.close();
+      openDB<MyDB>("antimony_editor_db", newVersion, {
+        upgrade(db) {
+          if (!db.objectStoreNames.contains("files")) {
+            db.createObjectStore("files", { keyPath: "name" });
+          }
+          if (!db.objectStoreNames.contains("settings")) {
+            db.createObjectStore("settings", {keyPath: "name"});
+          }
         }
-        if (!db.objectStoreNames.contains("settings")) {
-          db.createObjectStore("settings", {keyPath: "name"});
-        }
-      },
-    }).then((database) => {
-
-      let newVersion = database.version + 1
-
-      if (!database.objectStoreNames.contains("settings")) {
-        openDB<MyDB>("antimony_editor_db", newVersion, {
-          upgrade(db) {
-            if (!db.objectStoreNames.contains("files")) {
-              db.createObjectStore("files", { keyPath: "name" });
-            }
-            if (!db.objectStoreNames.contains("settings")) {
-              db.createObjectStore("settings", {keyPath: "name"});
-            }
+      }).then((database) => {
+        setDb(database); // Store the database instance in the state
+        database.getAll("files").then((files) => {
+          setUploadedFiles(files);
+        });
+        // Get the settings file if it currently exists, else create settings file with
+        // defaultPreferences loaded in
+        database.get("settings", "settings.json").then((settings) => {
+          if (settings) {
+            setPreferences(JSON.parse(settings.content));
+          } else {
+            setPreferences(defaultPreferences);
+            database.put("settings", {name: "settings.json", content:JSON.stringify(defaultPreferences)});
           }
         })
-      }
-
-      setDb(database); // Store the database instance in the state
-      database.getAll("files").then((files) => {
-        setUploadedFiles(files);
-      });
-      // Get the settings file if it currently exists, else create settings file with
-      // defaultPreferences loaded in
-      database.get("settings", "settings.json").then((settings) => {
-        if (settings) {
-          setPreferences(JSON.parse(settings.content));
-        } else {
-          setPreferences(defaultPreferences);
-          database.put("settings", {name: "settings.json", content:JSON.stringify(defaultPreferences)});
-        }
       })
-    });
+    })
+
+
+    // openDB<MyDB>("antimony_editor_db").then((db) => {
+    //   openDB<MyDB>("antimony_editor_db", db.version+1, {
+    //     upgrade(db) {
+    //       if (!db.objectStoreNames.contains("files")) {
+    //         db.createObjectStore("files", { keyPath: "name" });
+    //       }
+    //       if (!db.objectStoreNames.contains("settings")) {
+    //         db.createObjectStore("settings", {keyPath: "name"});
+    //       }
+    //     }
+    //   }).then((database) => {
+    //     setDb(database); // Store the database instance in the state
+    //     database.getAll("files").then((files) => {
+    //       setUploadedFiles(files);
+    //     });
+    //     // Get the settings file if it currently exists, else create settings file with
+    //     // defaultPreferences loaded in
+    //     database.get("settings", "settings.json").then((settings) => {
+    //       if (settings) {
+    //         setPreferences(JSON.parse(settings.content));
+    //       } else {
+    //         setPreferences(defaultPreferences);
+    //         database.put("settings", {name: "settings.json", content:JSON.stringify(defaultPreferences)});
+    //       }
+    //     })
+    //   })
+    // })
   }, []);
 
   /**
@@ -246,30 +265,29 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      const database = await openDB<MyDB>("antimony_editor_db", 1);
-      setDb(database);
+      if (db) {
+        // Filter out invalid names like empty string
+        const files = (await db.getAll("files")).filter(f => f.name !== "");
+        setUploadedFiles(files);
 
-      // Filter out invalid names like empty string
-      const files = (await database.getAll("files")).filter(f => f.name !== "");
-      setUploadedFiles(files);
-
-      // Update selectedFileIndex based on the current files
-      const fileIndex = Number(window.localStorage.getItem("current_file_index"));
-      if (fileIndex >= 0 && fileIndex < files.length) {
-        setSelectedFileIndex(fileIndex);
-        setSelectedFileContent(files[fileIndex].content);
-        setSelectedFileName(files[fileIndex].name);
-      } else {
-        setSelectedFileIndex(null);
-        setSelectedFileContent("// Enter Antimony Model Here");
-        setSelectedFileContent("")
-        setSelectedFileName("untitled.ant");
-        window.localStorage.removeItem("current_file_index");
+        // Update selectedFileIndex based on the current files
+        const fileIndex = Number(window.localStorage.getItem("current_file_index"));
+        if (fileIndex >= 0 && fileIndex < files.length) {
+          setSelectedFileIndex(fileIndex);
+          setSelectedFileContent(files[fileIndex].content);
+          setSelectedFileName(files[fileIndex].name);
+        } else {
+          setSelectedFileIndex(null);
+          setSelectedFileContent("// Enter Antimony Model Here");
+          setSelectedFileContent("")
+          setSelectedFileName("untitled.ant");
+          window.localStorage.removeItem("current_file_index");
+        }
       }
     };
 
     loadData();
-  }, []);
+  }, [db]);
 
   /**
    * @description Deletes the given file
