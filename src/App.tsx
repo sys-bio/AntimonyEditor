@@ -96,7 +96,7 @@ const App: React.FC = () => {
    * @description Use the openDB function to open the database
    */
   useEffect(() => {
-    openDB<MyDB>("antimony_editor_db", 1, {
+    openDB<MyDB>("antimony_editor_db", undefined, {
       upgrade(db) {
         if (!db.objectStoreNames.contains("files")) {
           db.createObjectStore("files", { keyPath: "name" });
@@ -106,6 +106,22 @@ const App: React.FC = () => {
         }
       },
     }).then((database) => {
+
+      let newVersion = database.version + 1
+
+      if (!database.objectStoreNames.contains("settings")) {
+        openDB<MyDB>("antimony_editor_db", newVersion, {
+          upgrade(db) {
+            if (!db.objectStoreNames.contains("files")) {
+              db.createObjectStore("files", { keyPath: "name" });
+            }
+            if (!db.objectStoreNames.contains("settings")) {
+              db.createObjectStore("settings", {keyPath: "name"});
+            }
+          }
+        })
+      }
+
       setDb(database); // Store the database instance in the state
       database.getAll("files").then((files) => {
         setUploadedFiles(files);
@@ -117,7 +133,6 @@ const App: React.FC = () => {
           setPreferences(JSON.parse(settings.content));
         } else {
           setPreferences(defaultPreferences);
-          console.log(defaultPreferences);
           database.put("settings", {name: "settings.json", content:JSON.stringify(defaultPreferences)});
         }
       })

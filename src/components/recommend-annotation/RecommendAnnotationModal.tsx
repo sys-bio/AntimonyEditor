@@ -133,8 +133,6 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   const [step, setStep] = useState<number>(1);
   const [progress, setProgress] = useState<number>(0);
   const [progressMessage, setProgressMessage] = useState<string>("Loading...");
-  // const [cutoff, setCutoff] = useState<number>(0.01);
-  // const [mssc, setMSSC] = useState<MSSC>(MSSC.TOP);
   const [recommender, setRecommender] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [selectedRecommendations, setSelectedRecommendations] = useState<
@@ -449,10 +447,10 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     setSavePromptVisible(false);
     setUnsavedPreferences(JSON.parse(JSON.stringify(preferences[PreferenceTypes.ANNOTATOR])));
     if (afterSaveAction) {
-      let a = afterSaveAction.current;
+      let action = afterSaveAction.current;
       afterSaveAction.current = () => {};
-      if (a)
-        a();
+      if (action)
+        action();
     }
   }
 
@@ -480,7 +478,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
             </div> 
             <div className="save-prompt-button"
             onClick={() => handleCancelSavePreferences()}>
-              Cancel
+              No
             </div>
           </div>   
         </div>
@@ -528,9 +526,25 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
               
               {annotatorIDtoForm[selectedAnnotator]}
             </div>
-            {selectedAnnotator === Annotators.AMAS ? <div
+            {selectedAnnotator === Annotators.AMAS ? <div 
+              tabIndex={0}
               className= "annot-recommend-button"
-              onClick={handleGenerateAnnotations}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (isUnsaved) {
+                    setSavePromptVisible(true)
+                  } else {
+                    handleGenerateAnnotations()
+                  }
+                }
+              }}
+              onClick={() => {
+                if (isUnsaved) {
+                  setSavePromptVisible(true)
+                } else {
+                  handleGenerateAnnotations()
+                }
+              }}
             >
               Generate annotation recommendations
             </div>:
