@@ -10,6 +10,7 @@ import {
 } from "../../libs/AMAS-js/src/recommend_annotation";
 
 import { openDB, IDBPDatabase } from "idb";
+import { PreferenceTypes } from "../../App";
 
 /**
  * Represents the Match Score Selection Criteria (MSSC) used in AMAS.
@@ -22,6 +23,21 @@ enum MSSC {
   ABOVE = "above",
 }
 
+// Annotator Info Interface
+interface AnnotatorInfo {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  sourceCode: string;
+}
+
+// Annotator Info Dictionary
+const annotators: AnnotatorInfo[] = [
+  { id: "amas", name: "AMAS", description: "Placeholder", version: "1.0", sourceCode: "https://github.com/sys-bio/AMAS" },
+  { id: "example", name: "Example", description: "An example alternative algorithm", version: "1.2.3.4 beta", sourceCode: "https://sys-bio.github.io/AntimonyEditor/" }
+];
+
 interface Recommendation {
   type: string;
   id: string;
@@ -33,6 +49,12 @@ interface Recommendation {
   existing: number;
   updateAnnotation: string;
   isLowMatch: boolean;
+}
+
+// Available Annotators
+enum Annotators {
+  AMAS = "amas",
+  EXAMPLE = "example"
 }
 
 enum SortOrder {
@@ -56,6 +78,8 @@ interface SortConfig {
  * @property {function} setFileContent - Sets the file content
  * @property {function} setUploadedFiles - Sets the uploaded files
  * @property {boolean} isConverted - True if the fileContent was previously Antimony (.ant) and converted to SBML (.xml).
+ * @property {dict} preferences - A stateful object that contains the user's AWE preferences
+ * @property {function} handlePreferenceUpdate - A function used to update and save the user's AWE preferences
  */
 interface RecommendAnnotationModalProps {
   db: IDBPDatabase<MyDB> | null | undefined;
@@ -66,6 +90,8 @@ interface RecommendAnnotationModalProps {
   setFileContent: (fileContent: string) => void;
   setUploadedFiles: (files: { name: string; content: string }[]) => void;
   isConverted: boolean;
+  preferences: {[key:string]: any};
+  handlePreferenceUpdate: (preferences: {[key: string]: any}) => void;
 }
 
 /**
@@ -78,6 +104,8 @@ interface RecommendAnnotationModalProps {
  * @param setFileContent - RecommendAnnotationModalProp
  * @param setUploadedFiles - RecommendAnnotationModalProp
  * @param isConverted - RecommendAnnotationModalProp
+ * @param preferences - A stateful object that contains the user's AWE preferences
+ * @param handlePreferenceUpdate - A function used to update and save the user's AWE preferences
  * @example - <RecommendAnnotationModal
  *              db={db}
  *              setDb={setDb}
@@ -99,12 +127,12 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   setFileContent,
   setUploadedFiles,
   isConverted,
+  preferences,
+  handlePreferenceUpdate
 }) => {
   const [step, setStep] = useState<number>(1);
   const [progress, setProgress] = useState<number>(0);
   const [progressMessage, setProgressMessage] = useState<string>("Loading...");
-  const [cutoff, setCutoff] = useState<number>(0.01);
-  const [mssc, setMSSC] = useState<MSSC>(MSSC.TOP);
   const [recommender, setRecommender] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [selectedRecommendations, setSelectedRecommendations] = useState<
@@ -115,14 +143,33 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     order: SortOrder.ASC,
   });
   const modalRef = useRef<HTMLDivElement>(null);
+  const [selectedAnnotator, setSelectedAnnotator] = useState<string>("amas");
+  const [unsavedPreferences, setUnsavedPreferences] = useState<{[key:string]: any}>(JSON.parse(JSON.stringify(preferences[PreferenceTypes.ANNOTATOR])));
+  const [isUnsaved, setIsUnsaved] = useState<boolean>(false);
+  const [savePromptVisible, setSavePromptVisible] = useState<boolean>(false);
+
+  // Method to call after saving or cancelling the save prompt
+  const afterSaveAction = useRef<() => void>();
+
+  // Initialize states, mostly for debugging
+  useEffect(() => {
+    setIsUnsaved(false)
+    afterSaveAction.current = () => {};
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         modalRef.current &&
-        !modalRef.current.contains(event.target as Node)
+        !modalRef.current.contains(event.target as Node) &&
+        !savePromptVisible
       ) {
-        onClose(); // Close the modal if the click is outside the modal
+        if (isUnsaved) {
+          setSavePromptVisible(true);
+          afterSaveAction.current = onClose;
+        } else {
+          onClose(); // Close the modal if the click is outside the modal
+        }
       }
     };
 
@@ -130,29 +177,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [onClose]);
-
-  /**
-   * Handles changes to the cutoff value input field.
-   * Ensures the value stays within the valid range of 0.0 to 1.0.
-   *
-   * @param event - The change event from the number input field.
-   */
-  const handleCutoff = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let value = parseFloat(event.target.value);
-    if (value >= 0.0 && value <= 1.0) {
-      setCutoff(value);
-    }
-  };
-
-  /**
-   * Handles changes to the MSSC dropdown selection.
-   *
-   * @param event - The change event from the dropdown select element.
-   */
-  const handleMSSC = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setMSSC(event.target.value as MSSC);
-  };
+  }, [onClose, isUnsaved, savePromptVisible]);
 
   /**
    * Handles the generation of annotation recommendations.
@@ -183,8 +208,8 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
       // Predict species
       const predSpec = await predictSpecies({
         recom,
-        mssc,
-        cutoff,
+        cutoff: unsavedPreferences[Annotators.AMAS]["cutoff"],
+        mssc: unsavedPreferences[Annotators.AMAS]["mssc"]
       });
 
       setProgressMessage(`Predicting ${numReactions} reactions...`);
@@ -196,8 +221,8 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
       // Predict reactions
       const predReac = await predictReactions({
         recom,
-        mssc,
-        cutoff,
+        cutoff: unsavedPreferences[Annotators.AMAS]["cutoff"],
+        mssc: unsavedPreferences[Annotators.AMAS]["mssc"]
       });
 
       setProgressMessage("Creating recommendations table...");
@@ -314,21 +339,20 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   const sortedRecommendations =
     sortConfig.field !== null
       ? [...recommendations].sort((a, b) => {
-          const field = sortConfig.field as keyof typeof a;
-          const valueA = a[field];
-          const valueB = b[field];
-
-          if (typeof valueA === "number" && typeof valueB === "number") {
-            return sortConfig.order === SortOrder.ASC
-              ? valueA - valueB
-              : valueB - valueA;
-          } else if (typeof valueA === "string" && typeof valueB === "string") {
-            return sortConfig.order === SortOrder.ASC
-              ? valueA.localeCompare(valueB)
-              : valueB.localeCompare(valueA);
-          }
-          return 0;
-        })
+        const field = sortConfig.field as keyof typeof a;
+        const valueA = a[field];
+        const valueB = b[field];
+        if (typeof valueA === "number" && typeof valueB === "number") {
+          return sortConfig.order === SortOrder.ASC
+            ? valueA - valueB
+            : valueB - valueA;
+        } else if (typeof valueA === "string" && typeof valueB === "string") {
+          return sortConfig.order === SortOrder.ASC
+            ? valueA.localeCompare(valueB)
+            : valueB.localeCompare(valueA);
+        }
+        return 0;
+      })
       : recommendations;
 
   /**
@@ -386,9 +410,80 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     }
   };
 
+  /**
+   * 
+   * Function to call to update the "unsaved preferences".
+   * Also updates the unsaved state to cause the save prompt to show up
+   * if any settings are different
+   * 
+   * @param annotator - Annotator's preference to update
+   * @param key - name of the preference
+   * @param value - value of the preference
+   */
+  const updateUnsavedPreferences = (annotator: Annotators, key:string, value:any) => {
+    //console.log("updating " + key + " to " + value)
+    let temp = unsavedPreferences;
+    temp[annotator][key] = value;
+    setIsUnsaved(JSON.stringify(preferences[PreferenceTypes.ANNOTATOR]) !== JSON.stringify(temp));
+    setUnsavedPreferences(temp);
+  }
+
+  const handleSavePreferences = () => {
+    let temp = JSON.parse(JSON.stringify(preferences));
+    temp[PreferenceTypes.ANNOTATOR] = unsavedPreferences
+    handlePreferenceUpdate(JSON.parse(JSON.stringify(temp)));
+    setIsUnsaved(false);
+    setSavePromptVisible(false);
+    if (afterSaveAction) {
+      let a = afterSaveAction.current;
+      afterSaveAction.current = () => {};
+      if (a)
+        a();
+    }
+  }
+
+  const handleCancelSavePreferences = () => {
+    setIsUnsaved(false);
+    setSavePromptVisible(false);
+    setUnsavedPreferences(JSON.parse(JSON.stringify(preferences[PreferenceTypes.ANNOTATOR])));
+    if (afterSaveAction) {
+      let action = afterSaveAction.current;
+      afterSaveAction.current = () => {};
+      if (action)
+        action();
+    }
+  }
+
+  const annotatorIDtoForm: {[key:string]: any}= {
+    "amas": AMASForm(unsavedPreferences, updateUnsavedPreferences),
+    "example": ExampleForm(unsavedPreferences, updateUnsavedPreferences)
+  }
+
   return (
     <>
       <div className="shadow-background" />
+      {savePromptVisible && 
+      <div className="save-prompt-background">
+        <div className="save-prompt-container">
+          <div className="modal-title-container">
+            <div className="modal-title"> Unsaved Changes </div>
+          </div>
+          <div className="save-prompt">
+            Do you want to save your preferences?
+          </div>
+          <div className="save-prompt-buttons">
+            <div className="save-prompt-button"
+            onClick={(e) => handleSavePreferences()}>
+              Save
+            </div> 
+            <div className="save-prompt-button"
+            onClick={() => handleCancelSavePreferences()}>
+              No
+            </div>
+          </div>   
+        </div>
+      </div>
+      }
       <div
         className="annot-modal"
         ref={modalRef}
@@ -396,51 +491,67 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
       >
         <div className="modal-title-container">
           <div className="modal-title">
-            {step === 1 && `Select arguments:`}
+            {step === 1 && `Select Arguments`}
             {step === 2 && (
               <div>
                 <div>{progressMessage}</div>
                 <progress value={progress} />
               </div>
             )}
-            {step === 3 && `Select annotations to update:`}
+            {step === 3 && `Select annotations to update`}
           </div>
         </div>
 
         {step === 1 && (
           <>
             <div className="annot-arguments-container">
-              <div className="annot-argument-container">
-                <label htmlFor="cutoffInput">Cutoff Score (0.0 - 1.0):</label>
-                <input
-                  id="cutoffInput"
-                  type="number"
-                  value={cutoff}
-                  onChange={handleCutoff}
-                  min="0.0"
-                  max="1.0"
-                  step="0.01"
-                />
-              </div>
-              <div className="annot-argument-container">
-                <label htmlFor="msscInput">
-                  Match Score Selection Criteria (MSSC):
-                </label>
-                <select id="msscInput" value={mssc} onChange={handleMSSC}>
-                  {Object.values(MSSC).map((value) => (
-                    <option key={value} value={value}>
-                      {value.toUpperCase()}
-                    </option>
-                  ))}
+              <div className="select-annotator-container">
+                Selected Annotator:
+                <select
+                  className="select-annotator"
+                  value={selectedAnnotator}
+                  onChange={e => {
+                    setSelectedAnnotator(e.target.value);
+                    if (isUnsaved) {
+                      setSavePromptVisible(true)
+                    }
+                  }}
+                >
+                  {annotators.map((a) => (
+                    <option className="select-options" value={a.id} key={a.id}>{a.name}</option>
+                  ))
+                  }
                 </select>
               </div>
+              
+              {annotatorIDtoForm[selectedAnnotator]}
             </div>
-            <div
-              className="annot-recommend-button"
-              onClick={handleGenerateAnnotations}
+            {selectedAnnotator === Annotators.AMAS ? <div 
+              tabIndex={0}
+              className= "annot-recommend-button"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (isUnsaved) {
+                    setSavePromptVisible(true)
+                  } else {
+                    handleGenerateAnnotations()
+                  }
+                }
+              }}
+              onClick={() => {
+                if (isUnsaved) {
+                  setSavePromptVisible(true)
+                } else {
+                  handleGenerateAnnotations()
+                }
+              }}
             >
               Generate annotation recommendations
+            </div>:
+            <div className= "annot-recommend-button-grey">
+              Annotation Recommendation Not Available
             </div>
+            }
           </>
         )}
 
@@ -485,9 +596,8 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
                 const key = getRecommendationKey(rec);
                 return (
                   <div
-                    className={`annot-grid-row ${
-                      rec.isLowMatch && "low-match"
-                    }`}
+                    className={`annot-grid-row ${rec.isLowMatch && "low-match"
+                      }`}
                     key={key}
                   >
                     <div className="annot-grid-item">{rec.type}</div>
@@ -519,5 +629,164 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     </>
   );
 };
+
+export const DefaultFormPreferences:{[key:string]: any} = {
+  "amas": {
+    "cutoff" : 0.1,
+    "mssc" : "TOP"
+  },
+  "example": {
+    "one": "Example String",
+    "two": 0,
+    "three": 0,
+    "four": "Select1",
+  },
+}
+
+// The preference form for AMAS
+const AMASForm = (unsavedPreferences:{[key:string]: any}, updateUnsavedPreferences: (annotator: Annotators, key:string, value:any) => void) => {
+
+  const [mssc, updateMssc] = useState<MSSC>(unsavedPreferences[Annotators.AMAS]["mssc"] as MSSC);
+  const [cutoff, updateCutoff] = useState<number>(unsavedPreferences[Annotators.AMAS]["cutoff"])
+
+  /**
+   * Handles changes to the cutoff value input field.
+   * Ensures the value stays within the valid range of 0.0 to 1.0.
+   *
+   * @param event - The change event from the number input field.
+   */
+  const handleCutoff = (event: React.ChangeEvent<HTMLInputElement>) => {
+    let value = parseFloat(event.target.value);
+    if (value >= 0.0 && value <= 1.0) {
+      updateUnsavedPreferences(Annotators.AMAS, "cutoff", value);
+      updateCutoff(value)
+    }
+  };
+
+  /**
+   * Handles changes to the MSSC dropdown selection.
+   *
+   * @param event - The change event from the dropdown select element.
+   */
+  const handleMSSC = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    updateUnsavedPreferences(Annotators.AMAS, "mssc", event.target.value);
+    updateMssc(event.target.value as MSSC)
+  };
+
+  return (
+    <>
+      <div className="annot-argument-container">
+        <label htmlFor="cutoffInput">Cutoff Score (0.0 - 1.0):</label>
+        <input
+          id="cutoffInput"
+          type="number"
+          value={cutoff}
+          onChange={handleCutoff}
+          min="0.0"
+          max="1.0"
+          step="0.01"
+        />
+      </div>
+      <div className="annot-argument-container">
+        <label htmlFor="msscInput">
+          Match Score Selection Criteria (MSSC):
+        </label>
+        <select 
+          id="msscInput" value={mssc} onChange={handleMSSC}>
+          {Object.values(MSSC).map((value) => (
+            <option key={value} value={value}>
+              {value.toUpperCase()}
+            </option>
+          ))}
+        </select>
+      </div>
+    </>
+  );
+}
+
+// An example form to play around with
+// When adding properties, you will need to 
+// update the default preferences above
+const ExampleForm = (unsavedPreferences:{[key:string]: any}, updateUnsavedPreferences: (annotator: Annotators, key:string, value:any) => void) => {
+
+  enum SelectValues {
+    Select1 = "Select1",
+    Select2 = "Select2",
+    Select3 = "Select3"
+  }
+
+  const [one, setOne] = useState<string>(unsavedPreferences[Annotators.EXAMPLE]["one"]);
+  const [two, setTwo] = useState<number>(unsavedPreferences[Annotators.EXAMPLE]["two"]);
+  const [three, setThree] = useState<number>(unsavedPreferences[Annotators.EXAMPLE]["three"]);
+  const [four, setFour] = useState<SelectValues>(unsavedPreferences[Annotators.EXAMPLE]["four"] as SelectValues);
+
+  return (
+    <>
+      <div className="annot-argument-container">
+        <label htmlFor="ExampleInput1"> Example Input String </label>
+        <input
+          id = "ExampleInput1"
+          type= "string"
+          value = {one}
+          onChange = {(e) => {
+            updateUnsavedPreferences(Annotators.EXAMPLE, "one", e.target.value);
+            setOne(e.target.value);
+          }
+          }
+        />
+      </div>
+      <div className="annot-argument-container">
+        <label htmlFor="ExampleInput2"> Example Input Number </label>
+        <input
+          id = "ExampleInput2"
+          type= "number"
+          value = {two}
+          onChange = {(e) => {
+            updateUnsavedPreferences(Annotators.EXAMPLE, "two", e.target.value);
+            setTwo(parseInt(e.target.value));
+          }
+          }
+        />
+      </div>
+      <div className="annot-argument-container">
+        <label htmlFor="ExampleInput3"> Example Input Range </label>
+        <div className="slider-container">
+          <div className="slider-number">{three}</div>
+          <input
+          id = "ExampleInput3"
+          type= "range"
+          value = {three}
+          min = "0"
+          max = "100"
+          step = "1"
+          onChange = {(e) => {
+            updateUnsavedPreferences(Annotators.EXAMPLE, "three", e.target.value);
+            setThree(parseInt(e.target.value));
+          }
+          }
+          />
+        </div>
+        
+      </div>
+      <div className="annot-argument-container">
+        <label htmlFor="ExampleInput4"> Example Input Selector </label>
+        <select 
+          id="ExampleInput4" 
+          value={four} 
+          onChange={(e) => {
+            updateUnsavedPreferences(Annotators.EXAMPLE, "four", e.target.value);
+            setFour(e.target.value as SelectValues);
+          }
+        }>
+          {Object.values(SelectValues).map((value) => (
+            <option key={value} value={value}>
+              {value.toUpperCase()}
+            </option>
+          ))}
+        </select>
+      </div>
+    </>
+  )
+}
 
 export default RecommendAnnotationModal;

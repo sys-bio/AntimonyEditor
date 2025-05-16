@@ -2,13 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import "./FileExplorer.css";
 import ContextMenu from "../context-menu/ContextMenu";
 import { IDBPDatabase, DBSchema } from "idb";
-
-interface MyDB extends DBSchema {
-  files: {
-    key: string;
-    value: { name: string; content: string };
-  };
-}
+import { MyDB } from "../../App";
 
 /**
  * @description FileExplorerProps interface
