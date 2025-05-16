@@ -127,35 +127,6 @@ const App: React.FC = () => {
         })
       })
     })
-
-
-    // openDB<MyDB>("antimony_editor_db").then((db) => {
-    //   openDB<MyDB>("antimony_editor_db", db.version+1, {
-    //     upgrade(db) {
-    //       if (!db.objectStoreNames.contains("files")) {
-    //         db.createObjectStore("files", { keyPath: "name" });
-    //       }
-    //       if (!db.objectStoreNames.contains("settings")) {
-    //         db.createObjectStore("settings", {keyPath: "name"});
-    //       }
-    //     }
-    //   }).then((database) => {
-    //     setDb(database); // Store the database instance in the state
-    //     database.getAll("files").then((files) => {
-    //       setUploadedFiles(files);
-    //     });
-    //     // Get the settings file if it currently exists, else create settings file with
-    //     // defaultPreferences loaded in
-    //     database.get("settings", "settings.json").then((settings) => {
-    //       if (settings) {
-    //         setPreferences(JSON.parse(settings.content));
-    //       } else {
-    //         setPreferences(defaultPreferences);
-    //         database.put("settings", {name: "settings.json", content:JSON.stringify(defaultPreferences)});
-    //       }
-    //     })
-    //   })
-    // })
   }, []);
 
   /**
