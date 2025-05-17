@@ -1,0 +1,3 @@
+pi = 1
+avogadro = 2
+species NaN = pi + avogadro

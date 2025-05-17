@@ -1,0 +1,162 @@
+header {
+  grid-area: header;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
+  border-bottom: 3px solid #474757;
+  background-color: #1c1c1c;
+  padding: 0px 15px;
+  width: 100%;
+}
+
+/* Topbar */
+
+.title {
+  color: white;
+  font-weight: bold;
+  font-size: 1em;
+}
+
+.header-menu {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+}
+
+.header-menu-option {
+  margin: 1px;
+}
+
+.header-menu-option > button {
+  position: relative;
+  padding: 5px 10px;
+  background-color: #1c1c1c;
+  color: #d4d4d4;
+  border-radius: 4px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.header-menu-option > button:hover {
+  background-color: #464646;
+}
+
+/** Dropdown */
+
+.header-menu-dropdown {
+  position: absolute;
+  background-color: #333;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: default;
+  list-style: none;
+  padding: 4px;
+  gap: 4px;
+  z-index: 10000;
+}
+
+.header-menu-dropdown.header-submenu {
+  left: 100%;
+}
+
+.header-menu-dropdown-option {
+  position: relative;
+}
+
+.header-menu-dropdown-button {
+  display: flex;
+  position: relative;
+  justify-content: space-between;
+  width: 250px;
+  padding: 5px 10px;
+  margin: 0;
+  background-color: #333;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/** Fix for link options */
+.header-menu-dropdown-button > a {
+  color: white;
+  text-decoration: none;
+}
+
+.header-menu-dropdown-button:hover {
+  background-color: #464646;
+}
+
+.header-menu-dropdown-button.option-inactive::before {
+  content: " ";
+  color: white;
+  font-size: 1rem;
+  width: 24px;
+}
+
+.header-menu-dropdown-button.option-active::before {
+  content: "✓";
+  color: white;
+  font-size: 1rem;
+  text-align: left;
+  width: 24px;
+}
+
+.header-menu-dropdown-hotkey-text {
+  color: #bbb;
+  font-size: 1rem;
+}
+
+.header-menu-dropdown-main-text {
+  color: white;
+  font-size: 1rem;
+
+  flex-grow: 1;
+  text-align: left;
+}
+
+.header-dropdown-arrow-icon {
+  color: #888;
+}
+
+.color-square {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #ccc;
+  margin-left: 10px;
+  border-radius: 2px;
+}
+
+/* Miscellaneous */
+
+.modal-background {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.about-modal {
+  background-color: #333;
+  padding: 2rem;
+  border-radius: 5px;
+  border: 1px solid #ccc; 
+  max-width: 400px;
+  width: 80%;
+  text-align: center;
+  color: white;
+  z-index: 1001;
+}
+
+#file-upload {
+  display: none;
+}
