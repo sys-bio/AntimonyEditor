@@ -1,5 +1,0 @@
-species pi;
-species inf = 1;
-compartment avogadro;
-const species Nan = 0;
-species Pi = 1;

@@ -1,2 +1,0 @@
-a=3
-a isPropertyOf "BQB_thing"
