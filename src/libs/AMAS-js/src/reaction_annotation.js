@@ -59,8 +59,6 @@ class ReactionAnnotation {
     const numCols = reacs.length;
     let maxMultipliedMatrix = math.max(multipliedMatrix, 0);
     let queryColSum = math.zeros(numCols);
-
-    console.time("ReactionMatrixTime")
     // Convert matrices to native arrays just once
     const multiplied = multipliedMatrix.toArray();           // shape: [rows][cols]
     const maxVals = maxMultipliedMatrix.toArray();           // shape: [cols][1]
@@ -108,7 +106,7 @@ class ReactionAnnotation {
     //   // Find minimum row sum
     //   queryColSum.set([col], Math.min(...rowSums));
     // }
-    console.timeEnd("ReactionMatrixTime")
+    
     // Reshape queryColSum into a column vector (math.js matrix)
     queryColSum = math.transpose(math.reshape(queryColSum, [queryColSum.size()[0], 1]));
 
