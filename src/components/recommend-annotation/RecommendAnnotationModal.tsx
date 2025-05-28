@@ -403,7 +403,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
           const updatedFile = { name: fileName, content: updatedContent };
           await db.put("files", updatedFile);
           const updatedFiles = await db.getAll("files");
-          const updatedDatabase = await openDB<MyDB>("antimony_editor_db", 1);
+          const updatedDatabase = await openDB<MyDB>("antimony_editor_db");
           setUploadedFiles(updatedFiles);
           setDb(updatedDatabase);
         }
