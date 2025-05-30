@@ -59,26 +59,54 @@ class ReactionAnnotation {
     const numCols = reacs.length;
     let maxMultipliedMatrix = math.max(multipliedMatrix, 0);
     let queryColSum = math.zeros(numCols);
+    // Convert matrices to native arrays just once
+    const multiplied = multipliedMatrix.toArray();           // shape: [rows][cols]
+    const maxVals = maxMultipliedMatrix.toArray();           // shape: [cols][1]
+    const refMat = cn.REF_MAT.toArray();                     // shape: [rows][features]
 
     for (let col = 0; col < numCols; col++) {
-      // Find the rows that contain the max column values
-      let matchingIndices = [];
-      for (let row = 0; row < multipliedMatrix.size()[0]; row++) {
-        if (multipliedMatrix.get([row, col]) === maxMultipliedMatrix.get([col, 0])) {
+      const maxVal = maxVals[col][0];
+      const matchingIndices = [];
+
+      // Find matching rows (i.e. where this col hits max value)
+      for (let row = 0; row < multiplied.length; row++) {
+        if (multiplied[row][col] === maxVal) {
           matchingIndices.push(row);
         }
       }
 
-      // Extract rows from REF_MAT that contain the max column values
-      let selectedRows = matchingIndices.map(i => cn.REF_MAT.subset(math.index(i, math.range(0, cn.REF_MAT.size()[1]))));
-      
-      // Compute row sums
-      let rowSums = selectedRows.map(row => math.sum(row));
+      // Find min row sum in REF_MAT over these matching rows
+      let minSum = Infinity;
+      for (let rowIdx of matchingIndices) {
+        const row = refMat[rowIdx];
+        let sum = 0;
+        for (let val of row) sum += val;
+        if (sum < minSum) minSum = sum;
+      }
 
-      // Find minimum row sum
-      queryColSum.set([col], Math.min(...rowSums));
+      queryColSum.set([col], minSum);
     }
 
+    // Old matrix math.js based algorithm
+    // for (let col = 0; col < numCols; col++) {
+    //   // Find the rows that contain the max column values
+    //   let matchingIndices = [];
+    //   for (let row = 0; row < multipliedMatrix.size()[0]; row++) {
+    //     if (multipliedMatrix.get([row, col]) === maxMultipliedMatrix.get([col, 0])) {
+    //       matchingIndices.push(row);
+    //     }
+    //   }
+
+    //   // Extract rows from REF_MAT that contain the max column values
+    //   let selectedRows = matchingIndices.map(i => cn.REF_MAT.subset(math.index(i, math.range(0, cn.REF_MAT.size()[1]))));
+      
+    //   // Compute row sums
+    //   let rowSums = selectedRows.map(row => math.sum(row));
+
+    //   // Find minimum row sum
+    //   queryColSum.set([col], Math.min(...rowSums));
+    // }
+    
     // Reshape queryColSum into a column vector (math.js matrix)
     queryColSum = math.transpose(math.reshape(queryColSum, [queryColSum.size()[0], 1]));
 

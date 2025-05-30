@@ -147,6 +147,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   const [unsavedPreferences, setUnsavedPreferences] = useState<{[key:string]: any}>(JSON.parse(JSON.stringify(preferences[PreferenceTypes.ANNOTATOR])));
   const [isUnsaved, setIsUnsaved] = useState<boolean>(false);
   const [savePromptVisible, setSavePromptVisible] = useState<boolean>(false);
+  const [genInProgress, setGenInProgress] = useState<boolean>(false);
 
   // Method to call after saving or cancelling the save prompt
   const afterSaveAction = useRef<() => void>();
@@ -162,7 +163,8 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
       if (
         modalRef.current &&
         !modalRef.current.contains(event.target as Node) &&
-        !savePromptVisible
+        !savePromptVisible &&
+        !genInProgress
       ) {
         if (isUnsaved) {
           setSavePromptVisible(true);
@@ -177,7 +179,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [onClose, isUnsaved, savePromptVisible]);
+  }, [onClose, isUnsaved, savePromptVisible, genInProgress]);
 
   /**
    * Handles the generation of annotation recommendations.
@@ -187,6 +189,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   const handleGenerateAnnotations = async () => {
     try {
       setStep(2);
+      setGenInProgress(true);
       await new Promise((resolve) => {
         setTimeout(resolve, 10);
       });
@@ -290,8 +293,10 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
         )
       );
       setStep(3);
+      setGenInProgress(false);
     } catch (error) {
       console.error("Unable to generate annotation recommendations:", error);
+      setGenInProgress(false);
       onClose();
     }
   };
@@ -398,7 +403,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
           const updatedFile = { name: fileName, content: updatedContent };
           await db.put("files", updatedFile);
           const updatedFiles = await db.getAll("files");
-          const updatedDatabase = await openDB<MyDB>("antimony_editor_db", 1);
+          const updatedDatabase = await openDB<MyDB>("antimony_editor_db");
           setUploadedFiles(updatedFiles);
           setDb(updatedDatabase);
         }
