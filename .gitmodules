@@ -1,0 +1,3 @@
+[submodule "biomodels_cache"]
+	path = biomodels_cache
+	url = ./biomodels_cache
