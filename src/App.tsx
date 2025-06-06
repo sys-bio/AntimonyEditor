@@ -284,12 +284,12 @@ const App: React.FC = () => {
         // NOTE: Currently, a file is selected before it is deleted.
         //       Therefore, fileName === selectedFileName always holds in this method (for now).
 
-        if (selectedFileIndex === null || updatedFiles.length === 1) {
+        if (selectedFileIndex === null || updatedFiles.length === 0) {
           // If last file was deleted, create a new blank file.
           handleNewFile("untitled.ant", "");
-        } else if (selectedFileIndex === 1) {
+        } else if (selectedFileIndex === 0) {
           // If the selected file is deleted and was the first file, select the new first file.
-          handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
+          handleFileClick(updatedFiles[0].content, updatedFiles[0].name, 0);
         } else if (selectedFileIndex === updatedFiles.length) {
           // If the selected file is deleted and was the last file, select the file before it.
           const newIndex = selectedFileIndex - 1;
