@@ -128,7 +128,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   const [step, setStep] = useState<number>(1);
   const [progress, setProgress] = useState<number>(0);
   const [progressMessage, setProgressMessage] = useState<string>("Loading...");
-  
+
 
   const modalRef = useRef<HTMLDivElement>(null);
   const [selectedAnnotator, setSelectedAnnotator] = useState<string>("amas");
@@ -270,7 +270,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
 
       let recommender = recom;
       let recommendations = processedRecommendations;
-      let selectedRecommendations:Record<string, boolean> = 
+      let selectedRecommendations: Record<string, boolean> =
         recomTable.reduce(
           (acc: Record<string, boolean>, rec: Recommendation) => {
             const key = getRecommendationKey(rec);
@@ -281,14 +281,14 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
         );
 
       setRecommendationTableParams({
-        db: db, 
-        fileName: fileName, 
-        isConverted: isConverted, 
-        recommender: recommender, 
-        recommendations: recommendations, 
-        selectedRecommendationsInput: selectedRecommendations, 
+        db: db,
+        fileName: fileName,
+        isConverted: isConverted,
+        recommender: recommender,
+        recommendations: recommendations,
+        selectedRecommendationsInput: selectedRecommendations,
         onClose: null,
-        })
+      })
 
       setGenInProgress(false);
       onClose();

@@ -11,7 +11,7 @@ import handleDownload from "./features/HandleDownload";
 import * as monaco from "monaco-editor";
 import { openDB, IDBPDatabase, DBSchema } from "idb";
 import { Split } from "@geoffcox/react-splitter";
-import { DefaultFormPreferences} from "./components/recommend-annotation/RecommendAnnotationModal";
+import { DefaultFormPreferences } from "./components/recommend-annotation/RecommendAnnotationModal";
 import { RecommendationTableProps, RecommendationTable } from "./components/recommend-annotation/RecommendTable";
 
 /**
@@ -385,7 +385,7 @@ const App: React.FC = () => {
     setRecommendationReady(true);
   }
 
-  const handleRecommendationTableClose = (fileName:string):void => {
+  const handleRecommendationTableClose = (fileName: string): void => {
     setEditorWindowSize("100%");
     setRecommendationWindowSize("0%");
     setRecommendationTableParams(null);
@@ -400,7 +400,7 @@ const App: React.FC = () => {
       handleRecommendationTableOpen();
       console.log("Attempt open")
     }
-  },[recommendationTableParams])
+  }, [recommendationTableParams])
 
   return (
     <div className="app">
@@ -456,7 +456,7 @@ const App: React.FC = () => {
           <Split
             renderSplitter={() => <SolidSplitter />}
             initialPrimarySize="80%"
-            minPrimarySize = {editorWindowSize}
+            minPrimarySize={editorWindowSize}
             minSecondarySize="20%"
             splitterSize="4px"
           >
