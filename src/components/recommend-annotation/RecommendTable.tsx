@@ -18,7 +18,7 @@ export interface RecommendationTableProps {
   onClose: ((fileName: string) => void) | null;
 }
 
-export const RecommendationTable: React.FC<RecommendationTableProps> = ({db, fileName, isConverted, recommender, recommendations, selectedRecommendationsInput, onClose}) => {
+export const RecommendationTable: React.FC<RecommendationTableProps> = ({ db, fileName, isConverted, recommender, recommendations, selectedRecommendationsInput, onClose }) => {
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     field: null,
@@ -39,11 +39,11 @@ export const RecommendationTable: React.FC<RecommendationTableProps> = ({db, fil
     `${rec.id}-${rec.annotation}`;
 
   /**
- * Updates the sorting configuration based on the selected field.
- * Toggles between ascending and descending order if the same field is clicked.
- *
- * @param field - The recommendation field to sort by.
- */
+   * Updates the sorting configuration based on the selected field.
+   * Toggles between ascending and descending order if the same field is clicked.
+   *
+   * @param field - The recommendation field to sort by.
+   */
   const handleSort = (field: keyof Recommendation) => {
     setSortConfig((prev) => ({
       field,
@@ -55,8 +55,8 @@ export const RecommendationTable: React.FC<RecommendationTableProps> = ({db, fil
   };
 
   /**
- * Sort recommendations based on the sort config.
- */
+   * Sort recommendations based on the sort config.
+   */
   const sortedRecommendations =
     sortConfig.field !== null
       ? [...recommendations].sort((a, b) => {
@@ -113,16 +113,10 @@ export const RecommendationTable: React.FC<RecommendationTableProps> = ({db, fil
           window.sbmlString = updatedContent;
         }
 
-        //setFileContent(updatedContent);
-
         window.localStorage.setItem("current_file", updatedContent);
         if (db) {
           const updatedFile = { name: fileName, content: updatedContent };
           await db.put("files", updatedFile);
-          // const updatedFiles = await db.getAll("files");
-          // const updatedDatabase = await openDB<MyDB>("antimony_editor_db");
-          // setUploadedFiles(updatedFiles);
-          // setDb(updatedDatabase);
         }
       }
     } catch (error) {
