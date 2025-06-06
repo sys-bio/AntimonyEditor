@@ -34,6 +34,7 @@ interface AntimonyEditorProps {
   setHighlightColor: (color: string) => void;
   highlightColor: string;
   handleNewFile: (newFileName: string, newFileContent: string) => Promise<void>;
+  forceUpdateCount: number;
 }
 
 /**
@@ -86,6 +87,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
        handleSelectedPosition,
        highlightColor,
        handleNewFile,
+       forceUpdateCount
      }) => {
       const editorRef = useRef<HTMLDivElement | null>(null);
       const [loading, setLoading] = useState<boolean>(false);
@@ -307,7 +309,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
        */
       useEffect(() => {
         loadFile(fileName);
-      }, [fileName, database]) 
+      }, [fileName, database, forceUpdateCount]) 
 
 
       /**

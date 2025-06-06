@@ -26,3 +26,4 @@ yarn-error.log*
 /src/language-handler/antlr/.antlr
 /src/language-handler/antlr/.antlr/*
 
+.vscode
