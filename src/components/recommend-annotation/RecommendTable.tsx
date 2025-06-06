@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Recommendation, SortOrder } from "./RecommendAnnotationModal";
 import { IDBPDatabase } from "idb";
 import { MyDB } from "../../App";
@@ -141,12 +141,8 @@ export const RecommendationTable: React.FC<RecommendationTableProps> = ({ db, fi
     }));
   };
 
-  useEffect(() => {
-    console.log("Rendering")
-  }, [])
-
   return (
-    <>
+    <div className="recommend-table">
       <div className="annot-grid">
         <div className="annot-grid-header-container">
           <div
@@ -213,7 +209,7 @@ export const RecommendationTable: React.FC<RecommendationTableProps> = ({ db, fi
       >
         Update annotations
       </div>
-    </>
+    </div>
   )
 }
 

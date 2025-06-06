@@ -153,17 +153,25 @@
   background-color: #5b5b5c;
 }
 
+.recommend-table {
+  max-height: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .annot-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr 2fr 1fr 1fr;
   gap: 10px;
-  width: 100%;
+  max-width: 100%;
   padding: 10px;
-  margin: 10px 0px;
   box-sizing: border-box;
-  max-height: 600px;
-  overflow-y: auto;
-  font-size: 10px;
+  overflow-y: scroll;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+  scrollbar-color: #5b5b5c #333333;
+  scrollbar-gutter: auto;
 }
 
 .annot-grid-header-container {
@@ -191,6 +199,7 @@
 .annot-grid-item {
   text-align: left;
   padding: 5px;
+  max-width: 100%;
 }
 
 .sortable-header {

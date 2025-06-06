@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode } from "react";
+import React, { useState, useEffect} from "react";
 import "./App.css";
 
 import AntimonyEditor from "./components/antimony-editor/AntimonyEditor";
@@ -380,7 +380,7 @@ const App: React.FC = () => {
   };
 
   const handleRecommendationTableOpen = () => {
-    setEditorWindowSize("60%");
+    setEditorWindowSize("0%");
     setRecommendationWindowSize("40%");
     setRecommendationReady(true);
   }
@@ -398,7 +398,6 @@ const App: React.FC = () => {
       let props = recommendationTableParams;
       props.onClose = handleRecommendationTableClose;
       handleRecommendationTableOpen();
-      console.log("Attempt open")
     }
   }, [recommendationTableParams])
 
@@ -457,7 +456,7 @@ const App: React.FC = () => {
             renderSplitter={() => <SolidSplitter />}
             initialPrimarySize="80%"
             minPrimarySize={editorWindowSize}
-            minSecondarySize="20%"
+            minSecondarySize={recommendationWindowSize}
             splitterSize="4px"
           >
             <section className="editor">
