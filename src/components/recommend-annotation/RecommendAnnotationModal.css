@@ -175,19 +175,25 @@
 }
 
 .annot-grid-header-container {
-  display: contents;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 2fr 1fr 1fr;
+  max-width: 100%;
+  gap: 10px;
+  padding: 10px;
+  box-sizing: border-box;
+  position: sticky;
   border-bottom: 2px solid #ddd;
   padding-bottom: 10px;
 }
 
 .annot-grid-header {
   display: flex;
+  position: sticky;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   font-weight: bold;
   padding: 5px;
-  border-bottom: 2px solid #ddd;
 }
 
 .annot-grid-row {
@@ -230,4 +236,22 @@
 .select-options {
   border-bottom-left-radius: 3px;
   border-bottom-right-radius: 3px;
+}
+
+.annot-recommend-button-container {
+  display:flex;
+  flex-direction: row;
+  width: 100%;
+  flex-basis: auto;
+  justify-content: space-evenly;
+}
+
+.annot-recommend-button-table {
+  cursor: pointer;
+  text-align: center;
+  padding: 5px;
+  background-color: #333;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 50%;
 }

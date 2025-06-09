@@ -143,41 +143,40 @@ export const RecommendationTable: React.FC<RecommendationTableProps> = ({ db, fi
 
   return (
     <div className="recommend-table">
-      <div className="annot-grid">
-        <div className="annot-grid-header-container">
-          <div
-            className="annot-grid-header sortable-header"
-            onClick={() => handleSort("type")}
-          >
-            <div>Type</div>
-            <div>
-              {sortConfig.field === "type"
-                ? sortConfig.order === SortOrder.ASC
-                  ? "↑"
-                  : "↓"
-                : "↕"}
-            </div>
+      <div className="annot-grid-header-container">
+        <div
+          className="annot-grid-header sortable-header"
+          onClick={() => handleSort("type")}
+        >
+          <div>Type</div>
+          <div>
+            {sortConfig.field === "type"
+              ? sortConfig.order === SortOrder.ASC
+                ? "↑"
+                : "↓"
+              : "↕"}
           </div>
-          <div className="annot-grid-header">ID</div>
-          <div className="annot-grid-header">Display Name</div>
-          <div className="annot-grid-header">Annotation</div>
-          <div className="annot-grid-header">Annotation Label</div>
-          <div
-            className="annot-grid-header sortable-header"
-            onClick={() => handleSort("matchScore")}
-          >
-            <div>Match Score</div>
-            <div>
-              {sortConfig.field === "matchScore"
-                ? sortConfig.order === SortOrder.ASC
-                  ? "↑"
-                  : "↓"
-                : "↕"}
-            </div>
-          </div>
-          <div className="annot-grid-header">Selected Annotation</div>
         </div>
-
+        <div className="annot-grid-header">ID</div>
+        <div className="annot-grid-header">Display Name</div>
+        <div className="annot-grid-header">Annotation</div>
+        <div className="annot-grid-header">Annotation Label</div>
+        <div
+          className="annot-grid-header sortable-header"
+          onClick={() => handleSort("matchScore")}
+        >
+          <div>Match Score</div>
+          <div>
+            {sortConfig.field === "matchScore"
+              ? sortConfig.order === SortOrder.ASC
+                ? "↑"
+                : "↓"
+              : "↕"}
+          </div>
+        </div>
+        <div className="annot-grid-header">Selected Annotation</div>
+      </div>
+      <div className="annot-grid">
         {sortedRecommendations.map((rec) => {
           const key = getRecommendationKey(rec);
           return (
@@ -203,12 +202,26 @@ export const RecommendationTable: React.FC<RecommendationTableProps> = ({ db, fi
           );
         })}
       </div>
-      <div
-        className="annot-recommend-button"
-        onClick={handleUpdateAnnotations}
-      >
-        Update annotations
+      <div className="annot-recommend-button-container">
+        <div
+          className="annot-recommend-button-table"
+          onClick={() => {
+            if (onClose)
+              onClose(fileName)
+          }}
+        >
+          Cancel
+        </div>
+
+        <div
+          className="annot-recommend-button-table"
+          onClick={handleUpdateAnnotations}
+        >
+          Update annotations
+        </div>
+
       </div>
+
     </div>
   )
 }

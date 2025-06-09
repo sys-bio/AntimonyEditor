@@ -385,7 +385,7 @@ const App: React.FC = () => {
     setRecommendationReady(true);
   }
 
-  const handleRecommendationTableClose = (fileName: string): void => {
+  const handleRecommendationTableClose = (): void => {
     setEditorWindowSize("100%");
     setRecommendationWindowSize("0%");
     setRecommendationTableParams(null);
@@ -400,6 +400,12 @@ const App: React.FC = () => {
       handleRecommendationTableOpen();
     }
   }, [recommendationTableParams])
+
+  useEffect(() => {
+    if (recommendationTableParams != null && selectedFileName !== recommendationTableParams.fileName) {
+      handleRecommendationTableClose()
+    }
+  }, [selectedFileName, recommendationTableParams])
 
   return (
     <div className="app">
