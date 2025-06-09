@@ -153,33 +153,47 @@
   background-color: #5b5b5c;
 }
 
+.recommend-table {
+  max-height: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .annot-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr 2fr 1fr 1fr;
   gap: 10px;
-  width: 100%;
+  max-width: 100%;
   padding: 10px;
-  margin: 10px 0px;
   box-sizing: border-box;
-  max-height: 600px;
-  overflow-y: auto;
-  font-size: 10px;
+  overflow-y: scroll;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+  scrollbar-color: #5b5b5c #333333;
+  scrollbar-gutter: auto;
 }
 
 .annot-grid-header-container {
-  display: contents;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 2fr 1fr 1fr;
+  max-width: 100%;
+  gap: 10px;
+  padding: 10px;
+  box-sizing: border-box;
+  position: sticky;
   border-bottom: 2px solid #ddd;
   padding-bottom: 10px;
 }
 
 .annot-grid-header {
   display: flex;
+  position: sticky;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   font-weight: bold;
   padding: 5px;
-  border-bottom: 2px solid #ddd;
 }
 
 .annot-grid-row {
@@ -191,6 +205,7 @@
 .annot-grid-item {
   text-align: left;
   padding: 5px;
+  max-width: 100%;
 }
 
 .sortable-header {
@@ -221,4 +236,22 @@
 .select-options {
   border-bottom-left-radius: 3px;
   border-bottom-right-radius: 3px;
+}
+
+.annot-recommend-button-container {
+  display:flex;
+  flex-direction: row;
+  width: 100%;
+  flex-basis: auto;
+  justify-content: space-evenly;
+}
+
+.annot-recommend-button-table {
+  cursor: pointer;
+  text-align: center;
+  padding: 5px;
+  background-color: #333;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 50%;
 }
