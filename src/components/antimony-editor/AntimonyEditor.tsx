@@ -276,6 +276,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
             window.antimonyString = processedContent;
             window.selectedFile = data.name;
             setSelectedFile(fName);
+            if (editorInstance) {
+              editorInstance.setValue(processedContent);
+            }
           } else {
             console.log("File called to load does not exist in database");
           }
@@ -380,7 +383,6 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         handleCursorPositionChange(editor);
         getBiomodels(setLoading, setChosenModel);
         setEditorInstance(editor);
-
         return () => editor.dispose();
       }
     }, [annotUnderlinedOn, selectedFile, initialContent]);

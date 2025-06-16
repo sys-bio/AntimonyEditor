@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Recommendation, SortOrder } from "./RecommendAnnotationModal";
 import { IDBPDatabase } from "idb";
 import { MyDB } from "../../App";
@@ -15,7 +15,7 @@ export interface RecommendationTableProps {
   recommender: any;
   recommendations: Recommendation[];
   selectedRecommendationsInput: Record<string, boolean>;
-  onClose: ((fileName: string) => void) | null;
+  onClose: (() => void) | null;
 }
 
 export const RecommendationTable: React.FC<RecommendationTableProps> = ({ db, fileName, isConverted, recommender, recommendations, selectedRecommendationsInput, onClose }) => {
@@ -123,7 +123,7 @@ export const RecommendationTable: React.FC<RecommendationTableProps> = ({ db, fi
       console.error("Unable to update annotations:", error);
     } finally {
       if (onClose) {
-        onClose(fileName);
+        onClose();
       } else {
         console.error("Recommendation Table cannot be closed, improperly initialized")
       }
@@ -207,7 +207,7 @@ export const RecommendationTable: React.FC<RecommendationTableProps> = ({ db, fi
           className="annot-recommend-button-table"
           onClick={() => {
             if (onClose)
-              onClose(fileName)
+              onClose()
           }}
         >
           Cancel
