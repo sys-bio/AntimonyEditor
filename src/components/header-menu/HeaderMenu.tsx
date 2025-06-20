@@ -59,7 +59,7 @@ interface HeaderMenuProps {
   setHighlightColor: (color: string) => void;
   /** Options for the highlight color  */
   colors: { name: string; color: string }[];
-  setRecTableParamsPre: React.Dispatch<any>;
+  promptRecommendationTable: (params: any) => void;
 }
 
 /**
@@ -102,7 +102,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   highlightColor,
   setHighlightColor,
   colors,
-  setRecTableParamsPre,
+  promptRecommendationTable,
 }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [convertedFileContent, setConvertedFileContent] = useState("");
@@ -324,7 +324,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
           isConverted={isConverted}
           preferences={preferences}
           handlePreferenceUpdate={handlePreferenceUpdate}
-          setRecommendationTableParams={setRecTableParamsPre}
+          promptRecommendationTable={promptRecommendationTable}
         />
       )}
       

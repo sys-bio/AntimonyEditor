@@ -58,10 +58,7 @@ enum Annotators {
   EXAMPLE = "example"
 }
 
-export enum SortOrder {
-  ASC = "asc",
-  DESC = "desc",
-}
+
 
 /**
  * @description RecommendAnnotationModalProps interface
@@ -87,7 +84,7 @@ interface RecommendAnnotationModalProps {
   isConverted: boolean;
   preferences: { [key: string]: any };
   handlePreferenceUpdate: (preferences: { [key: string]: any }) => void;
-  setRecommendationTableParams: React.Dispatch<RecommendationTableProps>;
+  promptRecommendationTable: (params: RecommendationTableProps | null) => void;
 }
 
 /**
@@ -123,7 +120,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   isConverted,
   preferences,
   handlePreferenceUpdate,
-  setRecommendationTableParams,
+  promptRecommendationTable,
 }) => {
   const [step, setStep] = useState<number>(1);
   const [progress, setProgress] = useState<number>(0);
@@ -280,15 +277,20 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
           {} as Record<string, boolean>
         );
 
-      setRecommendationTableParams({
+      const closePromptRec = () => {
+        promptRecommendationTable(null)
+      }
+
+      promptRecommendationTable({
         db: db,
         fileName: fileName,
         isConverted: isConverted,
         recommender: recommender,
         recommendations: recommendations,
         selectedRecommendationsInput: selectedRecommendations,
-        onClose: null,
-      })
+        onClose: closePromptRec,
+        
+      });
 
       setGenInProgress(false);
       onClose();

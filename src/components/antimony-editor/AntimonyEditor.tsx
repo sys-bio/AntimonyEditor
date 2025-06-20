@@ -425,9 +425,9 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
     /**
      * @description Saves the name and content of the file selected to IndexedDB
      */
-    useEffect(() => {
+    const saveToDB = (val: string) => {
       if (database && editorInstance) {
-        let processedContent = processContent(editorInstance.getValue());
+        let processedContent = val;
         const transaction = database.transaction("files", "readwrite");
         transaction.objectStore("files").put({
           name: selectedFile,
@@ -438,7 +438,7 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
       } else {
         if (!database) console.log("Database state is null!");
       }
-    }, [newContent]);
+    }
 
     /**
      * @description Handles displaying the dropdown when a user searches for a model
@@ -508,7 +508,8 @@ const AntimonyEditor: React.FC<AntimonyEditorProps & { database: IDBPDatabase<My
         if (currentContent !== processedContent) {
           editor.setValue(processedContent);
         }
-        setNewContent(processedContent);
+        saveToDB(processedContent);
+        // setNewContent(processedContent);
         window.localStorage.setItem("current_file", processedContent);
         window.antimonyString = processedContent;
         delayedModelParser(editor);

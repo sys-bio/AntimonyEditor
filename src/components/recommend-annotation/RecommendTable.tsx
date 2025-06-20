@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
-import { Recommendation, SortOrder } from "./RecommendAnnotationModal";
+import { Recommendation } from "./RecommendAnnotationModal";
 import { IDBPDatabase } from "idb";
 import { MyDB } from "../../App";
 
 interface SortConfig {
   field: keyof Recommendation | null;
   order: SortOrder;
+}
+
+enum SortOrder {
+  ASC = "asc",
+  DESC = "desc",
 }
 
 export interface RecommendationTableProps {
@@ -114,6 +119,7 @@ export const RecommendationTable: React.FC<RecommendationTableProps> = ({ db, fi
         }
 
         window.localStorage.setItem("current_file", updatedContent);
+        console.log(updatedContent);
         if (db) {
           const updatedFile = { name: fileName, content: updatedContent };
           await db.put("files", updatedFile);

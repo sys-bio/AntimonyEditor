@@ -93,8 +93,7 @@ const App: React.FC = () => {
   // Preferences start empty and are later set on DB setup
   const [preferences, setPreferences] = useState<{ [key: string]: any }>({});
 
-  const [recTableParamsPre, setRecTableParamsPre] = useState<RecommendationTableProps | null>(null);
-  const [recTableParamsPost, setRecTableParamsPost] = useState<RecommendationTableProps | null>(null);
+  const [recommendationTableParams, setRecommendationTableParams] = useState<RecommendationTableProps | null>(null);
 
   const [editorWindowSize, setEditorWindowSize] = useState<string>("100%");
   const [recommendationWindowSize, setRecommendationWindowSize] = useState<string>("0%");
@@ -383,31 +382,38 @@ const App: React.FC = () => {
   const handleRecommendationTableOpen = () => {
     setEditorWindowSize("0%");
     setRecommendationWindowSize("40%");
-    setRecommendationReady(true);
   }
 
   const handleRecommendationTableClose = (): void => {
     setEditorWindowSize("100%");
     setRecommendationWindowSize("0%");
-    setRecTableParamsPre(null);
-    setRecommendationReady(false);
     setForceEditorUpdate(forceEditorUpdate + 1);
   }
 
-  useEffect(() => {
-    if (recTableParamsPre) {
-      let props = recTableParamsPre;
-      props.onClose = handleRecommendationTableClose;
-      setRecTableParamsPost(props)
+  const promptRecommendationTable = (params: RecommendationTableProps|null) => {
+    if (params == null) {
+      setRecommendationTableParams(null)
+      handleRecommendationTableClose();
+    } else {
+      setRecommendationTableParams(params);
       handleRecommendationTableOpen();
     }
-  }, [recTableParamsPre])
+  }
+
+  // useEffect(() => {
+  //   if (recTableParamsPre) {
+  //     let props = recTableParamsPre;
+  //     props.onClose = handleRecommendationTableClose;
+  //     setRecTableParamsPost(props)
+  //     handleRecommendationTableOpen();
+  //   }
+  // }, [recTableParamsPre])
 
   useEffect(() => {
-    if (recTableParamsPre != null && selectedFileName !== recTableParamsPre.fileName) {
-      handleRecommendationTableClose()
+    if (recommendationTableParams !== null && selectedFileName !== recommendationTableParams.fileName) {
+      promptRecommendationTable(null);
     }
-  }, [selectedFileName, recTableParamsPre])
+  }, [selectedFileName])
 
   return (
     <div className="app">
@@ -427,7 +433,7 @@ const App: React.FC = () => {
         colors={colors}
         preferences={preferences}
         handlePreferenceUpdate={handlePreferenceUpdate}
-        setRecTableParamsPre={setRecTableParamsPre}
+        promptRecommendationTable={promptRecommendationTable}
       />
       <div className="middle">
         <Split
@@ -489,9 +495,9 @@ const App: React.FC = () => {
                 <div>Loading...</div>
               )}
             </section>
-            {recommendationReady && recTableParamsPost && <section className="recommendationTable">
+            {recommendationTableParams && <section className="recommendationTable">
               <RecommendationTable
-                {...recTableParamsPost}
+                {...recommendationTableParams}
               />
             </section>}
           </Split>
