@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect} from "react";
 import "./App.css";
 
 import AntimonyEditor from "./components/antimony-editor/AntimonyEditor";
@@ -11,7 +11,8 @@ import handleDownload from "./features/HandleDownload";
 import * as monaco from "monaco-editor";
 import { openDB, IDBPDatabase, DBSchema } from "idb";
 import { Split } from "@geoffcox/react-splitter";
-import RecommendAnnotationModal, { DefaultFormPreferences } from "./components/recommend-annotation/RecommendAnnotationModal";
+import { DefaultFormPreferences, Recommendation } from "./components/recommend-annotation/RecommendAnnotationModal";
+import { RecommendationTableProps, RecommendationTable } from "./components/recommend-annotation/RecommendTable";
 
 /**
  * @description MyDB interface
@@ -47,7 +48,7 @@ export enum PreferenceTypes {
 
 
 // Default user preferences
-const defaultPreferences:{[key:string]: any} = {
+const defaultPreferences: { [key: string]: any } = {
   "annotatorPreferences": DefaultFormPreferences,
   "highlightColor": "Red"
 };
@@ -90,7 +91,14 @@ const App: React.FC = () => {
   ];
 
   // Preferences start empty and are later set on DB setup
-  const [preferences, setPreferences] = useState<{[key:string]: any}>({});
+  const [preferences, setPreferences] = useState<{ [key: string]: any }>({});
+
+  const [recommendationTableParams, setRecommendationTableParams] = useState<RecommendationTableProps | null>(null);
+
+  const [editorWindowSize, setEditorWindowSize] = useState<string>("100%");
+  const [recommendationWindowSize, setRecommendationWindowSize] = useState<string>("0%");
+  const [recommendationReady, setRecommendationReady] = useState<boolean>(false);
+  const [forceEditorUpdate, setForceEditorUpdate] = useState<number>(0);
 
   /**
    * @description Use the openDB function to open the database
@@ -107,7 +115,7 @@ const App: React.FC = () => {
             db.createObjectStore("files", { keyPath: "name" });
           }
           if (!db.objectStoreNames.contains("settings")) {
-            db.createObjectStore("settings", {keyPath: "name"});
+            db.createObjectStore("settings", { keyPath: "name" });
           }
         }
       }).then((database) => {
@@ -122,7 +130,7 @@ const App: React.FC = () => {
             setPreferences(JSON.parse(settings.content));
           } else {
             setPreferences(defaultPreferences);
-            database.put("settings", {name: "settings.json", content:JSON.stringify(defaultPreferences)});
+            database.put("settings", { name: "settings.json", content: JSON.stringify(defaultPreferences) });
           }
         })
       })
@@ -133,10 +141,10 @@ const App: React.FC = () => {
    * @description Updates preferences and saves in user storage
    * @param preferences - Full updated preferences file
    */
-  const handlePreferenceUpdate = (preferences: {[key:string]: any}) => {
+  const handlePreferenceUpdate = (preferences: { [key: string]: any }) => {
     setPreferences(preferences);
     if (db) {
-      db.put("settings", {name: "settings.json", content:JSON.stringify(preferences)});
+      db.put("settings", { name: "settings.json", content: JSON.stringify(preferences) });
     }
   }
 
@@ -276,12 +284,12 @@ const App: React.FC = () => {
         // NOTE: Currently, a file is selected before it is deleted.
         //       Therefore, fileName === selectedFileName always holds in this method (for now).
 
-        if (selectedFileIndex === null || updatedFiles.length === 1) {
+        if (selectedFileIndex === null || updatedFiles.length === 0) {
           // If last file was deleted, create a new blank file.
           handleNewFile("untitled.ant", "");
-        } else if (selectedFileIndex === 1) {
+        } else if (selectedFileIndex === 0) {
           // If the selected file is deleted and was the first file, select the new first file.
-          handleFileClick(updatedFiles[1].content, updatedFiles[1].name, 1);
+          handleFileClick(updatedFiles[0].content, updatedFiles[0].name, 0);
         } else if (selectedFileIndex === updatedFiles.length) {
           // If the selected file is deleted and was the last file, select the file before it.
           const newIndex = selectedFileIndex - 1;
@@ -349,7 +357,7 @@ const App: React.FC = () => {
     dataTransfer.items.add(file);
 
     if (db) {
-      let fileobj = {name: newFileName, content: newFileContent};
+      let fileobj = { name: newFileName, content: newFileContent };
 
       // Add file to database
       await db.put("files", fileobj);
@@ -371,11 +379,46 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRecommendationTableOpen = () => {
+    setEditorWindowSize("0%");
+    setRecommendationWindowSize("40%");
+  }
+
+  const handleRecommendationTableClose = (): void => {
+    setEditorWindowSize("100%");
+    setRecommendationWindowSize("0%");
+    setForceEditorUpdate(forceEditorUpdate + 1);
+  }
+
+  const promptRecommendationTable = (params: RecommendationTableProps|null) => {
+    if (params == null) {
+      setRecommendationTableParams(null)
+      handleRecommendationTableClose();
+    } else {
+      setRecommendationTableParams(params);
+      handleRecommendationTableOpen();
+    }
+  }
+
+  // useEffect(() => {
+  //   if (recTableParamsPre) {
+  //     let props = recTableParamsPre;
+  //     props.onClose = handleRecommendationTableClose;
+  //     setRecTableParamsPost(props)
+  //     handleRecommendationTableOpen();
+  //   }
+  // }, [recTableParamsPre])
+
+  useEffect(() => {
+    if (recommendationTableParams !== null && selectedFileName !== recommendationTableParams.fileName) {
+      promptRecommendationTable(null);
+    }
+  }, [selectedFileName])
+
   return (
     <div className="app">
       <HeaderMenu
         db={db}
-        setDb={setDb}
         fileName={selectedFileName}
         fileContent={selectedFileContent}
         setFileContent={setSelectedFileContent}
@@ -390,58 +433,74 @@ const App: React.FC = () => {
         colors={colors}
         preferences={preferences}
         handlePreferenceUpdate={handlePreferenceUpdate}
+        promptRecommendationTable={promptRecommendationTable}
       />
       <div className="middle">
         <Split
           renderSplitter={() => <SolidSplitter />}
           initialPrimarySize="14%"
           minPrimarySize="14%"
-          splitterSize="5px"
+          minSecondarySize="20%"
+          splitterSize="4px"
         >
           <section className="sidebar">
             <div className="fileExplorerContainer">
               <div className="fileExplorerTitle">File Explorer</div>
             </div>
             {db ? (
-            <FileExplorer
-              key={fileExplorerKey}
-              database={db}
-              files={uploadedFiles}
-              setFiles={setUploadedFiles}
-              onFileClick={handleFileClick}
-              onDeleteFile={deleteFile}
-              handleNewFile={handleNewFile}
-              selectedFileIndex={selectedFileIndex}
-              setSelectedFileIndex={setSelectedFileIndex}
-              selectedFileName={selectedFileName}
-              setSelectedFileName={setSelectedFileName}
-            />
-            ) : (
-              // You can provide a loading message or handle the absence of the database as needed
-              <div>Loading...</div>
-            )}
-          </section>
-          <section className="editor">
-            {db ? ( // Conditionally render the AntimonyEditor component when db is defined
-              <AntimonyEditor
-                key={selectedFileName}
-                fileName={selectedFileName}
+              <FileExplorer
+                key={fileExplorerKey}
                 database={db}
-                annotUnderlinedOn={annotUnderlinedOn}
-                setAnnotUnderlinedOn={setAnnotUnderlinedOn}
-                editorInstance={editorInstance}
-                setEditorInstance={setEditorInstance}
-                selectedFilePosition={selectedEditorPosition}
-                handleSelectedPosition={handleSelectedPosition}
-                highlightColor={highlightColor}
-                setHighlightColor={setHighlightColor}
+                files={uploadedFiles}
+                setFiles={setUploadedFiles}
+                onFileClick={handleFileClick}
+                onDeleteFile={deleteFile}
                 handleNewFile={handleNewFile}
+                selectedFileIndex={selectedFileIndex}
+                setSelectedFileIndex={setSelectedFileIndex}
+                selectedFileName={selectedFileName}
+                setSelectedFileName={setSelectedFileName}
               />
             ) : (
               // You can provide a loading message or handle the absence of the database as needed
               <div>Loading...</div>
             )}
           </section>
+          <Split
+            renderSplitter={() => <SolidSplitter />}
+            initialPrimarySize="80%"
+            minPrimarySize={editorWindowSize}
+            minSecondarySize={recommendationWindowSize}
+            splitterSize="4px"
+          >
+            <section className="editor">
+              {db ? ( // Conditionally render the AntimonyEditor component when db is defined
+                <AntimonyEditor
+                  key={selectedFileName}
+                  fileName={selectedFileName}
+                  database={db}
+                  annotUnderlinedOn={annotUnderlinedOn}
+                  setAnnotUnderlinedOn={setAnnotUnderlinedOn}
+                  editorInstance={editorInstance}
+                  setEditorInstance={setEditorInstance}
+                  selectedFilePosition={selectedEditorPosition}
+                  handleSelectedPosition={handleSelectedPosition}
+                  highlightColor={highlightColor}
+                  setHighlightColor={setHighlightColor}
+                  handleNewFile={handleNewFile}
+                  forceUpdateCount={forceEditorUpdate}
+                />
+              ) : (
+                // You can provide a loading message or handle the absence of the database as needed
+                <div>Loading...</div>
+              )}
+            </section>
+            {recommendationTableParams && <section className="recommendationTable">
+              <RecommendationTable
+                {...recommendationTableParams}
+              />
+            </section>}
+          </Split>
         </Split>
       </div>
       <footer>

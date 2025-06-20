@@ -28,7 +28,6 @@ import { IDBPDatabase } from "idb";
  */
 interface HeaderMenuProps {
   db: IDBPDatabase<MyDB> | null | undefined;
-  setDb: (database: IDBPDatabase<MyDB> | null) => void;
 
   /** Name of the current selected file */
   fileName: string;
@@ -60,12 +59,12 @@ interface HeaderMenuProps {
   setHighlightColor: (color: string) => void;
   /** Options for the highlight color  */
   colors: { name: string; color: string }[];
+  promptRecommendationTable: (params: any) => void;
 }
 
 /**
  * @description HeaderMenu component
  * @param db - HeaderMenuProp
- * @param setDb - HeaderMenuProp
  * @param fileName - HeaderMenuProp
  * @param fileContent - HeaderMenuProp
  * @param setFileContent - HeaderMenuProp
@@ -89,7 +88,6 @@ interface HeaderMenuProps {
  */
 const HeaderMenu: React.FC<HeaderMenuProps> = ({
   db,
-  setDb,
   fileName,
   fileContent,
   setFileContent,
@@ -104,6 +102,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
   highlightColor,
   setHighlightColor,
   colors,
+  promptRecommendationTable,
 }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [convertedFileContent, setConvertedFileContent] = useState("");
@@ -317,7 +316,6 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
       {isModalVisible && (
         <RecommendAnnotationModal
           db={db}
-          setDb={setDb}
           onClose={() => setModalVisible(false)}
           fileName={fileName}
           fileContent={isConverted ? convertedFileContent : fileContent}
@@ -326,6 +324,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
           isConverted={isConverted}
           preferences={preferences}
           handlePreferenceUpdate={handlePreferenceUpdate}
+          promptRecommendationTable={promptRecommendationTable}
         />
       )}
       

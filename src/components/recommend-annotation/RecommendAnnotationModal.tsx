@@ -11,6 +11,7 @@ import {
 
 import { openDB, IDBPDatabase } from "idb";
 import { PreferenceTypes } from "../../App";
+import { RecommendationTableProps } from "./RecommendTable";
 
 /**
  * Represents the Match Score Selection Criteria (MSSC) used in AMAS.
@@ -38,7 +39,7 @@ const annotators: AnnotatorInfo[] = [
   { id: "example", name: "Example", description: "An example alternative algorithm", version: "1.2.3.4 beta", sourceCode: "https://sys-bio.github.io/AntimonyEditor/" }
 ];
 
-interface Recommendation {
+export interface Recommendation {
   type: string;
   id: string;
   displayName: string;
@@ -57,15 +58,7 @@ enum Annotators {
   EXAMPLE = "example"
 }
 
-enum SortOrder {
-  ASC = "asc",
-  DESC = "desc",
-}
 
-interface SortConfig {
-  field: keyof Recommendation | null;
-  order: SortOrder;
-}
 
 /**
  * @description RecommendAnnotationModalProps interface
@@ -83,21 +76,20 @@ interface SortConfig {
  */
 interface RecommendAnnotationModalProps {
   db: IDBPDatabase<MyDB> | null | undefined;
-  setDb: (database: IDBPDatabase<MyDB> | null) => void;
   onClose: () => void;
   fileName: string;
   fileContent: string;
   setFileContent: (fileContent: string) => void;
   setUploadedFiles: (files: { name: string; content: string }[]) => void;
   isConverted: boolean;
-  preferences: {[key:string]: any};
-  handlePreferenceUpdate: (preferences: {[key: string]: any}) => void;
+  preferences: { [key: string]: any };
+  handlePreferenceUpdate: (preferences: { [key: string]: any }) => void;
+  promptRecommendationTable: (params: RecommendationTableProps | null) => void;
 }
 
 /**
  * @description RecommendAnnotationModal component
  * @param db - RecommendAnnotationModalProp
- * @param setDb - RecommendAnnotationModalProp
  * @param onClose - RecommendAnnotationModalProp
  * @param fileName - RecommendAnnotationModalProp
  * @param fileContent - RecommendAnnotationModalProp
@@ -120,7 +112,6 @@ interface RecommendAnnotationModalProps {
  */
 const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   db,
-  setDb,
   onClose,
   fileName,
   fileContent,
@@ -128,23 +119,17 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   setUploadedFiles,
   isConverted,
   preferences,
-  handlePreferenceUpdate
+  handlePreferenceUpdate,
+  promptRecommendationTable,
 }) => {
   const [step, setStep] = useState<number>(1);
   const [progress, setProgress] = useState<number>(0);
   const [progressMessage, setProgressMessage] = useState<string>("Loading...");
-  const [recommender, setRecommender] = useState<any>(null);
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [selectedRecommendations, setSelectedRecommendations] = useState<
-    Record<string, boolean>
-  >({});
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
-    field: null,
-    order: SortOrder.ASC,
-  });
+
+
   const modalRef = useRef<HTMLDivElement>(null);
   const [selectedAnnotator, setSelectedAnnotator] = useState<string>("amas");
-  const [unsavedPreferences, setUnsavedPreferences] = useState<{[key:string]: any}>(JSON.parse(JSON.stringify(preferences[PreferenceTypes.ANNOTATOR])));
+  const [unsavedPreferences, setUnsavedPreferences] = useState<{ [key: string]: any }>(JSON.parse(JSON.stringify(preferences[PreferenceTypes.ANNOTATOR])));
   const [isUnsaved, setIsUnsaved] = useState<boolean>(false);
   const [savePromptVisible, setSavePromptVisible] = useState<boolean>(false);
   const [genInProgress, setGenInProgress] = useState<boolean>(false);
@@ -155,7 +140,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   // Initialize states, mostly for debugging
   useEffect(() => {
     setIsUnsaved(false)
-    afterSaveAction.current = () => {};
+    afterSaveAction.current = () => { };
   }, [])
 
   useEffect(() => {
@@ -201,7 +186,6 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
       const numSpecies = recom.getSpeciesIDs().length;
       const numReactions = recom.getReactionIDs().length;
 
-      setRecommender(recom);
       setProgressMessage(`Predicting ${numSpecies} species...`);
       setProgress(0.25);
       await new Promise((resolve) => {
@@ -281,8 +265,9 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
         return { ...rec, isLowMatch: updatedRec?.isLowMatch || false };
       });
 
-      setRecommendations(processedRecommendations);
-      setSelectedRecommendations(
+      let recommender = recom;
+      let recommendations = processedRecommendations;
+      let selectedRecommendations: Record<string, boolean> =
         recomTable.reduce(
           (acc: Record<string, boolean>, rec: Recommendation) => {
             const key = getRecommendationKey(rec);
@@ -290,10 +275,25 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
             return acc;
           },
           {} as Record<string, boolean>
-        )
-      );
-      setStep(3);
+        );
+
+      const closePromptRec = () => {
+        promptRecommendationTable(null)
+      }
+
+      promptRecommendationTable({
+        db: db,
+        fileName: fileName,
+        isConverted: isConverted,
+        recommender: recommender,
+        recommendations: recommendations,
+        selectedRecommendationsInput: selectedRecommendations,
+        onClose: closePromptRec,
+        
+      });
+
       setGenInProgress(false);
+      onClose();
     } catch (error) {
       console.error("Unable to generate annotation recommendations:", error);
       setGenInProgress(false);
@@ -312,110 +312,6 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     `${rec.id}-${rec.annotation}`;
 
   /**
-   * Toggles the selection of a recommendation by its recommendation key generated by getRecommendationKey.
-   * If the recommendation is already selected, it will be deselected, and vice versa.
-   */
-  const handleSelect = (key: string) => {
-    setSelectedRecommendations((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
-  /**
-   * Updates the sorting configuration based on the selected field.
-   * Toggles between ascending and descending order if the same field is clicked.
-   *
-   * @param field - The recommendation field to sort by.
-   */
-  const handleSort = (field: keyof Recommendation) => {
-    setSortConfig((prev) => ({
-      field,
-      order:
-        prev.field === field && prev.order === SortOrder.ASC
-          ? SortOrder.DESC
-          : SortOrder.ASC,
-    }));
-  };
-
-  /**
-   * Sort recommendations based on the sort config.
-   */
-  const sortedRecommendations =
-    sortConfig.field !== null
-      ? [...recommendations].sort((a, b) => {
-        const field = sortConfig.field as keyof typeof a;
-        const valueA = a[field];
-        const valueB = b[field];
-        if (typeof valueA === "number" && typeof valueB === "number") {
-          return sortConfig.order === SortOrder.ASC
-            ? valueA - valueB
-            : valueB - valueA;
-        } else if (typeof valueA === "string" && typeof valueB === "string") {
-          return sortConfig.order === SortOrder.ASC
-            ? valueA.localeCompare(valueB)
-            : valueB.localeCompare(valueA);
-        }
-        return 0;
-      })
-      : recommendations;
-
-  /**
-   * Updates the file with selected annotations by generating an SBML document.
-   * Converts it to Antimony if needed.
-   */
-  const handleUpdateAnnotations = async () => {
-    try {
-      if (recommender) {
-        const selected = recommendations.filter(
-          (rec) => selectedRecommendations[getRecommendationKey(rec)]
-        );
-
-        const updatedSBMLString = recommender.getSBMLDocument({
-          sbmlDocument: recommender.sbmlDocument,
-          chosen: selected,
-          autoFeedback: true,
-        });
-
-        // Update AWE
-        let updatedContent;
-        if (isConverted) {
-          // Convert to Antimony if needed
-          if (window.convertSBMLToAntimony) {
-            updatedContent = await window.convertSBMLToAntimony(
-              updatedSBMLString
-            );
-            window.antimonyString = updatedContent;
-          } else {
-            console.error(
-              "convertSBMLToAntimony function not found in the global scope."
-            );
-            return;
-          }
-        } else {
-          updatedContent = updatedSBMLString;
-          window.sbmlString = updatedContent;
-        }
-
-        setFileContent(updatedContent);
-        window.localStorage.setItem("current_file", updatedContent);
-        if (db) {
-          const updatedFile = { name: fileName, content: updatedContent };
-          await db.put("files", updatedFile);
-          const updatedFiles = await db.getAll("files");
-          const updatedDatabase = await openDB<MyDB>("antimony_editor_db");
-          setUploadedFiles(updatedFiles);
-          setDb(updatedDatabase);
-        }
-      }
-    } catch (error) {
-      console.error("Unable to update annotations:", error);
-    } finally {
-      onClose();
-    }
-  };
-
-  /**
    * 
    * Function to call to update the "unsaved preferences".
    * Also updates the unsaved state to cause the save prompt to show up
@@ -425,7 +321,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
    * @param key - name of the preference
    * @param value - value of the preference
    */
-  const updateUnsavedPreferences = (annotator: Annotators, key:string, value:any) => {
+  const updateUnsavedPreferences = (annotator: Annotators, key: string, value: any) => {
     //console.log("updating " + key + " to " + value)
     let temp = unsavedPreferences;
     temp[annotator][key] = value;
@@ -441,7 +337,7 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     setSavePromptVisible(false);
     if (afterSaveAction) {
       let a = afterSaveAction.current;
-      afterSaveAction.current = () => {};
+      afterSaveAction.current = () => { };
       if (a)
         a();
     }
@@ -453,13 +349,13 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
     setUnsavedPreferences(JSON.parse(JSON.stringify(preferences[PreferenceTypes.ANNOTATOR])));
     if (afterSaveAction) {
       let action = afterSaveAction.current;
-      afterSaveAction.current = () => {};
+      afterSaveAction.current = () => { };
       if (action)
         action();
     }
   }
 
-  const annotatorIDtoForm: {[key:string]: any}= {
+  const annotatorIDtoForm: { [key: string]: any } = {
     "amas": AMASForm(unsavedPreferences, updateUnsavedPreferences),
     "example": ExampleForm(unsavedPreferences, updateUnsavedPreferences)
   }
@@ -467,27 +363,27 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   return (
     <>
       <div className="shadow-background" />
-      {savePromptVisible && 
-      <div className="save-prompt-background">
-        <div className="save-prompt-container">
-          <div className="modal-title-container">
-            <div className="modal-title"> Unsaved Changes </div>
-          </div>
-          <div className="save-prompt">
-            Do you want to save your preferences?
-          </div>
-          <div className="save-prompt-buttons">
-            <div className="save-prompt-button"
-            onClick={(e) => handleSavePreferences()}>
-              Save
-            </div> 
-            <div className="save-prompt-button"
-            onClick={() => handleCancelSavePreferences()}>
-              No
+      {savePromptVisible &&
+        <div className="save-prompt-background">
+          <div className="save-prompt-container">
+            <div className="modal-title-container">
+              <div className="modal-title"> Unsaved Changes </div>
             </div>
-          </div>   
+            <div className="save-prompt">
+              Do you want to save your preferences?
+            </div>
+            <div className="save-prompt-buttons">
+              <div className="save-prompt-button"
+                onClick={(e) => handleSavePreferences()}>
+                Save
+              </div>
+              <div className="save-prompt-button"
+                onClick={() => handleCancelSavePreferences()}>
+                No
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
       }
       <div
         className="annot-modal"
@@ -528,12 +424,12 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
                   }
                 </select>
               </div>
-              
+
               {annotatorIDtoForm[selectedAnnotator]}
             </div>
-            {selectedAnnotator === Annotators.AMAS ? <div 
+            {selectedAnnotator === Annotators.AMAS ? <div
               tabIndex={0}
-              className= "annot-recommend-button"
+              className="annot-recommend-button"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   if (isUnsaved) {
@@ -552,82 +448,11 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
               }}
             >
               Generate annotation recommendations
-            </div>:
-            <div className= "annot-recommend-button-grey">
-              Annotation Recommendation Not Available
-            </div>
-            }
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <div className="annot-grid">
-              <div className="annot-grid-header-container">
-                <div
-                  className="annot-grid-header sortable-header"
-                  onClick={() => handleSort("type")}
-                >
-                  <div>Type</div>
-                  <div>
-                    {sortConfig.field === "type"
-                      ? sortConfig.order === SortOrder.ASC
-                        ? "↑"
-                        : "↓"
-                      : "↕"}
-                  </div>
-                </div>
-                <div className="annot-grid-header">ID</div>
-                <div className="annot-grid-header">Display Name</div>
-                <div className="annot-grid-header">Annotation</div>
-                <div className="annot-grid-header">Annotation Label</div>
-                <div
-                  className="annot-grid-header sortable-header"
-                  onClick={() => handleSort("matchScore")}
-                >
-                  <div>Match Score</div>
-                  <div>
-                    {sortConfig.field === "matchScore"
-                      ? sortConfig.order === SortOrder.ASC
-                        ? "↑"
-                        : "↓"
-                      : "↕"}
-                  </div>
-                </div>
-                <div className="annot-grid-header">Selected Annotation</div>
+            </div> :
+              <div className="annot-recommend-button-grey">
+                Annotation Recommendation Not Available
               </div>
-
-              {sortedRecommendations.map((rec) => {
-                const key = getRecommendationKey(rec);
-                return (
-                  <div
-                    className={`annot-grid-row ${rec.isLowMatch && "low-match"
-                      }`}
-                    key={key}
-                  >
-                    <div className="annot-grid-item">{rec.type}</div>
-                    <div className="annot-grid-item">{rec.id}</div>
-                    <div className="annot-grid-item">{rec.displayName}</div>
-                    <div className="annot-grid-item">{rec.annotation}</div>
-                    <div className="annot-grid-item">{rec.annotationLabel}</div>
-                    <div className="annot-grid-item">{rec.matchScore}</div>
-                    <div className="annot-grid-item">
-                      <input
-                        type="checkbox"
-                        checked={selectedRecommendations[key] || false}
-                        onChange={() => handleSelect(key)}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div
-              className="annot-recommend-button"
-              onClick={handleUpdateAnnotations}
-            >
-              Update annotations
-            </div>
+            }
           </>
         )}
       </div>
@@ -635,10 +460,10 @@ const RecommendAnnotationModal: React.FC<RecommendAnnotationModalProps> = ({
   );
 };
 
-export const DefaultFormPreferences:{[key:string]: any} = {
+export const DefaultFormPreferences: { [key: string]: any } = {
   "amas": {
-    "cutoff" : 0.1,
-    "mssc" : "TOP"
+    "cutoff": 0.1,
+    "mssc": "TOP"
   },
   "example": {
     "one": "Example String",
@@ -649,7 +474,7 @@ export const DefaultFormPreferences:{[key:string]: any} = {
 }
 
 // The preference form for AMAS
-const AMASForm = (unsavedPreferences:{[key:string]: any}, updateUnsavedPreferences: (annotator: Annotators, key:string, value:any) => void) => {
+const AMASForm = (unsavedPreferences: { [key: string]: any }, updateUnsavedPreferences: (annotator: Annotators, key: string, value: any) => void) => {
 
   const [mssc, updateMssc] = useState<MSSC>(unsavedPreferences[Annotators.AMAS]["mssc"] as MSSC);
   const [cutoff, updateCutoff] = useState<number>(unsavedPreferences[Annotators.AMAS]["cutoff"])
@@ -696,7 +521,7 @@ const AMASForm = (unsavedPreferences:{[key:string]: any}, updateUnsavedPreferenc
         <label htmlFor="msscInput">
           Match Score Selection Criteria (MSSC):
         </label>
-        <select 
+        <select
           id="msscInput" value={mssc} onChange={handleMSSC}>
           {Object.values(MSSC).map((value) => (
             <option key={value} value={value}>
@@ -712,7 +537,7 @@ const AMASForm = (unsavedPreferences:{[key:string]: any}, updateUnsavedPreferenc
 // An example form to play around with
 // When adding properties, you will need to 
 // update the default preferences above
-const ExampleForm = (unsavedPreferences:{[key:string]: any}, updateUnsavedPreferences: (annotator: Annotators, key:string, value:any) => void) => {
+const ExampleForm = (unsavedPreferences: { [key: string]: any }, updateUnsavedPreferences: (annotator: Annotators, key: string, value: any) => void) => {
 
   enum SelectValues {
     Select1 = "Select1",
@@ -730,10 +555,10 @@ const ExampleForm = (unsavedPreferences:{[key:string]: any}, updateUnsavedPrefer
       <div className="annot-argument-container">
         <label htmlFor="ExampleInput1"> Example Input String </label>
         <input
-          id = "ExampleInput1"
-          type= "string"
-          value = {one}
-          onChange = {(e) => {
+          id="ExampleInput1"
+          type="string"
+          value={one}
+          onChange={(e) => {
             updateUnsavedPreferences(Annotators.EXAMPLE, "one", e.target.value);
             setOne(e.target.value);
           }
@@ -743,10 +568,10 @@ const ExampleForm = (unsavedPreferences:{[key:string]: any}, updateUnsavedPrefer
       <div className="annot-argument-container">
         <label htmlFor="ExampleInput2"> Example Input Number </label>
         <input
-          id = "ExampleInput2"
-          type= "number"
-          value = {two}
-          onChange = {(e) => {
+          id="ExampleInput2"
+          type="number"
+          value={two}
+          onChange={(e) => {
             updateUnsavedPreferences(Annotators.EXAMPLE, "two", e.target.value);
             setTwo(parseInt(e.target.value));
           }
@@ -758,31 +583,31 @@ const ExampleForm = (unsavedPreferences:{[key:string]: any}, updateUnsavedPrefer
         <div className="slider-container">
           <div className="slider-number">{three}</div>
           <input
-          id = "ExampleInput3"
-          type= "range"
-          value = {three}
-          min = "0"
-          max = "100"
-          step = "1"
-          onChange = {(e) => {
-            updateUnsavedPreferences(Annotators.EXAMPLE, "three", e.target.value);
-            setThree(parseInt(e.target.value));
-          }
-          }
+            id="ExampleInput3"
+            type="range"
+            value={three}
+            min="0"
+            max="100"
+            step="1"
+            onChange={(e) => {
+              updateUnsavedPreferences(Annotators.EXAMPLE, "three", e.target.value);
+              setThree(parseInt(e.target.value));
+            }
+            }
           />
         </div>
-        
+
       </div>
       <div className="annot-argument-container">
         <label htmlFor="ExampleInput4"> Example Input Selector </label>
-        <select 
-          id="ExampleInput4" 
-          value={four} 
+        <select
+          id="ExampleInput4"
+          value={four}
           onChange={(e) => {
             updateUnsavedPreferences(Annotators.EXAMPLE, "four", e.target.value);
             setFour(e.target.value as SelectValues);
           }
-        }>
+          }>
           {Object.values(SelectValues).map((value) => (
             <option key={value} value={value}>
               {value.toUpperCase()}
