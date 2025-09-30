@@ -3,23 +3,23 @@ import { Octokit, App } from "octokit";
 // import biomodels api to use the search function
 
 /**
- * Interface for storing a model
- * @interface Model
- * @property {string} name - The name of the model
- * @property {string} url - The URL of the model
- * @property {string} id - The ID of the model
- * @property {string} title - The title of the model
- */
-type Model = {
-  name: string;
-  url: string;
-  id: string;
-  title: string;
-  authors: string[];
-  citation: string | null;
-  date: string;
-  journal: string;
-};
+* Interface for storing a model
+* @interface Model
+* @property {string} name - The name of the model
+* @property {string} url - The URL of the model
+* @property {string} id - The ID of the model
+* @property {string} title - The title of the model
+*/
+interface Model {
+    name: string;
+    url: string;
+    id: string;
+    title: string;
+    authors: string[];
+    citation: string | null;
+    date: string;
+    journal: string;
+}
 
 /**
  * Interface for the cached data stored in the JSON file
@@ -31,28 +31,28 @@ type Model = {
  * @property {string} title - The title of the model
  * @property {string} synopsis - The synopsis of the model
  */
-type CachedData = {
+interface CachedData {
   [key: string]: {
-    name: string;
-    authors: string[];
-    url: string;
-    model_id: string;
-    title: string;
-    synopsis: string;
-    citation: string | null;
-    date: string;
-    journal: string;
+      name: string;
+      authors: string[];
+      url: string;
+      model_id: string;
+      title: string;
+      synopsis: string;
+      citation: string | null;
+      date: string;
+      journal: string;
   };
-};
+}
 
 /**
  * Interface for the models returned by the cache search
  * @interface Models
  * @property {Map<String, Model>} models - The models returned by the cache search
  */
-type Models = {
-  models: Map<String, Model>;
-};
+interface Models {
+    models: Map<String, Model>;
+}
 
 // The cache of models retrieved from a JSON file
 const cachedData: CachedData = cache;
@@ -60,57 +60,73 @@ const cachedData: CachedData = cache;
 // URL for the chosen model
 let url: string;
 
-// Utility to load the cache only once
-let biomodelsCache: any = null;
-async function ensureCacheLoaded() {
-  if (!biomodelsCache) {
-    const response = await fetch("/biomodels_cache.json");
-    if (!response.ok) throw new Error("Failed to load biomodels cache");
-    biomodelsCache = await response.json();
-  }
-}
-
 function formatBiomdNumber(number: number): string {
-  const formattedNumber = number.toString().padStart(10, "0").slice(-10);
+  const formattedNumber = number.toString().padStart(10, '0').slice(-10);
   return `BIOMD${formattedNumber}`;
 }
 
+/**
+ * Function to search for models using the cached data
+ * @param {KeyboardEvent} search - The search event
+ * @param {string} searchmode - a string input that is one of `standard` || `model_number`.
+ *                              `standard` search is normal biomodel search, `model_number`
+ *                              search will, given a number X search for biomodel ID: BIOMD000000000X
+ * @returns {Promise<Models>} - A promise containing the models returned by the search
+ */
 export async function searchModels(search: KeyboardEvent, searchMode: string) {
-  await ensureCacheLoaded();
-  let queryText = (search.target as HTMLInputElement).value.trim();
-  let results: any[] = [];
+  if (searchMode != "standard" && searchMode != "model_number") {
+    console.error("invalid search mode!")
+    return;
+  }
+  try {
+    // Get the search query
+    // make sure to handle the case where we want to search by model number.
+    let queryText = (search.target as HTMLInputElement).value.trim();
+    if (searchMode == "model_number") {
+      queryText = formatBiomdNumber(Number(queryText));
+    }
+    const models: Models = { models: new Map() };
 
-  if (searchMode === "model_number") {
-    queryText = formatBiomdNumber(Number(queryText));
-    const model = biomodelsCache[queryText];
-    if (model) results = [model];
-  } else {
-    for (const id in biomodelsCache) {
-      const model = biomodelsCache[id];
-      if (
-        model.name.toLowerCase().includes(queryText.toLowerCase()) ||
-        model.title.toLowerCase().includes(queryText.toLowerCase()) ||
-        model.synopsis.toLowerCase().includes(queryText.toLowerCase())
-      ) {
-        results.push(model);
+    for (const id in cachedData) {
+      // if the query has multiple words, split them and check if all words are in a model
+      const modelData = cachedData[id];
+      if (queryText.includes(" ")) {
+        const queryWords = queryText.split(" ");
+        // the model should contain all the words in the query standalone, not as part of a word
+        if (queryWords.every(word => Object.values(modelData).some(value => 
+          typeof value === "string" && (value as string).toLowerCase().includes(word.toLowerCase())))) {
+          models.models.set(id, {
+            name: modelData.name,
+            url: modelData.url,
+            id: modelData.model_id,
+            title: modelData.title,
+            authors: modelData.authors,
+            citation: modelData.citation,
+            date: modelData.date,
+            journal: modelData.journal
+          });
+        }
+      }
+      // if the query has only one word, check if the word is in a model
+      else if (Object.values(modelData).some(value => 
+        typeof value === "string" && value.toLowerCase().includes(queryText.toLowerCase()))) {
+        models.models.set(id, {
+          name: modelData.name,
+          url: modelData.url,
+          id: modelData.model_id,
+          title: modelData.title,
+          authors: modelData.authors,
+          citation: modelData.citation,
+          date: modelData.date,
+          journal: modelData.journal
+        });
       }
     }
+    return models;
+  } catch (error) {
+      // If there is an error, throw it
+      throwError("Unable to fetch models from cache.");
   }
-
-  const models: Models = { models: new Map() };
-  for (const model of results) {
-    models.models.set(model.model_id, {
-      name: model.name,
-      url: model.url,
-      id: model.model_id,
-      title: model.title,
-      authors: model.authors,
-      citation: model.citation,
-      date: model.date,
-      journal: model.journal,
-    });
-  }
-  return models;
 }
 
 /**
@@ -122,39 +138,28 @@ export async function getModel(modelId: string) {
   try {
     // Fetch the model from the GitHub repository using the model ID and the GitHub API
     const octokit = new Octokit();
-    const response = await octokit.request(
-      "GET /repos/{owner}/{repo}/contents/{path}",
-      {
-        owner: "sys-bio",
-        repo: "BiomodelsStore",
-        path: "biomodels/" + modelId,
-        headers: {
-          Accept: "application/vnd.github+json",
-        },
+    const response = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
+      owner: "sys-bio",
+      repo: "BiomodelsStore",
+      path: "biomodels/" + modelId,
+      headers: {
+        "Accept": "application/vnd.github+json"
       }
-    );
-
+    });
+    
     // If the model is found, decode the content and return it
     if (Array.isArray(response.data)) {
-      const fileResponse = await octokit.request(
-        "GET /repos/{owner}/{repo}/contents/{path}",
-        {
-          owner: "sys-bio",
-          repo: "BiomodelsStore",
-          path: "biomodels/" + modelId + "/" + response.data[0].name,
-          headers: {
-            Accept: "application/vnd.github+json",
-          },
+      const fileResponse = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
+        owner: "sys-bio",
+        repo: "BiomodelsStore",
+        path: "biomodels/" + modelId + "/" + response.data[0].name,
+        headers: {
+          "Accept": "application/vnd.github+json"
         }
-      );
+      });
       if ("content" in fileResponse.data) {
-        const sbmlData = decodeURIComponent(
-          Array.prototype.map
-            .call(atob(fileResponse.data.content), (c: string) => {
-              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-            })
-            .join("")
-        );
+        const sbmlData = decodeURIComponent(Array.prototype.map.call(atob(fileResponse.data.content), (c: string) => {
+          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)}).join(""));
         return {
           modelId: modelId,
           sbmlData: sbmlData,
@@ -163,7 +168,7 @@ export async function getModel(modelId: string) {
           authors: cachedData[modelId].authors,
           citation: cachedData[modelId].citation,
           date: cachedData[modelId].date,
-          journal: cachedData[modelId].journal,
+          journal: cachedData[modelId].journal
         };
       } else {
         throwError("Unable to fetch model from GitHub repository.");
@@ -175,8 +180,8 @@ export async function getModel(modelId: string) {
           authors: [],
           citation: "",
           date: "",
-          journal: "",
-        };
+          journal: ""
+        }
       }
     } else {
       throwError("Unable to fetch model from GitHub repository.");
@@ -188,8 +193,8 @@ export async function getModel(modelId: string) {
         authors: [],
         citation: "",
         date: "",
-        journal: "",
-      };
+        journal: ""
+      }
     }
   } catch (error) {
     throwError("Model not found, please choose another model.");
@@ -201,8 +206,8 @@ export async function getModel(modelId: string) {
       authors: [],
       citation: "",
       date: "",
-      journal: "",
-    };
+      journal: ""
+    }
   }
 }
 
@@ -235,27 +240,17 @@ async function throwError(error: String) {
  * @param {React.Dispatch<React.SetStateAction<string | null>>} setChosenModel - The setChosenModel function from the parent component
  * @returns {void}
  */
-export function getBiomodels(
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setChosenModel: React.Dispatch<React.SetStateAction<string | null>>
-) {
-  const biomodelBrowse = document.getElementById(
-    "biomodel-browse"
-  ) as HTMLInputElement;
+export function getBiomodels(setLoading: React.Dispatch<React.SetStateAction<boolean>>, setChosenModel: React.Dispatch<React.SetStateAction<string | null>>) {
+  const biomodelBrowse = document.getElementById("biomodel-browse") as HTMLInputElement;
   const dropdown = document.getElementById("biomddropdown");
-  const searchModeElement = document.getElementById(
-    "search-mode"
-  ) as HTMLSelectElement | null;
+  const searchModeElement = document.getElementById("search-mode") as HTMLSelectElement | null;
   var biomodels: any;
   var chosenModel: any;
 
   biomodelBrowse.addEventListener("keyup", async (val) => {
     const biomodel = val;
-    const searchMode = searchModeElement!!.value;
-    if (
-      searchMode == "standard" &&
-      (val.target as HTMLInputElement).value.length < 2
-    ) {
+    const searchMode = searchModeElement!!.value
+    if (searchMode == "standard" && (val.target as HTMLInputElement).value.length < 2) {
       dropdown!.innerHTML = "";
       return;
     }
@@ -287,8 +282,7 @@ export function getBiomodels(
           setChosenModel(chosenModel);
         });
         // if author exists, display author, else display "No authors found"
-        const authors =
-          model.authors.length > 0 ? model.authors : "No authors found";
+        const authors = model.authors.length > 0 ? model.authors : "No authors found";
         a.innerHTML = `
             <div class="model-box">
                 <div class="title">${model.name}</div>
